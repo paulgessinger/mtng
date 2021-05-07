@@ -1,0 +1,42 @@
+\section{Recap}
+
+{% for repo, prs in repos.items() %}
+
+\begin{frame}{ {{ repo }}: PRs merged since {{ last.strftime('%Y-%m-%d') }} }
+
+  \begin{itemize}
+    {% for pr in prs %}
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{ {{- pr.html_url -}} }{\#{{- pr.number -}} } -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{ {{- pr.title|sanitize -}} }\\
+          by \href{ {{- pr.user.html_url -}} }{ @{{- pr.user.login|sanitize -}} }, merged on {{ pr.merged_at.strftime('%Y-%m-%d') }}
+    \end{varwidth}
+
+    {#
+    \item \href{ {{ pr.html_url }} }{ \#{{ pr.number }} } - \textbf{ {{ pr.title|sanitize }} }\\
+          by \href{ {{ pr.user.html_url }} }{ @{{ pr.user.login|sanitize }} }, merged on {{ pr.merged_at.strftime('%Y-%m-%d') }}
+    #}
+    {% endfor %}
+  \end{itemize}
+
+\end{frame}
+
+{% endfor %}
+
+\begin{frame}{Contributions today}
+
+  \begin{itemize}
+    {% for contrib in contributions %}
+      \item
+      \textbf{ {{- contrib["title"] -}} } \\
+      by {{ contrib["speakers"]|join(", ") }}
+    {% endfor %}
+  \end{itemize}
+
+
+\end{frame}
