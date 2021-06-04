@@ -4,74 +4,88 @@ from jinja2.loaders import FileSystemLoader
 from dotenv import load_dotenv
 from github import Github
 import requests
+import typer
 
 from datetime import datetime, timedelta
 from pathlib import Path
 import os
 import sys
+import re
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
-g = Github(os.environ["GH_TOKEN"])
 
-
-dt = datetime.now() - timedelta(days=14)
-
-data = {}
-
-r = requests.get("https://indico.cern.ch/export/event/1035950.json?detail=contributions")
-
-event = r.json()
-
-# print(event["results"][0]["contributions"])
-
-# sys.exit()
-
-
-for repo in (
-    "acts-project/traccc",
-    "acts-project/vecmem"
+def main(
+  indico: str
 ):
-    issues = g.search_issues(f"repo:{repo} is:pr merged:>={dt.strftime('%Y-%m-%d')}")
-
-    # data.setdefault(repo, [])
-
-    prs = [i.as_pull_request() for i in issues]
-    # prs = sorted(prs, key=lambda p: p.merged_at)
-    data[repo] = prs
-    # for pr in prs:
-        # s = f"#{pr.number} - {pr.title} by @{pr.user.login}, merged on {pr.merged_at.strftime('%Y-%m-%d')}"
-
-        # print(s)
-        # print(pr, pr.merged_at)
-        # data[repo].append(pr)
+  g = Github(os.environ["GH_TOKEN"])
 
 
-from jinja2 import Environment, FileSystemLoader
-env = Environment(
-    loader=FileSystemLoader(Path(__file__).parent / "template"),
-)
+  # dt = datetime.now() - timedelta(days=)
+  dt = datetime(year=2021, month=5, day=7)
 
-def sanitize(s):
-  return s.replace("_", "\\_").replace("#", "\\#")
-  
-env.filters["sanitize"] = sanitize
+  data = {}
 
-tpl = env.get_template("main.tex")
+  indico_id = re.match(r"https://indico.cern.ch/event/(\d*)/?", indico).group(1)
 
-contributions = []
+  r = requests.get(f"https://indico.cern.ch/export/event/{indico_id}.json?detail=contributions")
 
-for contrib in event["results"][0]["contributions"]:
-  start = datetime.strptime(contrib["startDate"]["date"]+ " " + contrib["startDate"]["time"], "%Y-%m-%d %H:%M:%S")
-  contributions.append({
-    "title": contrib["title"],
-    "speakers": [s["first_name"] + " " + s["last_name"] for s in contrib["speakers"]],
-    "start_date": start
-  })
+  event = r.json()
 
-contributions = sorted(contributions, key=lambda c: c["start_date"])
+  # print(event["results"][0]["contributions"])
 
-print(tpl.render(
-  repos=data,
-  last=dt,
-  contributions=contributions
-))
+  # sys.exit()
+
+  with ThreadPoolExecutor() as ex:
+
+    for repo in (
+        "acts-project/traccc",
+        "acts-project/vecmem",
+        "acts-project/detray"
+    ):
+        data[repo] = {}
+        issues = g.search_issues(f"repo:{repo} is:pr merged:>={dt.strftime('%Y-%m-%d')}")
+        merged_prs = ex.map(lambda i: i.as_pull_request(), issues)
+        data[repo]["merged_prs"] = merged_prs
+
+        r = g.get_repo(repo)
+
+        prs = r.get_pulls(state="opened")
+        data[repo]["open_prs"] = prs
+
+    from jinja2 import Environment, FileSystemLoader
+    env = Environment(
+        loader=FileSystemLoader(Path(__file__).parent / "template"),
+    )
+
+    def sanitize(s):
+      return s.replace("_", "\\_").replace("#", "\\#")
+      
+    env.filters["sanitize"] = sanitize
+
+    tpl = env.get_template("main.tex")
+
+    contributions = []
+
+    for contrib in event["results"][0]["contributions"]:
+      if contrib["title"] in ("Intro", "Introduction"):
+        continue
+
+      start = datetime.strptime(contrib["startDate"]["date"]+ " " + contrib["startDate"]["time"], "%Y-%m-%d %H:%M:%S")
+      contributions.append({
+        "title": contrib["title"],
+        "speakers": [s["first_name"] + " " + s["last_name"] for s in contrib["speakers"]],
+        "start_date": start,
+        "url": contrib["url"],
+      })
+
+    contributions = sorted(contributions, key=lambda c: c["start_date"])
+
+    print(tpl.render(
+      repos=data,
+      last=dt,
+      contributions=contributions
+    ))
+
+if "__main__" == __name__:
+  typer.run(main)

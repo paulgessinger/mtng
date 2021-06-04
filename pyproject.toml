@@ -10,6 +10,7 @@ PyGithub = "^1.55"
 python-dotenv = "^0.17.1"
 Jinja2 = "^2.11.3"
 requests = "^2.25.1"
+typer = "^0.3.2"
 
 [tool.poetry.dev-dependencies]
 

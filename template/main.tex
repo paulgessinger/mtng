@@ -1,11 +1,11 @@
-\section{Recap}
+\section{Merged Pull Requests since {{ last.strftime('%Y-%m-%d') }} }
 
-{% for repo, prs in repos.items() %}
+{% for repo_name, repo in repos.items() %}
 
-\begin{frame}{ {{ repo }}: PRs merged since {{ last.strftime('%Y-%m-%d') }} }
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: PRs merged since {{ last.strftime('%Y-%m-%d') }} }
 
   \begin{itemize}
-    {% for pr in prs %}
+    {% for pr in repo["merged_prs"]|sort(attribute="merged_at") %}
 
     \item
     \begin{varwidth}[t]{3em}
@@ -17,10 +17,6 @@
           by \href{ {{- pr.user.html_url -}} }{ @{{- pr.user.login|sanitize -}} }, merged on {{ pr.merged_at.strftime('%Y-%m-%d') }}
     \end{varwidth}
 
-    {#
-    \item \href{ {{ pr.html_url }} }{ \#{{ pr.number }} } - \textbf{ {{ pr.title|sanitize }} }\\
-          by \href{ {{ pr.user.html_url }} }{ @{{ pr.user.login|sanitize }} }, merged on {{ pr.merged_at.strftime('%Y-%m-%d') }}
-    #}
     {% endfor %}
   \end{itemize}
 
@@ -28,12 +24,39 @@
 
 {% endfor %}
 
+\section{Open Pull Requests}
+
+{% for repo_name, repo in repos.items() %}
+
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: Open PRs}
+
+  \begin{itemize}
+    {% for pr in repo["open_prs"]|sort(reverse=True, attribute="updated_at") %}
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{ {{- pr.html_url -}} }{\#{{- pr.number -}} } -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{ {{- pr.title|sanitize -}} }\\
+          by \href{ {{- pr.user.html_url -}} }{ @{{- pr.user.login|sanitize -}} }, updated on {{ pr.updated_at.strftime('%Y-%m-%d') }}
+    \end{varwidth}
+
+    {% endfor %}
+  \end{itemize}
+
+\end{frame}
+
+{% endfor %}
+
+
 \begin{frame}{Contributions today}
 
   \begin{itemize}
-    {% for contrib in contributions %}
+    {% for contrib in contributions if contrib["speakers"]|length > 0 %}
       \item
-      \textbf{ {{- contrib["title"] -}} } \\
+      \href{ {{- contrib["url"] -}} }{ \textbf{ {{- contrib["title"] -}} } } \\
       by {{ contrib["speakers"]|join(", ") }}
     {% endfor %}
   \end{itemize}
