@@ -1,0 +1,435 @@
+\section{Merged Pull Requests since 2021-05-07 }
+
+
+
+\begin{frame}[allowframebreaks]{ acts-project/traccc: PRs merged since 2021-05-07 }
+
+  \begin{itemize}
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/37}{\#37} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Declare algebra header functions to be inline}\\
+          by \href{https://github.com/stephenswat}{ @stephenswat}, merged on 2021-05-11
+    \end{varwidth}
+
+    
+  \end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}[allowframebreaks]{ acts-project/vecmem: PRs merged since 2021-05-07 }
+
+  \begin{itemize}
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/vecmem/pull/83}{\#83} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Implement a static array type}\\
+          by \href{https://github.com/stephenswat}{ @stephenswat}, merged on 2021-05-14
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/vecmem/pull/84}{\#84} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{CUDA 10.1 Compatibility Fix, main branch (2021.05.18.)}\\
+          by \href{https://github.com/krasznaa}{ @krasznaa}, merged on 2021-05-18
+    \end{varwidth}
+
+    
+  \end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}[allowframebreaks]{ acts-project/detray: PRs merged since 2021-05-07 }
+
+  \begin{itemize}
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/51}{\#51} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: teaching the volumes to know another}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-11
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/52}{\#52} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: add volume search benchmark}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-15
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/53}{\#53} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: change to proto detector}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-18
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/54}{\#54} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{removing old detector infrastructure}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-18
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/55}{\#55} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{chore: harmonize surface / portal / container names}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-18
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/56}{\#56} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{chore: de-template intersection, track}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-19
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/57}{\#57} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: harmonize surfaces and portals}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-20
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/58}{\#58} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: further progress in navigator behavior}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-21
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/59}{\#59} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: reduce boundary complexity}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-27
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/60}{\#60} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: first sort of navigator}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-27
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/61}{\#61} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: adding simple line\_stepper}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-28
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/62}{\#62} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat:  introduce propagator}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, merged on 2021-05-31
+    \end{varwidth}
+
+    
+  \end{itemize}
+
+\end{frame}
+
+
+
+\section{Open Pull Requests}
+
+
+
+\begin{frame}[allowframebreaks]{ acts-project/traccc: Open PRs}
+
+  \begin{itemize}
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/40}{\#40} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{CPU parallel example}\\
+          by \href{https://github.com/georgi-mania}{ @georgi-mania}, updated on 2021-05-25
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/35}{\#35} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Port ACTS binning algorithm for CPU}\\
+          by \href{https://github.com/beomki-yeo}{ @beomki-yeo}, updated on 2021-05-25
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/41}{\#41} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{add hit reader for ACTS fatras simulation}\\
+          by \href{https://github.com/beomki-yeo}{ @beomki-yeo}, updated on 2021-05-24
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/24}{\#24} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Add a simple clusterization example program}\\
+          by \href{https://github.com/stephenswat}{ @stephenswat}, updated on 2021-05-14
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/36}{\#36} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Implement a common set of algorithm semantics}\\
+          by \href{https://github.com/stephenswat}{ @stephenswat}, updated on 2021-05-12
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/39}{\#39} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Add clang-format script and CI job}\\
+          by \href{https://github.com/paulgessinger}{ @paulgessinger}, updated on 2021-05-12
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/38}{\#38} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Rework the vector and matrix types used for algebra}\\
+          by \href{https://github.com/stephenswat}{ @stephenswat}, updated on 2021-05-12
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/19}{\#19} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{WIP: Another CUDA implementation of connected component labeling}\\
+          by \href{https://github.com/stephenswat}{ @stephenswat}, updated on 2021-05-11
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/traccc/pull/33}{\#33} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Implement container element views}\\
+          by \href{https://github.com/stephenswat}{ @stephenswat}, updated on 2021-05-06
+    \end{varwidth}
+
+    
+  \end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}[allowframebreaks]{ acts-project/vecmem: Open PRs}
+
+  \begin{itemize}
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/vecmem/pull/82}{\#82} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Add clang-format script and CI job}\\
+          by \href{https://github.com/paulgessinger}{ @paulgessinger}, updated on 2021-05-14
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/vecmem/pull/79}{\#79} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{[WIP] Add cms caching cuda allocator}\\
+          by \href{https://github.com/cgleggett}{ @cgleggett}, updated on 2021-04-28
+    \end{varwidth}
+
+    
+  \end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}[allowframebreaks]{ acts-project/detray: Open PRs}
+
+  \begin{itemize}
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/65}{\#65} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Feat integrate simd algebra}\\
+          by \href{https://github.com/niermann999}{ @niermann999}, updated on 2021-06-03
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/64}{\#64} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{Refactor extern la plugin}\\
+          by \href{https://github.com/niermann999}{ @niermann999}, updated on 2021-06-03
+    \end{varwidth}
+
+    
+
+    \item
+    \begin{varwidth}[t]{3em}
+      \href{https://github.com/acts-project/detray/pull/63}{\#63} -
+    \end{varwidth}%
+    \hspace{1mm}%
+    \begin{varwidth}[t]{\textwidth-4em}
+          \textbf{feat: add propagate-all}\\
+          by \href{https://github.com/asalzburger}{ @asalzburger}, updated on 2021-06-01
+    \end{varwidth}
+
+    
+  \end{itemize}
+
+\end{frame}
+
+
+
+
+
+\begin{frame}[allowframebreaks]{Contributions today}
+
+  \begin{itemize}
+    
+      \item
+      \href{https://indico.cern.ch/event/1042735/contributions/4390445/}{ \textbf{Concurrent algorithms in traccc} } \\
+      by Georgiana Mania
+    
+      \item
+      \href{https://indico.cern.ch/event/1042735/contributions/4391827/}{ \textbf{traccc Seed Finding update} } \\
+      by Beom Ki Yeo
+    
+  \end{itemize}
+
+
+\end{frame}
+

@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 
-from jinja2.loaders import FileSystemLoader
-from dotenv import load_dotenv
-from github import Github
-import requests
-import typer
 
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -12,29 +7,31 @@ import os
 import sys
 import re
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
+
+from jinja2.loaders import FileSystemLoader
+from dotenv import load_dotenv
+from github import Github
+import requests
+import typer
+import dateutil.parser
 
 load_dotenv()
 
 def main(
-  indico: str
+  since: str,
+  indico: Optional[str] = None
 ):
   g = Github(os.environ["GH_TOKEN"])
 
 
   # dt = datetime.now() - timedelta(days=)
-  dt = datetime(year=2021, month=5, day=7)
+  # dt = datetime(year=2021, month=5, day=7)
+  dt = dateutil.parser.parse(since)
 
   data = {}
 
-  indico_id = re.match(r"https://indico.cern.ch/event/(\d*)/?", indico).group(1)
 
-  r = requests.get(f"https://indico.cern.ch/export/event/{indico_id}.json?detail=contributions")
-
-  event = r.json()
-
-  # print(event["results"][0]["contributions"])
-
-  # sys.exit()
 
   with ThreadPoolExecutor() as ex:
 
@@ -67,19 +64,28 @@ def main(
 
     contributions = []
 
-    for contrib in event["results"][0]["contributions"]:
-      if contrib["title"] in ("Intro", "Introduction"):
-        continue
+    if indico is not None:
 
-      start = datetime.strptime(contrib["startDate"]["date"]+ " " + contrib["startDate"]["time"], "%Y-%m-%d %H:%M:%S")
-      contributions.append({
-        "title": contrib["title"],
-        "speakers": [s["first_name"] + " " + s["last_name"] for s in contrib["speakers"]],
-        "start_date": start,
-        "url": contrib["url"],
-      })
+      indico_id = re.match(r"https://indico.cern.ch/event/(\d*)/?", indico).group(1)
 
-    contributions = sorted(contributions, key=lambda c: c["start_date"])
+      r = requests.get(f"https://indico.cern.ch/export/event/{indico_id}.json?detail=contributions")
+
+      event = r.json()
+
+
+      for contrib in event["results"][0]["contributions"]:
+        if contrib["title"] in ("Intro", "Introduction"):
+          continue
+
+        start = datetime.strptime(contrib["startDate"]["date"]+ " " + contrib["startDate"]["time"], "%Y-%m-%d %H:%M:%S")
+        contributions.append({
+          "title": contrib["title"],
+          "speakers": [s["first_name"] + " " + s["last_name"] for s in contrib["speakers"]],
+          "start_date": start,
+          "url": contrib["url"],
+        })
+
+      contributions = sorted(contributions, key=lambda c: c["start_date"])
 
     print(tpl.render(
       repos=data,

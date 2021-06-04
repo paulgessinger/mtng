@@ -51,7 +51,8 @@
 {% endfor %}
 
 
-\begin{frame}{Contributions today}
+{% if contributions|length > 0 %}
+\begin{frame}[allowframebreaks]{Contributions today}
 
   \begin{itemize}
     {% for contrib in contributions if contrib["speakers"]|length > 0 %}
@@ -63,3 +64,4 @@
 
 
 \end{frame}
+{% endif %}
