@@ -42,12 +42,12 @@ def main(
     ):
         data[repo] = {}
         issues = g.search_issues(f"repo:{repo} is:pr merged:>={dt.strftime('%Y-%m-%d')}")
-        merged_prs = ex.map(lambda i: i.as_pull_request(), issues)
+        merged_prs = list(ex.map(lambda i: i.as_pull_request(), issues))
         data[repo]["merged_prs"] = merged_prs
 
         r = g.get_repo(repo)
 
-        prs = r.get_pulls(state="opened")
+        prs = list(r.get_pulls(state="opened"))
         data[repo]["open_prs"] = prs
 
     from jinja2 import Environment, FileSystemLoader
