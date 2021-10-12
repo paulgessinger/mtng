@@ -1,0 +1,147 @@
+import os
+from typing import Optional, List
+import functools
+import asyncio
+import datetime
+from pathlib import Path
+import re
+
+import typer
+from dotenv import load_dotenv
+from gidgethub.aiohttp import GitHubAPI
+import gidgethub
+import aiohttp
+import dateutil.parser
+
+cli = typer.Typer()
+
+
+def make_sync(fn):
+    @functools.wraps(fn)
+    def wrapped(*args, **kwargs):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(fn(*args, **kwargs))
+
+    return wrapped
+
+
+async def collect(gh: GitHubAPI, repo: str, dt: datetime.datetime):
+    merged_prs = [
+        gh.getitem(f"/repos/{repo}/pulls/{issue['number']}")
+        async for issue in gh.getiter(
+            f"/search/issues?q=repo:{repo}+is:pr+merged:>={dt.strftime('%Y-%m-%d')}",
+        )
+    ]
+
+    open_prs = [
+        gh.getitem(f"/repos/{repo}/pulls/{issue['number']}")
+        async for issue in gh.getiter(
+            f'/search/issues?q=repo:{repo}+is:pr+is:open+-label:":construction: WIP"',
+        )
+    ]
+
+    stale = [
+        issue
+        async for issue in gh.getiter(
+            f"/search/issues?q=repo:{repo}+is:open+label:Stale"
+        )
+    ]
+
+    merged_prs = await asyncio.gather(*merged_prs)
+    open_prs = await asyncio.gather(*open_prs)
+    # stale = await asyncio.gather(*stale)
+
+    return open_prs, merged_prs, stale
+
+
+@cli.command()
+@make_sync
+async def generate(
+    do_issues: bool = typer.Option(False),
+    token: Optional[str] = typer.Option(
+        None,
+        help="Github API token to use. Can be supplied with environment variable GH_TOKEN",
+    ),
+    repositories: List[str] = typer.Option(..., "--repo"),
+    since: str = typer.Option(...),
+    events: List[str] = typer.Option([], "--event"),
+):
+    dt = dateutil.parser.parse(since)
+
+    if token is None:
+        if "GH_TOKEN" not in os.environ:
+            raise TypeError("No GitHub token provided. See help")
+        token = os.environ["GH_TOKEN"]
+
+    async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
+        gh = GitHubAPI(session, __name__, oauth_token=token)
+        data = {}
+        for repo in repositories:
+            open_prs, merged_prs, stale = await collect(gh, repo, dt)
+            data[repo] = {}
+            data[repo]["merged_prs"] = merged_prs
+            data[repo]["open_prs"] = open_prs
+            data[repo]["stale"] = stale
+
+            for prs in open_prs, merged_prs, stale:
+                for pr in prs:
+                    for k in "merged_at", "updated_at":
+                        if not k in pr:
+                            continue
+                        pr[k] = (
+                            dateutil.parser.parse(pr[k]) if pr[k] is not None else None
+                        )
+
+        contributions = []
+
+        for event_url in events:
+            indico_id = re.match(
+                r"https://indico.cern.ch/event/(\d*)/?", event_url
+            ).group(1)
+            async with session.get(
+                f"https://indico.cern.ch/export/event/{indico_id}.json?detail=contributions",
+            ) as res:
+                event = await res.json()
+
+                for contrib in event["results"][0]["contributions"]:
+                    if contrib["title"] in ("Intro", "Introduction"):
+                        continue
+
+                    start = datetime.datetime.strptime(
+                        contrib["startDate"]["date"]
+                        + " "
+                        + contrib["startDate"]["time"],
+                        "%Y-%m-%d %H:%M:%S",
+                    )
+                    contributions.append(
+                        {
+                            "title": contrib["title"],
+                            "speakers": [
+                                s["first_name"] + " " + s["last_name"]
+                                for s in contrib["speakers"]
+                            ],
+                            "start_date": start,
+                            "url": contrib["url"],
+                        }
+                    )
+        contributions = sorted(contributions, key=lambda c: c["start_date"])
+
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(Path(__file__).parent / "template"),
+    )
+
+    def sanitize(s):
+        return s.replace("_", "\\_").replace("#", "\\#").replace("&", "\\&")
+
+    env.filters["sanitize"] = sanitize
+
+    tpl = env.get_template("main.tex")
+
+    print(tpl.render(repos=data, last=dt, contributions=contributions))
+
+
+@cli.callback()
+def main():
+    load_dotenv()

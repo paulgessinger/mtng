@@ -1,0 +1,83 @@
+{% for repo_name, repo in repos.items() %}
+
+{% macro show_item(item) %}
+    \item
+    \textbf{\href{
+      {{- item.html_url -}}
+    }{\textcolor{black}{
+      {{- item.title|sanitize -}} 
+    }}}
+    (\href{ {{- item.html_url -}} }{\#{{- item.number -}} }) \\
+    by \href{ {{- item.user.html_url -}} }{ @{{- item.user.login|sanitize -}} }
+    {{- caller() }}
+{% endmacro %}
+
+{% if repo["merged_prs"]|length > 0 %}
+
+\section{ {{repo_name}} \\ Merged PRs}
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: PRs merged since {{ last.strftime('%Y-%m-%d') }} }
+
+  \begin{itemize}
+    {% for pr in repo["merged_prs"]|sort(attribute="merged_at") %}
+    {%- call show_item(pr) -%}
+    , merged on {{ pr.merged_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+  \end{itemize}
+
+\end{frame}
+
+{% else %}
+\begin{frame}[c]{}
+  \begin{center}
+    \Large
+    \color{shivablue}
+    \sffamily 
+    No merged PRs since \textbf{ {{ last.strftime('%Y-%m-%d') }} } in\\
+    \textbf{ {{ repo_name }} }
+  \end{center}
+\end{frame}
+{% endif %}
+
+\section{ {{repo_name}} \\ Open PRs (non WIP)}
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: Open PRs (non WIP)}
+
+  \begin{itemize}
+    {% for pr in repo["open_prs"]|sort(reverse=True, attribute="updated_at") %}
+    {%- call show_item(pr) -%}
+    , updated on {{ pr.updated_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+  \end{itemize}
+
+\end{frame}
+
+{% if repo["stale"]|length > 0 %}
+\section{ {{repo_name}} \\ Stale Issues and PRs}
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: Stale Issues / PRs}
+  \begin{itemize}
+    {% for item in repo["stale"]|sort(reverse=True, attribute="updated_at") %}
+    {%- call show_item(item) -%}
+        , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+  \end{itemize}
+\end{frame}
+{% endif %}
+{% endfor %}
+
+{% if contributions|length > 0 %}
+\begin{frame}[allowframebreaks]{Contributions today}
+  \begin{itemize}
+    {% for contrib in contributions %}
+
+      \item
+      \href{ {{- contrib["url"] -}} }{ \textbf{ {{- contrib["title"] -}} } } \\
+      {% if contrib["speakers"]|length > 0 %}
+      by {{ contrib["speakers"]|join(", ") }}
+      {% endif %}
+    {% endfor %}
+  \end{itemize}
+\end{frame}
+{% endif %}
+
