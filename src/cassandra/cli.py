@@ -57,6 +57,38 @@ async def collect(gh: GitHubAPI, repo: str, dt: datetime.datetime):
     return open_prs, merged_prs, stale
 
 
+async def handle_event(event: str, session):
+    contributions = []
+
+    indico_id = re.match(r"https://indico.cern.ch/event/(\d*)/?", event).group(1)
+    async with session.get(
+        f"https://indico.cern.ch/export/event/{indico_id}.json?detail=contributions",
+    ) as res:
+        event = await res.json()
+
+        for contrib in event["results"][0]["contributions"]:
+            if contrib["title"] in ("Intro", "Introduction"):
+                continue
+
+            start = datetime.datetime.strptime(
+                contrib["startDate"]["date"] + " " + contrib["startDate"]["time"],
+                "%Y-%m-%d %H:%M:%S",
+            )
+            contributions.append(
+                {
+                    "title": contrib["title"],
+                    "speakers": [
+                        s["first_name"] + " " + s["last_name"]
+                        for s in contrib["speakers"]
+                    ],
+                    "start_date": start,
+                    "url": contrib["url"],
+                }
+            )
+    contributions = sorted(contributions, key=lambda c: c["start_date"])
+    return contributions
+
+
 @cli.command()
 @make_sync
 async def generate(
@@ -79,6 +111,10 @@ async def generate(
         token = os.environ["GH_TOKEN"]
 
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
+
+        if event is not None:
+            contributions = handle_event(event, session)
+
         gh = GitHubAPI(session, __name__, oauth_token=token)
         data = {}
         for repo in spec.repos:
@@ -96,7 +132,6 @@ async def generate(
                         f"/search/issues?q=repo:{repo.name}+is:pr+merged:>={dt.strftime('%Y-%m-%d')}",
                     )
                 ]
-                merged_prs = await asyncio.gather(*merged_prs)
                 data[repo.name]["merged_prs"] = merged_prs
 
             if repo.do_open_prs:
@@ -107,7 +142,6 @@ async def generate(
                     gh.getitem(f"/repos/{repo.name}/pulls/{issue['number']}")
                     async for issue in gh.getiter(url)
                 ]
-                open_prs = await asyncio.gather(*open_prs)
                 data[repo.name]["open_prs"] = open_prs
 
             if repo.do_stale:
@@ -119,6 +153,9 @@ async def generate(
                 ]
                 data[repo.name]["stale"] = stale
 
+            for prk in "open_prs", "merged_prs":
+                data[repo.name][prk] = await asyncio.gather(*data[repo.name][prk])
+
             for prk in "open_prs", "merged_prs", "stale":
                 for pr in data[repo.name][prk]:
                     for k in "merged_at", "updated_at":
@@ -128,39 +165,7 @@ async def generate(
                             dateutil.parser.parse(pr[k]) if pr[k] is not None else None
                         )
 
-        contributions = []
-
-        if event is not None:
-            indico_id = re.match(r"https://indico.cern.ch/event/(\d*)/?", event).group(
-                1
-            )
-            async with session.get(
-                f"https://indico.cern.ch/export/event/{indico_id}.json?detail=contributions",
-            ) as res:
-                event = await res.json()
-
-                for contrib in event["results"][0]["contributions"]:
-                    if contrib["title"] in ("Intro", "Introduction"):
-                        continue
-
-                    start = datetime.datetime.strptime(
-                        contrib["startDate"]["date"]
-                        + " "
-                        + contrib["startDate"]["time"],
-                        "%Y-%m-%d %H:%M:%S",
-                    )
-                    contributions.append(
-                        {
-                            "title": contrib["title"],
-                            "speakers": [
-                                s["first_name"] + " " + s["last_name"]
-                                for s in contrib["speakers"]
-                            ],
-                            "start_date": start,
-                            "url": contrib["url"],
-                        }
-                    )
-        contributions = sorted(contributions, key=lambda c: c["start_date"])
+        contributions = await contributions if event is not None else []
 
     from jinja2 import Environment, FileSystemLoader
 
