@@ -17,6 +17,7 @@ python-dateutil = "^2.8.1"
 aiohttp = "^3.7.4"
 gidgethub = "^5.0.1"
 pydantic = "^1.8.2"
+PyYAML = "^5.4.1"
 
 [tool.poetry.scripts]
 cassandra = 'cassandra.cli:cli'

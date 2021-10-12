@@ -39,8 +39,14 @@
 \end{frame}
 {% endif %}
 
-\section{ {{repo_name}} \\ Open PRs (non WIP)}
-\begin{frame}[allowframebreaks]{ {{ repo_name }}: Open PRs (non WIP)}
+\section{ {{repo_name}} \\ Open PRs 
+{%- if repo["spec"].wip_label is not none %} (non WIP)
+{%- endif -%}
+}
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: Open PRs
+{%- if repo["spec"].wip_label is not none %} (non WIP)
+{%- endif -%}
+}
 
   \begin{itemize}
     {% for pr in repo["open_prs"]|sort(reverse=True, attribute="updated_at") %}

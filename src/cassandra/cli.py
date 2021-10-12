@@ -12,6 +12,9 @@ from gidgethub.aiohttp import GitHubAPI
 import gidgethub
 import aiohttp
 import dateutil.parser
+import yaml
+
+from cassandra.spec import Spec
 
 cli = typer.Typer()
 
@@ -57,15 +60,17 @@ async def collect(gh: GitHubAPI, repo: str, dt: datetime.datetime):
 @cli.command()
 @make_sync
 async def generate(
-    do_issues: bool = typer.Option(False),
+    config: typer.FileText,
     token: Optional[str] = typer.Option(
         None,
         help="Github API token to use. Can be supplied with environment variable GH_TOKEN",
     ),
-    repositories: List[str] = typer.Option(..., "--repo"),
-    since: str = typer.Option(...),
-    events: List[str] = typer.Option([], "--event"),
+    since: str = typer.Option(..., prompt="When was the last meeting? (YYYY-MM-DD)"),
+    event: Optional[str] = typer.Option(None, "--event"),
 ):
+
+    spec = Spec.parse_obj(yaml.safe_load(config))
+
     dt = dateutil.parser.parse(since)
 
     if token is None:
@@ -76,15 +81,46 @@ async def generate(
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         gh = GitHubAPI(session, __name__, oauth_token=token)
         data = {}
-        for repo in repositories:
-            open_prs, merged_prs, stale = await collect(gh, repo, dt)
-            data[repo] = {}
-            data[repo]["merged_prs"] = merged_prs
-            data[repo]["open_prs"] = open_prs
-            data[repo]["stale"] = stale
+        for repo in spec.repos:
+            # open_prs, merged_prs, stale = await collect(gh, repo, dt)
+            data[repo.name] = {}
+            data[repo.name]["merged_prs"] = []
+            data[repo.name]["open_prs"] = []
+            data[repo.name]["stale"] = []
+            data[repo.name]["spec"] = repo
 
-            for prs in open_prs, merged_prs, stale:
-                for pr in prs:
+            if repo.do_merged_prs:
+                merged_prs = [
+                    gh.getitem(f"/repos/{repo.name}/pulls/{issue['number']}")
+                    async for issue in gh.getiter(
+                        f"/search/issues?q=repo:{repo.name}+is:pr+merged:>={dt.strftime('%Y-%m-%d')}",
+                    )
+                ]
+                merged_prs = await asyncio.gather(*merged_prs)
+                data[repo.name]["merged_prs"] = merged_prs
+
+            if repo.do_open_prs:
+                url = f"/search/issues?q=repo:{repo.name}+is:pr+is:open"
+                if repo.wip_label is not None:
+                    url += '+-label:"{repo.wip_label}"'
+                open_prs = [
+                    gh.getitem(f"/repos/{repo.name}/pulls/{issue['number']}")
+                    async for issue in gh.getiter(url)
+                ]
+                open_prs = await asyncio.gather(*open_prs)
+                data[repo.name]["open_prs"] = open_prs
+
+            if repo.do_stale:
+                stale = [
+                    issue
+                    async for issue in gh.getiter(
+                        f'/search/issues?q=repo:{repo.name}+is:open+label:"{repo.stale_label}"'
+                    )
+                ]
+                data[repo.name]["stale"] = stale
+
+            for prk in "open_prs", "merged_prs", "stale":
+                for pr in data[repo.name][prk]:
                     for k in "merged_at", "updated_at":
                         if not k in pr:
                             continue
@@ -94,10 +130,10 @@ async def generate(
 
         contributions = []
 
-        for event_url in events:
-            indico_id = re.match(
-                r"https://indico.cern.ch/event/(\d*)/?", event_url
-            ).group(1)
+        if event is not None:
+            indico_id = re.match(r"https://indico.cern.ch/event/(\d*)/?", event).group(
+                1
+            )
             async with session.get(
                 f"https://indico.cern.ch/export/event/{indico_id}.json?detail=contributions",
             ) as res:
@@ -139,7 +175,7 @@ async def generate(
 
     tpl = env.get_template("main.tex")
 
-    print(tpl.render(repos=data, last=dt, contributions=contributions))
+    print(tpl.render(repos=data, spec=spec, last=dt, contributions=contributions))
 
 
 @cli.callback()
