@@ -7,7 +7,13 @@
     }{\textcolor{black}{
       {{- item.title|sanitize -}} 
     }}}
-    (\href{ {{- item.html_url -}} }{\#{{- item.number -}} }) \\
+    (\href{ {{- item.html_url -}} }{
+    {%- if item.pull_request is defined or item.head is defined -%}
+    PR
+    {%- else -%}
+    Issue
+    {%- endif -%}
+    \#{{- item.number -}} }) \\
     by \href{ {{- item.user.html_url -}} }{ @{{- item.user.login|sanitize -}} }
     {{- caller() }}
 {% endmacro %}
@@ -57,6 +63,21 @@
   \end{itemize}
 
 \end{frame}
+
+{% if repo["spec"].do_recent_issues %}
+{% if repo["recent_issues"] | length > 0 %}
+  \section{ {{repo_name}} \\ Issues opened since {{ last.strftime('%Y-%m-%d') }} }
+  \begin{frame}[allowframebreaks]{ {{ repo_name }}: Issues opened since {{ last.strftime('%Y-%m-%d') }} }
+    {% for item in repo["recent_issues"]|sort(reverse=True, attribute="updated_at") %}
+    {%- call show_item(item) -%}
+        , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+  \end{frame}
+{% else %}
+  \section{ {{repo_name}} \\ No issues opened since {{ last.strftime('%Y-%m-%d') }} }
+{% endif %}
+{% endif %}
 
 {% if repo["stale"]|length > 0 %}
 \section{ {{repo_name}} \\ Stale Issues and PRs}

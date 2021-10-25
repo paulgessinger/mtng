@@ -5,6 +5,7 @@ import asyncio
 import datetime
 from pathlib import Path
 import re
+import urllib.parse
 
 import typer
 from dotenv import load_dotenv
@@ -97,13 +98,16 @@ async def generate(
         None,
         help="Github API token to use. Can be supplied with environment variable GH_TOKEN",
     ),
-    since: str = typer.Option(..., prompt="When was the last meeting? (YYYY-MM-DD)"),
+    since: datetime.datetime = typer.Option(
+        ..., prompt="When was the last meeting? (YYYY-MM-DD)"
+    ),
+    now: datetime.datetime = typer.Option(
+        datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    ),
     event: Optional[str] = typer.Option(None, "--event"),
 ):
 
     spec = Spec.parse_obj(yaml.safe_load(config))
-
-    dt = dateutil.parser.parse(since)
 
     if token is None:
         if "GH_TOKEN" not in os.environ:
@@ -123,13 +127,14 @@ async def generate(
             data[repo.name]["merged_prs"] = []
             data[repo.name]["open_prs"] = []
             data[repo.name]["stale"] = []
+            data[repo.name]["recent_issues"] = []
             data[repo.name]["spec"] = repo
 
             if repo.do_merged_prs:
                 merged_prs = [
                     gh.getitem(f"/repos/{repo.name}/pulls/{issue['number']}")
                     async for issue in gh.getiter(
-                        f"/search/issues?q=repo:{repo.name}+is:pr+merged:>={dt.strftime('%Y-%m-%d')}",
+                        f"/search/issues?q=repo:{repo.name}+is:pr+merged:{since:%Y-%m-%d}..{now:%Y-%m-%d}",
                     )
                 ]
                 data[repo.name]["merged_prs"] = merged_prs
@@ -137,7 +142,8 @@ async def generate(
             if repo.do_open_prs:
                 url = f"/search/issues?q=repo:{repo.name}+is:pr+is:open"
                 if repo.wip_label is not None:
-                    url += '+-label:"{repo.wip_label}"'
+                    url += f'+-label:"{urllib.parse.quote(repo.wip_label)}"'
+                    # url += '+-label:"{repo.wip_label}"'
                 open_prs = [
                     gh.getitem(f"/repos/{repo.name}/pulls/{issue['number']}")
                     async for issue in gh.getiter(url)
@@ -148,15 +154,22 @@ async def generate(
                 stale = [
                     issue
                     async for issue in gh.getiter(
-                        f'/search/issues?q=repo:{repo.name}+is:open+label:"{repo.stale_label}"'
+                        f'/search/issues?q=repo:{repo.name}+is:open+label:"{urllib.parse.quote(repo.stale_label)}"'
                     )
                 ]
+
                 data[repo.name]["stale"] = stale
+
+            if repo.do_recent_issues:
+                url = f"/search/issues?q=repo:{repo.name}+is:open+is:issue+created:{since:%Y-%m-%d}..{now:%Y-%m-%d}"
+                #  print(url)
+                recent_issues = [issue async for issue in gh.getiter(url)]
+                data[repo.name]["recent_issues"] = recent_issues
 
             for prk in "open_prs", "merged_prs":
                 data[repo.name][prk] = await asyncio.gather(*data[repo.name][prk])
 
-            for prk in "open_prs", "merged_prs", "stale":
+            for prk in "open_prs", "merged_prs", "stale", "recent_issues":
                 for pr in data[repo.name][prk]:
                     for k in "merged_at", "updated_at":
                         if not k in pr:
@@ -180,7 +193,7 @@ async def generate(
 
     tpl = env.get_template("main.tex")
 
-    print(tpl.render(repos=data, spec=spec, last=dt, contributions=contributions))
+    print(tpl.render(repos=data, spec=spec, last=since, contributions=contributions))
 
 
 @cli.callback()

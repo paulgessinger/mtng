@@ -15,6 +15,7 @@ class Repository(BaseModel):
     do_open_prs: bool = True
     do_merged_prs: bool = True
     do_stale: bool = False
+    do_recent_issues: bool = False
 
     @root_validator
     def stale_label_set(cls, values):
