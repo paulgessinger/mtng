@@ -15,7 +15,7 @@ import aiohttp
 import dateutil.parser
 import yaml
 
-from cassandra.spec import Spec
+from mtng.spec import Spec
 
 cli = typer.Typer()
 

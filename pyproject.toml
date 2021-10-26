@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "cassandra"
+name = "mtng"
 version = "0.1.0"
 description = ""
 authors = ["Paul Gessinger <hello@paulgessinger.com>"]
 packages = [
-    { include = "cassandra", from = "src" },
+    { include = "mtng", from = "src" },
 ]
 
 [tool.poetry.dependencies]
@@ -20,7 +20,7 @@ pydantic = "^1.8.2"
 PyYAML = "^5.4.1"
 
 [tool.poetry.scripts]
-cassandra = 'cassandra.cli:cli'
+mtng = 'mtng.cli:cli'
 
 [tool.poetry.dev-dependencies]
 
