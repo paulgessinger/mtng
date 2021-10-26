@@ -90,7 +90,9 @@ async def handle_event(event: str, session):
     return contributions
 
 
-@cli.command()
+@cli.command(
+    help="Generate a LaTeX fragment that includes an overview of PRs, Issues and optionally an Indico agenda"
+)
 @make_sync
 async def generate(
     config: typer.FileText,

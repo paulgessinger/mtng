@@ -6,6 +6,7 @@ authors = ["Paul Gessinger <hello@paulgessinger.com>"]
 packages = [
     { include = "mtng", from = "src" },
 ]
+readme = README.md
 
 [tool.poetry.dependencies]
 python = "^3.8"
