@@ -68,11 +68,13 @@
 {% if repo["recent_issues"] | length > 0 %}
   \section{ {{repo_name}} \\ Issues opened since {{ last.strftime('%Y-%m-%d') }} }
   \begin{frame}[allowframebreaks]{ {{ repo_name }}: Issues opened since {{ last.strftime('%Y-%m-%d') }} }
-    {% for item in repo["recent_issues"]|sort(reverse=True, attribute="updated_at") %}
-    {%- call show_item(item) -%}
-        , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
-    {%- endcall %}
-    {%- endfor %}
+    \begin{itemize}
+      {% for item in repo["recent_issues"]|sort(reverse=True, attribute="updated_at") %}
+      {%- call show_item(item) -%}
+          , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
+      {%- endcall %}
+      {%- endfor %}
+      \end{itemize}
   \end{frame}
 {% else %}
   \section{ {{repo_name}} \\ No issues opened since {{ last.strftime('%Y-%m-%d') }} }
