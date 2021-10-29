@@ -18,7 +18,7 @@ import yaml
 from mtng.spec import Spec
 from mtng import __version__
 
-load_dotenv()
+load_dotenv(dotenv_path=Path.cwd() /".env")
 
 cli = typer.Typer()
 
