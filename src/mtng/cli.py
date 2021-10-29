@@ -100,7 +100,7 @@ async def handle_event(event: str, session):
 async def generate(
     config: typer.FileText,
     token: str = typer.Option(
-        os.environ.get("GH_TOKEN"),
+        os.environ.get("GH_TOKEN",...),
         help="Github API token to use. Can be supplied with environment variable GH_TOKEN",
     ),
     since: datetime.datetime = typer.Option(
