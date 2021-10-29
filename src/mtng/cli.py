@@ -16,6 +16,9 @@ import dateutil.parser
 import yaml
 
 from mtng.spec import Spec
+from mtng import __version__
+
+load_dotenv()
 
 cli = typer.Typer()
 
@@ -96,8 +99,8 @@ async def handle_event(event: str, session):
 @make_sync
 async def generate(
     config: typer.FileText,
-    token: Optional[str] = typer.Option(
-        None,
+    token: str = typer.Option(
+        os.environ.get("GH_TOKEN"),
         help="Github API token to use. Can be supplied with environment variable GH_TOKEN",
     ),
     since: datetime.datetime = typer.Option(
@@ -110,11 +113,6 @@ async def generate(
 ):
 
     spec = Spec.parse_obj(yaml.safe_load(config))
-
-    if token is None:
-        if "GH_TOKEN" not in os.environ:
-            raise TypeError("No GitHub token provided. See help")
-        token = os.environ["GH_TOKEN"]
 
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
 
@@ -200,4 +198,10 @@ async def generate(
 
 @cli.callback()
 def main():
-    load_dotenv()
+    pass
+
+
+main.__doc__ = """
+Meeting generation script, version {version}
+""".format(version=__version__)
+
