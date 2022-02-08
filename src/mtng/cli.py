@@ -175,7 +175,7 @@ async def generate(
                         if not k in pr:
                             continue
                         pr[k] = (
-                            dateutil.parser.parse(pr[k]) if pr[k] is not None else None
+                            dateutil.parser.parse(pr[k]).replace(tzinfo=None) if pr[k] is not None else None
                         )
 
         contributions = await contributions if event is not None else []

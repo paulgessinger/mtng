@@ -81,9 +81,25 @@
 {% endif %}
 {% endif %}
 
-{% if repo["stale"]|length > 0 %}
+{% set newly_stale = repo["stale"] | selectattr("updated_at", ">", last) | list %}
+{% if newly_stale | length > 0 %}
 \section{ {{repo_name}} \\ Stale Issues and PRs}
-\begin{frame}[allowframebreaks]{ {{ repo_name }}: Stale Issues / PRs}
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: New stale Issues / PRs since {{ last.strftime('%Y-%m-%d') }} }
+  \begin{itemize}
+    {% for item in newly_stale %}
+    {%- call show_item(item) -%}
+        , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+  \end{itemize}
+\end{frame}
+{% else %}
+\section{ {{repo_name}} \\ No new stale issues or PRs since {{ last.strftime('%Y-%m-%d') }} }
+{% endif %}
+
+{% if repo["stale"]|length > 0 %}
+\section{ {{repo_name}} \\ All stale Issues and PRs}
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: All stale Issues / PRs}
   \begin{itemize}
     {% for item in repo["stale"]|sort(reverse=True, attribute="updated_at") %}
     {%- call show_item(item) -%}
