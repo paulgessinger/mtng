@@ -49,6 +49,7 @@
 {%- if repo["spec"].wip_label is not none %} (non WIP)
 {%- endif -%}
 }
+{% if repo["open_prs"]| length > 0 %}
 \begin{frame}[allowframebreaks]{ {{ repo_name }}: Open PRs
 {%- if repo["spec"].wip_label is not none %} (non WIP)
 {%- endif -%}
@@ -63,6 +64,7 @@
   \end{itemize}
 
 \end{frame}
+{% endif %}
 
 {% if repo["spec"].do_recent_issues %}
 {% if repo["recent_issues"] | length > 0 %}
