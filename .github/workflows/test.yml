@@ -1,0 +1,8 @@
+on:
+  push:
+  pull_request:
+
+jobs:
+  nox:
+    - name: Run nox
+      uses: wntrblm/nox
