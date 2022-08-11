@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mtng"
-version = "0.4.1"
+version = "0.5.0"
 description = ""
 authors = ["Paul Gessinger <hello@paulgessinger.com>"]
 packages = [
