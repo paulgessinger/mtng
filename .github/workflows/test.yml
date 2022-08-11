@@ -4,5 +4,6 @@ on:
 
 jobs:
   nox:
-    - name: Run nox
-      uses: wntrblm/nox
+    steps:
+     - name: Run nox
+       uses: wntrblm/nox
