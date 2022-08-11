@@ -4,6 +4,7 @@ on:
 
 jobs:
   nox:
+    runs-on: ubuntu-latest
     strategy:
       matrix: 
         python:
