@@ -17,5 +17,6 @@ jobs:
           python-version: "${{ matrix.python }}"
       - name: Install nox
         run: pip install nox
+      - uses: actions/checkout@v3
       - name: Run nox
         run: nox -p ${{ matrix.python }}
