@@ -1,9 +1,14 @@
+from unittest.mock import Mock
 import asyncio
 from datetime import datetime
 import json
 from pathlib import Path
-from unittest.mock import Mock
+import os
+import warnings
+
 import pytest
+import aiohttp
+from gidgethub.aiohttp import GitHubAPI
 
 import mtng.collect
 from mtng.generate import generate_latex
@@ -11,7 +16,7 @@ from mtng.spec import Repository, Spec
 
 
 @pytest.mark.asyncio
-async def test_success(monkeypatch: pytest.MonkeyPatch):
+async def test_generate(monkeypatch: pytest.MonkeyPatch):
     gh = Mock()
 
     repo = Repository(
@@ -54,3 +59,24 @@ async def test_success(monkeypatch: pytest.MonkeyPatch):
 
     assert output == (ref / "reference.tex").read_text()
     #  print((ref / "reference.tex").read_text())
+
+
+@pytest.mark.asyncio
+async def test_collect():
+    repo = Repository(
+        name="acts-project/acts",
+        do_stale=True,
+        stale_label="Stale",
+        wip_label=":construction: WIP",
+    )
+
+    if "GH_TOKEN" not in os.environ:
+        warnings.warn(
+            "GH_TOKEN environment variable not found. API based tests will likely fail"
+        )
+
+    async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
+        gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
+        result = await mtng.collect.collect_repositories(
+            [repo], gh=gh, since=datetime(2022, 8, 1), now=datetime(2022, 8, 11)
+        )
