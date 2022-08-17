@@ -100,7 +100,7 @@ In addition and independent of this config, a meeting agenda can be attached at 
 
 ## Making a presentation
 
-The output of `mtng generate` is a LaTeX fragment. It has to be incorporated into a set of Beamer/LaTeX slides, for example like
+By default, the output of `mtng generate` is a LaTeX fragment. It has to be incorporated into a set of Beamer/LaTeX slides, for example like
 
 ```console
 $ mtng generate spec.yml > gen.tex
@@ -112,4 +112,11 @@ with a LaTeX file like
 % Preamble and beginnig of slides
 \input{gen.tex}
 % Rest of slides
+```
+
+Alternatively, you can generate a fully compileable LaTex document, by using the `--full` option.
+
+```console
+$ mtng generate spec.yml --full > gen.tex
+$ latexmk gen.tex
 ```
