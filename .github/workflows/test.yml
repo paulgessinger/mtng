@@ -43,9 +43,10 @@ jobs:
     
   compile:
     runs-on: ubuntu-latest
-    container: texlive/texlive:latest
+    container: texlive/texlive:latest-small
     needs: generate
     steps:
+      - run: tlmgr install latexmk && ln -s /usr/local/texlive/20*/bin/*/latexmk /usr/local/bin/latexmk
       - uses: actions/download-artifact@v3
         with:
           name: latex-src
