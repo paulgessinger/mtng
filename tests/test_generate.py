@@ -80,5 +80,5 @@ async def test_collect():
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
         result = await mtng.collect.collect_repositories(
-            [repo], gh=gh, since=datetime(2022, 8, 1), now=datetime(2022, 8, 11)
+            [repo], gh=gh, since=datetime(2022, 8, 1), now=datetime(2022, 8, 2)
         )
