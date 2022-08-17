@@ -19,6 +19,7 @@ import aiohttp
 import dateutil.parser
 import yaml
 import pydantic.schema
+from dateutil.tz import tzlocal
 
 from mtng.generate import generate_latex
 from mtng.spec import Spec
@@ -147,6 +148,9 @@ async def generate(
         help="Compile the report as a PDF file. This requires a LaTeX installation.",
     ),
 ):
+
+    now = now.replace(tzinfo=tzlocal())
+    since = since.replace(tzinfo=tzlocal())
 
     if pdf is not None:
         full_tex = True
