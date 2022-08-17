@@ -43,8 +43,6 @@ Arguments:
 Options:
   --token TEXT                    Github API token to use. Can be supplied
                                   with environment variable GH_TOKEN
-                                  [default:
-                                  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]
   --since [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]
                                   Start window for queries  [required]
   --now [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]

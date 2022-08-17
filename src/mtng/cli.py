@@ -107,6 +107,7 @@ async def generate(
     token: str = typer.Option(
         os.environ.get("GH_TOKEN", ...),
         help="Github API token to use. Can be supplied with environment variable GH_TOKEN",
+        show_default=False,
     ),
     since: datetime.datetime = typer.Option(
         ...,
