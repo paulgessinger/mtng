@@ -5,7 +5,9 @@ from jinja2 import Environment, FileSystemLoader
 from mtng.spec import Spec
 
 
-def generate_latex(spec: Spec, data, last: datetime, contributions) -> str:
+def generate_latex(
+    spec: Spec, data, last: datetime, contributions, full_tex: bool
+) -> str:
 
     env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "template"),
@@ -18,4 +20,6 @@ def generate_latex(spec: Spec, data, last: datetime, contributions) -> str:
 
     tpl = env.get_template("main.tex")
 
-    return tpl.render(repos=data, spec=spec, last=last, contributions=contributions)
+    return tpl.render(
+        repos=data, spec=spec, last=last, contributions=contributions, full_tex=full_tex
+    )
