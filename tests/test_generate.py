@@ -13,10 +13,12 @@ import pytest
 import aiohttp
 from gidgethub.aiohttp import GitHubAPI
 import yaml
+from dateutil.tz import tzlocal
 
 import mtng.collect
 from mtng.generate import generate_latex
 from mtng.spec import Repository, Spec
+from mtng.collect import PullRequest, Issue
 
 
 @pytest.mark.asyncio
@@ -31,28 +33,28 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
 
     ref = Path(__file__).parent / "ref"
 
-    def get_file_content(file: str):
+    def get_file_content(file: str, cls):
         f = asyncio.Future()
         with (ref / file).open() as fh:
-            f.set_result(json.load(fh))
+            f.set_result([cls.parse_obj(o) for o in json.load(fh)])
         return f
 
     monkeypatch.setattr(
         "mtng.collect.get_merged_pulls",
-        Mock(return_value=get_file_content("merged_prs.json")),
+        Mock(return_value=get_file_content("merged_prs.json", PullRequest)),
     )
     monkeypatch.setattr(
         "mtng.collect.get_open_issues",
         Mock(
             side_effect=[
-                get_file_content("open_prs.json"),
-                get_file_content("stale.json"),
-                get_file_content("recent_issues.json"),
+                get_file_content("open_prs.json", Issue),
+                get_file_content("stale.json", Issue),
+                get_file_content("recent_issues.json", Issue),
             ]
         ),
     )
-    since = datetime(2022, 8, 1)
-    now = datetime(2022, 8, 11)
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
     result = await mtng.collect.collect_repositories(
         [repo], since=since, now=now, gh=gh
     )
@@ -73,11 +75,10 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
 
     ref_file = ref / "reference.tex"
     assert output == ref_file.read_text(), str(act_file)
-    #  print((ref / "reference.tex").read_text())
 
 
 @pytest.mark.asyncio
-async def test_collect():
+async def test_collect(tmp_path):
     repo = Repository(
         name="acts-project/acts",
         stale_label="Stale",
@@ -92,8 +93,18 @@ async def test_collect():
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
         result = await mtng.collect.collect_repositories(
-            [repo], gh=gh, since=datetime(2022, 8, 1), now=datetime(2022, 8, 2)
+            [repo],
+            gh=gh,
+            since=datetime(2022, 8, 1, tzinfo=tzlocal()),
+            now=datetime(2022, 8, 11, tzinfo=tzlocal()),
         )
+
+    (repo,) = result.values()
+    for k in ["merged_prs", "open_prs", "stale", "recent_issues"]:
+        outf = tmp_path / f"{k}.json"
+        print(outf)
+        with outf.open("w") as fh:
+            json.dump([json.loads(o.json()) for o in repo[k]], fh, indent=2)
 
 
 # check if we have latexmk
@@ -111,8 +122,8 @@ except:
 @pytest.mark.parametrize("full_tex", [True, False], ids=["full", "fragment"])
 async def test_compile(monkeypatch, full_tex, tmp_path):
 
-    since = datetime(2022, 8, 1)
-    now = datetime(2022, 8, 11)
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
 
     with (Path(__file__).parent / "acts_spec.yml").open() as fh:
         spec = Spec.parse_obj(yaml.safe_load(fh))
@@ -125,7 +136,7 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
         result = await mtng.collect.collect_repositories(
-            spec.repos, gh=gh, since=datetime(2022, 8, 1), now=datetime(2022, 8, 2)
+            spec.repos, gh=gh, since=since, now=now
         )
 
     tex = generate_latex(

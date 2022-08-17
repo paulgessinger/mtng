@@ -1,1 +1,205 @@
-[{"url": "https://api.github.com/repos/acts-project/acts/issues/1404", "repository_url": "https://api.github.com/repos/acts-project/acts", "labels_url": "https://api.github.com/repos/acts-project/acts/issues/1404/labels{/name}", "comments_url": "https://api.github.com/repos/acts-project/acts/issues/1404/comments", "events_url": "https://api.github.com/repos/acts-project/acts/issues/1404/events", "html_url": "https://github.com/acts-project/acts/pull/1404", "id": 1331999732, "node_id": "PR_kwDOCnRBfs480ioV", "number": 1404, "title": "test: minor full_chain_odd changes", "user": {"login": "andiwand", "id": 487211, "node_id": "MDQ6VXNlcjQ4NzIxMQ==", "avatar_url": "https://avatars.githubusercontent.com/u/487211?v=4", "gravatar_id": "", "url": "https://api.github.com/users/andiwand", "html_url": "https://github.com/andiwand", "followers_url": "https://api.github.com/users/andiwand/followers", "following_url": "https://api.github.com/users/andiwand/following{/other_user}", "gists_url": "https://api.github.com/users/andiwand/gists{/gist_id}", "starred_url": "https://api.github.com/users/andiwand/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/andiwand/subscriptions", "organizations_url": "https://api.github.com/users/andiwand/orgs", "repos_url": "https://api.github.com/users/andiwand/repos", "events_url": "https://api.github.com/users/andiwand/events{/privacy}", "received_events_url": "https://api.github.com/users/andiwand/received_events", "type": "User", "site_admin": false}, "labels": [], "state": "open", "locked": false, "assignee": null, "assignees": [], "milestone": {"url": "https://api.github.com/repos/acts-project/acts/milestones/66", "html_url": "https://github.com/acts-project/acts/milestone/66", "labels_url": "https://api.github.com/repos/acts-project/acts/milestones/66/labels", "id": 5810549, "node_id": "MDk6TWlsZXN0b25lNTgxMDU0OQ==", "number": 66, "title": "next", "description": "", "creator": {"login": "paulgessinger", "id": 1058585, "node_id": "MDQ6VXNlcjEwNTg1ODU=", "avatar_url": "https://avatars.githubusercontent.com/u/1058585?v=4", "gravatar_id": "", "url": "https://api.github.com/users/paulgessinger", "html_url": "https://github.com/paulgessinger", "followers_url": "https://api.github.com/users/paulgessinger/followers", "following_url": "https://api.github.com/users/paulgessinger/following{/other_user}", "gists_url": "https://api.github.com/users/paulgessinger/gists{/gist_id}", "starred_url": "https://api.github.com/users/paulgessinger/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/paulgessinger/subscriptions", "organizations_url": "https://api.github.com/users/paulgessinger/orgs", "repos_url": "https://api.github.com/users/paulgessinger/repos", "events_url": "https://api.github.com/users/paulgessinger/events{/privacy}", "received_events_url": "https://api.github.com/users/paulgessinger/received_events", "type": "User", "site_admin": false}, "open_issues": 24, "closed_issues": 29, "state": "open", "created_at": "2020-08-26T07:23:54Z", "updated_at": "2022-08-11T08:34:23Z", "due_on": null, "closed_at": null}, "comments": 4, "created_at": "2022-08-08T14:59:06Z", "updated_at": "2022-08-09T10:21:46Z", "closed_at": null, "author_association": "MEMBER", "active_lock_reason": null, "draft": false, "pull_request": {"url": "https://api.github.com/repos/acts-project/acts/pulls/1404", "html_url": "https://github.com/acts-project/acts/pull/1404", "diff_url": "https://github.com/acts-project/acts/pull/1404.diff", "patch_url": "https://github.com/acts-project/acts/pull/1404.patch", "merged_at": null}, "body": "after working on the full chain doc I wondered why we do `s = addSomething(s, ...)` all the time. to me it looks kind of confusing as the reader might think `s` is changing every time we add something.\r\n\r\nmaybe we want to remove the return value of the add functions completely? @paulgessinger @timadye ", "closed_by": null, "reactions": {"url": "https://api.github.com/repos/acts-project/acts/issues/1404/reactions", "total_count": 0, "+1": 0, "-1": 0, "laugh": 0, "hooray": 0, "confused": 0, "heart": 0, "rocket": 0, "eyes": 0}, "timeline_url": "https://api.github.com/repos/acts-project/acts/issues/1404/timeline", "performed_via_github_app": null, "state_reason": null}, {"url": "https://api.github.com/repos/acts-project/acts/issues/1395", "repository_url": "https://api.github.com/repos/acts-project/acts", "labels_url": "https://api.github.com/repos/acts-project/acts/issues/1395/labels{/name}", "comments_url": "https://api.github.com/repos/acts-project/acts/issues/1395/comments", "events_url": "https://api.github.com/repos/acts-project/acts/issues/1395/events", "html_url": "https://github.com/acts-project/acts/pull/1395", "id": 1331812037, "node_id": "PR_kwDOCnRBfs48z6Ah", "number": 1395, "title": "docs: first brush over the geometry pages", "user": {"login": "asalzburger", "id": 26623879, "node_id": "MDQ6VXNlcjI2NjIzODc5", "avatar_url": "https://avatars.githubusercontent.com/u/26623879?v=4", "gravatar_id": "", "url": "https://api.github.com/users/asalzburger", "html_url": "https://github.com/asalzburger", "followers_url": "https://api.github.com/users/asalzburger/followers", "following_url": "https://api.github.com/users/asalzburger/following{/other_user}", "gists_url": "https://api.github.com/users/asalzburger/gists{/gist_id}", "starred_url": "https://api.github.com/users/asalzburger/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/asalzburger/subscriptions", "organizations_url": "https://api.github.com/users/asalzburger/orgs", "repos_url": "https://api.github.com/users/asalzburger/repos", "events_url": "https://api.github.com/users/asalzburger/events{/privacy}", "received_events_url": "https://api.github.com/users/asalzburger/received_events", "type": "User", "site_admin": false}, "labels": [{"id": 2013786477, "node_id": "MDU6TGFiZWwyMDEzNzg2NDc3", "url": "https://api.github.com/repos/acts-project/acts/labels/Component%20-%20Documentation", "name": "Component - Documentation", "color": "99c3e5", "default": false, "description": "Affects the documentation"}], "state": "open", "locked": false, "assignee": null, "assignees": [], "milestone": {"url": "https://api.github.com/repos/acts-project/acts/milestones/66", "html_url": "https://github.com/acts-project/acts/milestone/66", "labels_url": "https://api.github.com/repos/acts-project/acts/milestones/66/labels", "id": 5810549, "node_id": "MDk6TWlsZXN0b25lNTgxMDU0OQ==", "number": 66, "title": "next", "description": "", "creator": {"login": "paulgessinger", "id": 1058585, "node_id": "MDQ6VXNlcjEwNTg1ODU=", "avatar_url": "https://avatars.githubusercontent.com/u/1058585?v=4", "gravatar_id": "", "url": "https://api.github.com/users/paulgessinger", "html_url": "https://github.com/paulgessinger", "followers_url": "https://api.github.com/users/paulgessinger/followers", "following_url": "https://api.github.com/users/paulgessinger/following{/other_user}", "gists_url": "https://api.github.com/users/paulgessinger/gists{/gist_id}", "starred_url": "https://api.github.com/users/paulgessinger/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/paulgessinger/subscriptions", "organizations_url": "https://api.github.com/users/paulgessinger/orgs", "repos_url": "https://api.github.com/users/paulgessinger/repos", "events_url": "https://api.github.com/users/paulgessinger/events{/privacy}", "received_events_url": "https://api.github.com/users/paulgessinger/received_events", "type": "User", "site_admin": false}, "open_issues": 24, "closed_issues": 29, "state": "open", "created_at": "2020-08-26T07:23:54Z", "updated_at": "2022-08-11T08:34:23Z", "due_on": null, "closed_at": null}, "comments": 1, "created_at": "2022-08-08T12:38:14Z", "updated_at": "2022-08-11T08:27:19Z", "closed_at": null, "author_association": "MEMBER", "active_lock_reason": null, "draft": false, "pull_request": {"url": "https://api.github.com/repos/acts-project/acts/pulls/1395", "html_url": "https://github.com/acts-project/acts/pull/1395", "diff_url": "https://github.com/acts-project/acts/pull/1395.diff", "patch_url": "https://github.com/acts-project/acts/pull/1395.patch", "merged_at": null}, "body": "This PR combines the two geometry pages into one and adds some additional info and highlights.", "closed_by": null, "reactions": {"url": "https://api.github.com/repos/acts-project/acts/issues/1395/reactions", "total_count": 0, "+1": 0, "-1": 0, "laugh": 0, "hooray": 0, "confused": 0, "heart": 0, "rocket": 0, "eyes": 0}, "timeline_url": "https://api.github.com/repos/acts-project/acts/issues/1395/timeline", "performed_via_github_app": null, "state_reason": null}, {"url": "https://api.github.com/repos/acts-project/acts/issues/1378", "repository_url": "https://api.github.com/repos/acts-project/acts", "labels_url": "https://api.github.com/repos/acts-project/acts/issues/1378/labels{/name}", "comments_url": "https://api.github.com/repos/acts-project/acts/issues/1378/comments", "events_url": "https://api.github.com/repos/acts-project/acts/issues/1378/events", "html_url": "https://github.com/acts-project/acts/pull/1378", "id": 1328525904, "node_id": "PR_kwDOCnRBfs48pQW1", "number": 1378, "title": "feat: Checks for configuration of delta R values in seed finder", "user": {"login": "LuisFelipeCoelho", "id": 56648068, "node_id": "MDQ6VXNlcjU2NjQ4MDY4", "avatar_url": "https://avatars.githubusercontent.com/u/56648068?v=4", "gravatar_id": "", "url": "https://api.github.com/users/LuisFelipeCoelho", "html_url": "https://github.com/LuisFelipeCoelho", "followers_url": "https://api.github.com/users/LuisFelipeCoelho/followers", "following_url": "https://api.github.com/users/LuisFelipeCoelho/following{/other_user}", "gists_url": "https://api.github.com/users/LuisFelipeCoelho/gists{/gist_id}", "starred_url": "https://api.github.com/users/LuisFelipeCoelho/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/LuisFelipeCoelho/subscriptions", "organizations_url": "https://api.github.com/users/LuisFelipeCoelho/orgs", "repos_url": "https://api.github.com/users/LuisFelipeCoelho/repos", "events_url": "https://api.github.com/users/LuisFelipeCoelho/events{/privacy}", "received_events_url": "https://api.github.com/users/LuisFelipeCoelho/received_events", "type": "User", "site_admin": false}, "labels": [{"id": 1939497996, "node_id": "MDU6TGFiZWwxOTM5NDk3OTk2", "url": "https://api.github.com/repos/acts-project/acts/labels/Component%20-%20Core", "name": "Component - Core", "color": "99c3e5", "default": false, "description": "Affects the Core module"}, {"id": 1939498008, "node_id": "MDU6TGFiZWwxOTM5NDk4MDA4", "url": "https://api.github.com/repos/acts-project/acts/labels/Improvement", "name": "Improvement", "color": "c96ee5", "default": false, "description": "Changes to an existing feature"}, {"id": 1939499978, "node_id": "MDU6TGFiZWwxOTM5NDk5OTc4", "url": "https://api.github.com/repos/acts-project/acts/labels/Component%20-%20Examples", "name": "Component - Examples", "color": "99c3e5", "default": false, "description": "Affects the Examples module"}], "state": "open", "locked": false, "assignee": null, "assignees": [], "milestone": {"url": "https://api.github.com/repos/acts-project/acts/milestones/66", "html_url": "https://github.com/acts-project/acts/milestone/66", "labels_url": "https://api.github.com/repos/acts-project/acts/milestones/66/labels", "id": 5810549, "node_id": "MDk6TWlsZXN0b25lNTgxMDU0OQ==", "number": 66, "title": "next", "description": "", "creator": {"login": "paulgessinger", "id": 1058585, "node_id": "MDQ6VXNlcjEwNTg1ODU=", "avatar_url": "https://avatars.githubusercontent.com/u/1058585?v=4", "gravatar_id": "", "url": "https://api.github.com/users/paulgessinger", "html_url": "https://github.com/paulgessinger", "followers_url": "https://api.github.com/users/paulgessinger/followers", "following_url": "https://api.github.com/users/paulgessinger/following{/other_user}", "gists_url": "https://api.github.com/users/paulgessinger/gists{/gist_id}", "starred_url": "https://api.github.com/users/paulgessinger/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/paulgessinger/subscriptions", "organizations_url": "https://api.github.com/users/paulgessinger/orgs", "repos_url": "https://api.github.com/users/paulgessinger/repos", "events_url": "https://api.github.com/users/paulgessinger/events{/privacy}", "received_events_url": "https://api.github.com/users/paulgessinger/received_events", "type": "User", "site_admin": false}, "open_issues": 24, "closed_issues": 29, "state": "open", "created_at": "2020-08-26T07:23:54Z", "updated_at": "2022-08-11T08:34:23Z", "due_on": null, "closed_at": null}, "comments": 1, "created_at": "2022-08-04T12:10:28Z", "updated_at": "2022-08-04T13:22:14Z", "closed_at": null, "author_association": "MEMBER", "active_lock_reason": null, "draft": false, "pull_request": {"url": "https://api.github.com/repos/acts-project/acts/pulls/1378", "html_url": "https://github.com/acts-project/acts/pull/1378", "diff_url": "https://github.com/acts-project/acts/pull/1378.diff", "patch_url": "https://github.com/acts-project/acts/pull/1378.patch", "merged_at": null}, "body": "This changes the initialisation of `deltaRMinTopSP`, `deltaRMaxTopSP`, `deltaRMinBottomSP` and `deltaRMaxBottomSP` to quiet_NaN. If the user does not configure these values, they take the values of `deltaRMin` and `deltaRMax`.\r\n\r\nI think this makes the configuration easier and avoids errors when the user wants to use the same values for top and bottom.\r\n\r\n@robertlangenberg ", "closed_by": null, "reactions": {"url": "https://api.github.com/repos/acts-project/acts/issues/1378/reactions", "total_count": 0, "+1": 0, "-1": 0, "laugh": 0, "hooray": 0, "confused": 0, "heart": 0, "rocket": 0, "eyes": 0}, "timeline_url": "https://api.github.com/repos/acts-project/acts/issues/1378/timeline", "performed_via_github_app": null, "state_reason": null}, {"url": "https://api.github.com/repos/acts-project/acts/issues/1360", "repository_url": "https://api.github.com/repos/acts-project/acts", "labels_url": "https://api.github.com/repos/acts-project/acts/issues/1360/labels{/name}", "comments_url": "https://api.github.com/repos/acts-project/acts/issues/1360/comments", "events_url": "https://api.github.com/repos/acts-project/acts/issues/1360/events", "html_url": "https://github.com/acts-project/acts/pull/1360", "id": 1325720243, "node_id": "PR_kwDOCnRBfs48f59a", "number": 1360, "title": "feat: add svg plugin", "user": {"login": "asalzburger", "id": 26623879, "node_id": "MDQ6VXNlcjI2NjIzODc5", "avatar_url": "https://avatars.githubusercontent.com/u/26623879?v=4", "gravatar_id": "", "url": "https://api.github.com/users/asalzburger", "html_url": "https://github.com/asalzburger", "followers_url": "https://api.github.com/users/asalzburger/followers", "following_url": "https://api.github.com/users/asalzburger/following{/other_user}", "gists_url": "https://api.github.com/users/asalzburger/gists{/gist_id}", "starred_url": "https://api.github.com/users/asalzburger/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/asalzburger/subscriptions", "organizations_url": "https://api.github.com/users/asalzburger/orgs", "repos_url": "https://api.github.com/users/asalzburger/repos", "events_url": "https://api.github.com/users/asalzburger/events{/privacy}", "received_events_url": "https://api.github.com/users/asalzburger/received_events", "type": "User", "site_admin": false}, "labels": [{"id": 1939500255, "node_id": "MDU6TGFiZWwxOTM5NTAwMjU1", "url": "https://api.github.com/repos/acts-project/acts/labels/Feature", "name": "Feature", "color": "95e22f", "default": false, "description": "Development to integrate a new feature"}], "state": "open", "locked": false, "assignee": null, "assignees": [], "milestone": {"url": "https://api.github.com/repos/acts-project/acts/milestones/66", "html_url": "https://github.com/acts-project/acts/milestone/66", "labels_url": "https://api.github.com/repos/acts-project/acts/milestones/66/labels", "id": 5810549, "node_id": "MDk6TWlsZXN0b25lNTgxMDU0OQ==", "number": 66, "title": "next", "description": "", "creator": {"login": "paulgessinger", "id": 1058585, "node_id": "MDQ6VXNlcjEwNTg1ODU=", "avatar_url": "https://avatars.githubusercontent.com/u/1058585?v=4", "gravatar_id": "", "url": "https://api.github.com/users/paulgessinger", "html_url": "https://github.com/paulgessinger", "followers_url": "https://api.github.com/users/paulgessinger/followers", "following_url": "https://api.github.com/users/paulgessinger/following{/other_user}", "gists_url": "https://api.github.com/users/paulgessinger/gists{/gist_id}", "starred_url": "https://api.github.com/users/paulgessinger/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/paulgessinger/subscriptions", "organizations_url": "https://api.github.com/users/paulgessinger/orgs", "repos_url": "https://api.github.com/users/paulgessinger/repos", "events_url": "https://api.github.com/users/paulgessinger/events{/privacy}", "received_events_url": "https://api.github.com/users/paulgessinger/received_events", "type": "User", "site_admin": false}, "open_issues": 24, "closed_issues": 29, "state": "open", "created_at": "2020-08-26T07:23:54Z", "updated_at": "2022-08-11T08:34:23Z", "due_on": null, "closed_at": null}, "comments": 2, "created_at": "2022-08-02T11:36:45Z", "updated_at": "2022-08-07T07:54:02Z", "closed_at": null, "author_association": "MEMBER", "active_lock_reason": null, "draft": false, "pull_request": {"url": "https://api.github.com/repos/acts-project/acts/pulls/1360", "html_url": "https://github.com/acts-project/acts/pull/1360", "diff_url": "https://github.com/acts-project/acts/pull/1360.diff", "patch_url": "https://github.com/acts-project/acts/pull/1360.patch", "merged_at": null}, "body": "This PR adds a new plugin for displaying geometry based on the [ACTSVG](https://github.com/acts-project/actsvgl) library.\r\nHere are some first plots, the ACTSVG library is not yet capable of dealing with plane layer types, which is why this is not yet supported.\r\n\r\n![Screenshot 2022-08-02 at 16 52 03](https://user-images.githubusercontent.com/26623879/182405069-9622f200-d16b-4ef0-b0f9-0eb55af714dd.png)\r\n\r\n![Screenshot 2022-08-02 at 16 52 27](https://user-images.githubusercontent.com/26623879/182405106-37248d56-1f17-4b51-85d3-4c639b7fe7f9.png)\r\n\r\n![Screenshot 2022-08-02 at 16 52 49](https://user-images.githubusercontent.com/26623879/182405130-6fb4a765-71e3-41f0-ac36-b7173d8ce709.png)\r\n\r\n![sheet_annulus](https://user-images.githubusercontent.com/26623879/182405279-11a0b153-8329-490f-8292-84dbd101b809.svg)\r\n\r\n![odd_vol_16_layer_6_grid](https://user-images.githubusercontent.com/26623879/182405594-3b484825-4671-45f4-88b9-f271a7909d94.svg)\r\n\r\n![odd_vol_16_layer_6_modules](https://user-images.githubusercontent.com/26623879/182405604-9683bc04-85a2-48b0-9077-ed8be5b01967.svg)\r\n\r\n", "closed_by": null, "reactions": {"url": "https://api.github.com/repos/acts-project/acts/issues/1360/reactions", "total_count": 0, "+1": 0, "-1": 0, "laugh": 0, "hooray": 0, "confused": 0, "heart": 0, "rocket": 0, "eyes": 0}, "timeline_url": "https://api.github.com/repos/acts-project/acts/issues/1360/timeline", "performed_via_github_app": null, "state_reason": null}, {"url": "https://api.github.com/repos/acts-project/acts/issues/1305", "repository_url": "https://api.github.com/repos/acts-project/acts", "labels_url": "https://api.github.com/repos/acts-project/acts/issues/1305/labels{/name}", "comments_url": "https://api.github.com/repos/acts-project/acts/issues/1305/comments", "events_url": "https://api.github.com/repos/acts-project/acts/issues/1305/events", "html_url": "https://github.com/acts-project/acts/pull/1305", "id": 1298083480, "node_id": "PR_kwDOCnRBfs47DrmH", "number": 1305, "title": "feat: Hough Transform first implementation", "user": {"login": "jahreda", "id": 57440432, "node_id": "MDQ6VXNlcjU3NDQwNDMy", "avatar_url": "https://avatars.githubusercontent.com/u/57440432?v=4", "gravatar_id": "", "url": "https://api.github.com/users/jahreda", "html_url": "https://github.com/jahreda", "followers_url": "https://api.github.com/users/jahreda/followers", "following_url": "https://api.github.com/users/jahreda/following{/other_user}", "gists_url": "https://api.github.com/users/jahreda/gists{/gist_id}", "starred_url": "https://api.github.com/users/jahreda/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/jahreda/subscriptions", "organizations_url": "https://api.github.com/users/jahreda/orgs", "repos_url": "https://api.github.com/users/jahreda/repos", "events_url": "https://api.github.com/users/jahreda/events{/privacy}", "received_events_url": "https://api.github.com/users/jahreda/received_events", "type": "User", "site_admin": false}, "labels": [], "state": "open", "locked": false, "assignee": null, "assignees": [], "milestone": {"url": "https://api.github.com/repos/acts-project/acts/milestones/66", "html_url": "https://github.com/acts-project/acts/milestone/66", "labels_url": "https://api.github.com/repos/acts-project/acts/milestones/66/labels", "id": 5810549, "node_id": "MDk6TWlsZXN0b25lNTgxMDU0OQ==", "number": 66, "title": "next", "description": "", "creator": {"login": "paulgessinger", "id": 1058585, "node_id": "MDQ6VXNlcjEwNTg1ODU=", "avatar_url": "https://avatars.githubusercontent.com/u/1058585?v=4", "gravatar_id": "", "url": "https://api.github.com/users/paulgessinger", "html_url": "https://github.com/paulgessinger", "followers_url": "https://api.github.com/users/paulgessinger/followers", "following_url": "https://api.github.com/users/paulgessinger/following{/other_user}", "gists_url": "https://api.github.com/users/paulgessinger/gists{/gist_id}", "starred_url": "https://api.github.com/users/paulgessinger/starred{/owner}{/repo}", "subscriptions_url": "https://api.github.com/users/paulgessinger/subscriptions", "organizations_url": "https://api.github.com/users/paulgessinger/orgs", "repos_url": "https://api.github.com/users/paulgessinger/repos", "events_url": "https://api.github.com/users/paulgessinger/events{/privacy}", "received_events_url": "https://api.github.com/users/paulgessinger/received_events", "type": "User", "site_admin": false}, "open_issues": 24, "closed_issues": 29, "state": "open", "created_at": "2020-08-26T07:23:54Z", "updated_at": "2022-08-11T08:34:23Z", "due_on": null, "closed_at": null}, "comments": 2, "created_at": "2022-07-07T20:51:25Z", "updated_at": "2022-08-02T14:59:44Z", "closed_at": null, "author_association": "MEMBER", "active_lock_reason": null, "draft": false, "pull_request": {"url": "https://api.github.com/repos/acts-project/acts/pulls/1305", "html_url": "https://github.com/acts-project/acts/pull/1305", "diff_url": "https://github.com/acts-project/acts/pull/1305.diff", "patch_url": "https://github.com/acts-project/acts/pull/1305.patch", "merged_at": null}, "body": "This is a first implementation of a Hough Transform into the ACTS code (also my first PR into ACTS). I think I have found some decent solutions for all the problems and questions I had before. The HT implementation is largely based on the ATLAS EF Tracing Hough Transform. The implementation is incomplete in that it only has example region selection and z sub-region slicing, but this can be implemented for specific geometries.\r\n\r\nCurrently the code exists as an Example, so I would like some feedback as to where best to put this (from previous discussions it wasn't fully clear). \r\n\r\nJust to show it's working, from 4 muon events in the barrel (narrow phi region):\r\n22:36:33    SeedingPerfo   INFO      Efficiency (nMatchedParticles / nAllParticles) = 0.994784\r\n22:36:33    SeedingPerfo   INFO      Fake rate (nUnMatchedSeeds / nAllSeeds) = 0.617954\r\n22:36:33    SeedingPerfo   INFO      Duplication rate (nDuplicatedMatchedParticles / nMatchedParticles) = 0.997378\r\n22:36:33    SeedingPerfo   INFO      Average number of duplicated seeds ((nMatchedSeeds - nMatchedParticles) / nMatchedParticles) = 26.7891\r\n22:36:33    SeedingPerfo   INFO      Wrote performance plots to '/afs/cern.ch/work/j/jahreda/acts_april28/acts/data/output_four_muons_hough/performance_seeding_hists.root:/'\r\n22:36:33    RootTrackPar   INFO      Write estimated parameters from seed to tree 'estimatedparams' in '/afs/cern.ch/work/j/jahreda/acts_april28/acts/data/output_four_muons_hough/estimatedparams.root'\r\n22:36:34    Sequencer      INFO      Processed 10000 events in 79.477941 s (wall clock)\r\n22:36:34    Sequencer      INFO      Average time per event: 77.954230 ms/event", "closed_by": null, "reactions": {"url": "https://api.github.com/repos/acts-project/acts/issues/1305/reactions", "total_count": 0, "+1": 0, "-1": 0, "laugh": 0, "hooray": 0, "confused": 0, "heart": 0, "rocket": 0, "eyes": 0}, "timeline_url": "https://api.github.com/repos/acts-project/acts/issues/1305/timeline", "performed_via_github_app": null, "state_reason": null}]
+[
+  {
+    "title": "feat: update to version v0.4.20 of ActSVG",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": "Component - Plugins"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1443",
+    "number": 1443,
+    "assignee": null,
+    "updated_at": "2022-08-17T15:22:26+00:00",
+    "created_at": "2022-08-17T14:32:49+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1443",
+      "html_url": "https://github.com/acts-project/acts/pull/1443",
+      "diff_url": "https://github.com/acts-project/acts/pull/1443.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1443.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "refactor: debug print particle id value [backport #1435 to develop/v19.x]",
+    "user": {
+      "login": "acts-project-service",
+      "html_url": "https://github.com/acts-project-service"
+    },
+    "labels": [
+      {
+        "name": "automerge"
+      },
+      {
+        "name": "backport"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1442",
+    "number": 1442,
+    "assignee": null,
+    "updated_at": "2022-08-17T09:11:24+00:00",
+    "created_at": "2022-08-16T16:09:10+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1442",
+      "html_url": "https://github.com/acts-project/acts/pull/1442",
+      "diff_url": "https://github.com/acts-project/acts/pull/1442.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1442.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "docs: Tracking in a nutshell",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Component - Documentation"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1399",
+    "number": 1399,
+    "assignee": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "updated_at": "2022-08-16T11:08:18+00:00",
+    "created_at": "2022-08-08T13:35:17+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1399",
+      "html_url": "https://github.com/acts-project/acts/pull/1399",
+      "diff_url": "https://github.com/acts-project/acts/pull/1399.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1399.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "docs: first brush over the geometry pages",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": "Component - Documentation"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1395",
+    "number": 1395,
+    "assignee": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "updated_at": "2022-08-16T09:29:02+00:00",
+    "created_at": "2022-08-08T12:38:14+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1395",
+      "html_url": "https://github.com/acts-project/acts/pull/1395",
+      "diff_url": "https://github.com/acts-project/acts/pull/1395.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1395.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "feat: Checks for configuration of delta R values in seed finder",
+    "user": {
+      "login": "LuisFelipeCoelho",
+      "html_url": "https://github.com/LuisFelipeCoelho"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
+      },
+      {
+        "name": "Improvement"
+      },
+      {
+        "name": "Component - Examples"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1378",
+    "number": 1378,
+    "assignee": null,
+    "updated_at": "2022-08-16T09:37:06+00:00",
+    "created_at": "2022-08-04T12:10:28+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1378",
+      "html_url": "https://github.com/acts-project/acts/pull/1378",
+      "diff_url": "https://github.com/acts-project/acts/pull/1378.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1378.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "fix: Refactor and fix component merging for GSF",
+    "user": {
+      "login": "benjaminhuth",
+      "html_url": "https://github.com/benjaminhuth"
+    },
+    "labels": [
+      {
+        "name": "Bug"
+      },
+      {
+        "name": "Component - Core"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1364",
+    "number": 1364,
+    "assignee": null,
+    "updated_at": "2022-08-12T15:05:37+00:00",
+    "created_at": "2022-08-03T10:21:25+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1364",
+      "html_url": "https://github.com/acts-project/acts/pull/1364",
+      "diff_url": "https://github.com/acts-project/acts/pull/1364.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1364.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "feat: Hough Transform first implementation",
+    "user": {
+      "login": "jahreda",
+      "html_url": "https://github.com/jahreda"
+    },
+    "labels": [],
+    "html_url": "https://github.com/acts-project/acts/pull/1305",
+    "number": 1305,
+    "assignee": null,
+    "updated_at": "2022-08-02T14:59:44+00:00",
+    "created_at": "2022-07-07T20:51:25+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1305",
+      "html_url": "https://github.com/acts-project/acts/pull/1305",
+      "diff_url": "https://github.com/acts-project/acts/pull/1305.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1305.patch",
+      "merged_at": null
+    }
+  }
+]
