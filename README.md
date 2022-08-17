@@ -66,7 +66,8 @@ repos:
     stale_label: Stale
     wip_label: ":construction: WIP"
     show_wip: true
-    do_recent_issued: true
+    do_recent_issues: true
+    no_assignee_attention: true
     filter_labels: 
       - backport
 ```
@@ -82,6 +83,7 @@ repos:
   - **`do_open_prs`** *(boolean)*: Show a list of open PRs. Default: `True`.
   - **`do_merged_prs`** *(boolean)*: Show a list of merged PRs. Default: `True`.
   - **`do_recent_issues`** *(boolean)*: Show a list of issues opened in the time interval. Default: `False`.
+  - **`no_assignee_attention`** *(boolean)*: Draw attention to items without an assignee. Default: `True`.
 - **`Spec`** *(object)*: Cannot contain additional properties.
   - **`repos`** *(array)*
     - **Items**: Refer to *#/definitions/Repository*.

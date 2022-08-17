@@ -4,5 +4,6 @@ repos:
     wip_label: ":construction: WIP"
     show_wip: true
     do_recent_issues: true
+    no_assignee_attention: true
     filter_labels: 
       - backport
