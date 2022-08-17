@@ -53,7 +53,9 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch):
         [repo], since=since, now=datetime(2022, 8, 11), gh=gh
     )
 
-    output = generate_latex(Spec(repos=[repo]), result, last=since, contributions=[])
+    output = generate_latex(
+        Spec(repos=[repo]), result, last=since, contributions=[], full_tex=False
+    )
 
     output += "\n"  # newline at end of file
 
@@ -78,5 +80,5 @@ async def test_collect():
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
         result = await mtng.collect.collect_repositories(
-            [repo], gh=gh, since=datetime(2022, 8, 1), now=datetime(2022, 8, 11)
+            [repo], gh=gh, since=datetime(2022, 8, 1), now=datetime(2022, 8, 2)
         )

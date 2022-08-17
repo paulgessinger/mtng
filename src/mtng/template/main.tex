@@ -1,3 +1,9 @@
+{% if full_tex %}
+{% extends "base.tex" %}
+{% endif %}
+
+{% block body %}
+
 {% for repo_name, repo in repos.items() %}
 
 {% macro show_item(item) %}
@@ -129,3 +135,4 @@
 \end{frame}
 {% endif %}
 
+{% endblock %}

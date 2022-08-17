@@ -112,6 +112,7 @@ async def generate(
         datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     ),
     event: Optional[str] = typer.Option(None, "--event"),
+    full_tex: bool = typer.Option(False, "--full"),
 ):
 
     spec = Spec.parse_obj(yaml.safe_load(config))
@@ -127,7 +128,7 @@ async def generate(
 
         contributions = await contributions if event is not None else []
 
-    print(generate_latex(spec, data, since, contributions))
+    print(generate_latex(spec, data, since, contributions, full_tex=full_tex))
 
 
 @cli.callback()

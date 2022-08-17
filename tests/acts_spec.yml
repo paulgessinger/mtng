@@ -1,0 +1,5 @@
+repos:
+  - name: acts-project/acts
+    do_stale: true
+    stale_label: Stale
+    wip_label: ":construction: WIP"

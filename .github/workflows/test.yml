@@ -12,7 +12,7 @@ jobs:
           - "3.9"
           - "3.10"
     env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
       - uses: actions/setup-python@v4
         with:
@@ -23,12 +23,57 @@ jobs:
       - name: Run nox
         run: nox -p ${{ matrix.python }}
 
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    steps:
+      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: pip install .
+      - name: Generate tex output
+        run: >
+          mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 > fragment.tex
+          && mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 --full > full.tex
+      - uses: actions/upload-artifact@v3
+        with:
+          name: latex-src
+          path: "*.tex"
+    
+  compile:
+    runs-on: ubuntu-latest
+    container: texlive/texlive:latest-small
+    needs: generate
+    steps:
+      - run: tlmgr install latexmk && ln -s /usr/local/texlive/20*/bin/*/latexmk /usr/local/bin/latexmk
+      - uses: actions/download-artifact@v3
+        with:
+          name: latex-src
+      - name: Compile full latex
+        run: latexmk -pdf -output-directory=full full.tex
+      - name: Compile fragment latex
+        run: >
+          printf "\\documentclass{beamer}\n\\\begin{document}\n" >> combined.tex
+          && cat fragment.tex >> combined.tex
+          && printf "\\\\end{document}" >> combined.tex
+          && latexmk -pdf -output-directory=combined combined.tex
+      - uses: actions/upload-artifact@v3
+        with:
+          name: latex-pdf
+          path: full/*.pdf
+      - uses: actions/upload-artifact@v3
+        with:
+          name: latex-pdf
+          path: combined/*.pdf
 
   black:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
       - name: Install black
         run: pip install black
       - name: Run black
