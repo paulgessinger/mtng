@@ -304,6 +304,7 @@ prob = ["^", "_", "%", "#", "&", "<", ">", "$", "\\", "{", "}"]
 @pytest.mark.parametrize(
     "prob", prob + [a + b for a, b in itertools.combinations_with_replacement(prob, 2)]
 )
+@pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
 def test_sanitization(try_render, prob):
     repo = Repository(name="acts-project/acts")
 
