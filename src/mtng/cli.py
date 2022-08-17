@@ -1,4 +1,7 @@
 import os
+import shutil
+import subprocess
+from tempfile import TemporaryDirectory
 from typing import Optional, List
 import functools
 import asyncio
@@ -26,6 +29,18 @@ from mtng import __version__
 load_dotenv(dotenv_path=Path.cwd() / ".env")
 
 cli = typer.Typer()
+
+
+def find_latexmk() -> Path:
+    try:
+        latexmk_path = Path(
+            subprocess.check_output(["which", "latexmk"]).decode().strip()
+        )
+    except subprocess.CalledProcessError:
+        return None
+    if not latexmk_path.exists():
+        return None
+    return latexmk_path
 
 
 def make_sync(fn):
@@ -126,7 +141,18 @@ async def generate(
     full_tex: bool = typer.Option(
         False, "--full", help="Write a full LaTeX file that is compileable on it's own"
     ),
+    pdf: Optional[Path] = typer.Option(
+        None,
+        dir_okay=False,
+        help="Compile the report as a PDF file. This requires a LaTeX installation.",
+    ),
 ):
+
+    if pdf is not None:
+        full_tex = True
+        latexmk = find_latexmk()
+        if latexmk is None:
+            raise ValueError("latexmk could not be found, cannot compile using --pdf")
 
     spec = Spec.parse_obj(yaml.safe_load(config))
 
@@ -141,16 +167,33 @@ async def generate(
 
         contributions = await contributions if event is not None else []
 
-    print(
-        generate_latex(
-            spec,
-            data,
-            since=since,
-            now=now,
-            contributions=contributions,
-            full_tex=full_tex,
-        )
+    latex = generate_latex(
+        spec,
+        data,
+        since=since,
+        now=now,
+        contributions=contributions,
+        full_tex=full_tex,
     )
+
+    if pdf is None:
+        print(latex)
+    else:
+        with TemporaryDirectory() as d:
+            d = Path(d)
+            source = d / "source.tex"
+            source.write_text(latex)
+            subprocess.check_call(
+                [
+                    latexmk,
+                    f"-output-directory={d}",
+                    "-halt-on-error",
+                    # "-pdflatex=lualatex",
+                    "-pdf",
+                    source,
+                ]
+            )
+            shutil.copy(d / "source.pdf", pdf)
 
 
 @cli.command(help="Print a preamble suitable to render fancy output")
