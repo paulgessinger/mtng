@@ -49,10 +49,11 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: latex-src
-      - name: Compile latex
-        run: > 
-          latexmk -pdf -output-directory=full full.tex
-          && printf "\\documentclass{beamer}\n\\\begin{document}\n" >> combined.tex
+      - name: Compile full latex
+        run: latexmk -pdf -output-directory=full full.tex
+      - name: Compile fragment latex
+        run: >
+          printf "\\documentclass{beamer}\n\\\begin{document}\n" >> combined.tex
           && cat fragment.tex >> combined.tex
           && printf "\\\\end" >> combined.tex
           && latexmk -pdf -output-directory=combined combined.tex
