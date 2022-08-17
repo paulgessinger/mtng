@@ -25,6 +25,8 @@ jobs:
 
   generate:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/setup-python@v4
       - uses: actions/checkout@v3
