@@ -41,15 +41,15 @@ jobs:
           name: latex-src
           path: "*.tex"
     
-  # compile:
-  #   runs-on: ubuntu-latest
-  #   image: texlive/texlive:latest
-  #   steps:
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: latex-src
-  #     - name: Compile latex
-  #       run: latexmk -pdf -output-directory=full full.tex
+  compile:
+    runs-on: ubuntu-latest
+    image: texlive/texlive:latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: latex-src
+      - name: Compile latex
+        run: latexmk -pdf -output-directory=full full.tex
 
   black:
     runs-on: ubuntu-latest
