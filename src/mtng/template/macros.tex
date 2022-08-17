@@ -1,0 +1,43 @@
+{% macro show_item(item, spec, mode = none) %}
+    \item
+    {%- set needs_space = false -%}
+    {%- if item.is_pr -%}
+      {%- set needs_space = true -%}
+      {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" -%}\prmerged{% endif %}
+    {%- else -%}
+      {%- set needs_space = true -%}
+      \iss
+    {%- endif -%}
+    {%- if item.is_wip -%}\prwip 
+    {%- set needs_space = true -%}
+    {%- endif -%}
+    {%- if item.is_stale -%}\prstale
+    {%- set needs_space = true -%}
+    {%- endif -%}
+    {%- if needs_space %}
+    \hspace*{0.1em}
+    {% endif -%}
+    \textbf{\href{
+      {{- item.html_url -}}
+    }{\textcolor{black}{
+      {{- item.title|sanitize -}} 
+    }}}
+    (\href{ {{- item.html_url -}} }{
+    {%- if item.is_pr -%}
+    PR
+    {%- else -%}
+    Issue
+    {%- endif -%}
+    \#{{- item.number -}} }) \\
+    by \href{ {{- item.user.html_url -}} }{@{{- item.user.login|sanitize -}}}, {}
+    {%- if item.assignee -%}
+    assigned to \href{ {{- item.assignee.html_url -}} }{@{{- item.assignee.login|sanitize -}}}
+    {%- else -%}
+    {%- if spec.no_assignee_attention and mode != "MERGED" -%}
+    \emojispace{warning}\textbf{\textcolor{Red}{no assignee}}
+    {%- else -%}
+    no assignee
+    {%- endif -%}
+    {%- endif -%}
+    {{- caller() }}
+{% endmacro %}

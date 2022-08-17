@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import re
 from jinja2 import Environment, FileSystemLoader
 
 from mtng.spec import Spec
@@ -10,7 +11,24 @@ env = Environment(
 
 
 def sanitize(s):
-    return s.replace("_", "\\_").replace("#", "\\#").replace("&", "\\&")
+    def repl(m):
+        orig = m.group(0)
+        return {
+            "_": "\\_",
+            "%": "\\%",
+            "#": "\\#",
+            "$": "\\$",
+            "&": "\\&",
+            "<": "\\textless{}",
+            ">": "\\textgreater{}",
+            "\\": "\\textbackslash{}",
+            "{": "\\{",
+            "}": "\\}",
+            "^": "\\textasciicircum{}",
+        }[orig]
+
+    s = re.sub(r"[\\^_{}&$%#<>%]", repl, s)
+    return s
 
 
 env.filters["sanitize"] = sanitize

@@ -1,0 +1,16 @@
+\documentclass{beamer}
+
+{% from "macros.tex" import show_item %}
+
+
+\begin{document}
+{% include "provides.tex" %}
+
+\begin{frame}
+\begin{itemize}
+{%- call show_item(item, spec, mode=mode) -%}
+    {{ extra }}
+{%- endcall %}
+\end{itemize}
+\end{frame}
+\end{document}
