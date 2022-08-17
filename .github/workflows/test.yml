@@ -43,7 +43,7 @@ jobs:
     
   compile:
     runs-on: ubuntu-latest
-    container: texlive/texlive:latest-small
+    container: texlive/texlive:latest
     needs: generate
     steps:
       - uses: actions/download-artifact@v3
