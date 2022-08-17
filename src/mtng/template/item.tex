@@ -1,0 +1,5 @@
+{% from "macros.tex" import show_item %}
+
+{%- call show_item(item, spec, mode=mode) -%}
+    {{ extra }}
+{%- endcall %}

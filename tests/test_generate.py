@@ -1,8 +1,10 @@
+from asyncio.subprocess import STDOUT
+import itertools
 from re import sub
 import shutil
 from unittest.mock import Mock
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import os
@@ -16,9 +18,9 @@ import yaml
 from dateutil.tz import tzlocal
 
 import mtng.collect
-from mtng.generate import generate_latex
+from mtng.generate import generate_latex, env
 from mtng.spec import Repository, Spec
-from mtng.collect import PullRequest, Issue
+from mtng.collect import Label, PullRequest, Issue, User
 
 
 @pytest.mark.asyncio
@@ -171,3 +173,160 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
         raise
 
     print(tmp_path / "build" / "source.pdf")
+
+
+@pytest.fixture
+def try_render(tmp_path):
+    if have_latexmk:
+
+        n = 0
+
+        def render(source):
+            nonlocal n
+            n += 1
+            build_dir = tmp_path / f"{n}"
+            file = build_dir / "source.tex"
+            build_dir.mkdir()
+            file.write_text(source)
+            try:
+                subprocess.check_output(
+                    [
+                        latexmk_path,
+                        f"-output-directory={build_dir}",
+                        "-pdf",
+                        "-halt-on-error",
+                        file,
+                    ],
+                    stderr=subprocess.STDOUT,
+                )
+            except subprocess.CalledProcessError as e:
+                print(e.output.decode())
+                print(file)
+                return False
+            outfile = build_dir / "source.pdf"
+            assert outfile.exists()
+            print(outfile)
+            return True
+
+    else:
+
+        def render(source):
+            return True
+
+    return render
+
+
+def test_item_render(try_render):
+    repo = Repository(name="acts-project/acts")
+
+    tpl = env.get_template("item.tex")
+    ctpl = env.get_template("item_context.tex")
+
+    user_a = User(login="someone", html_url="https://example.com")
+    user_b = User(login="another", html_url="https://example.com")
+
+    item = PullRequest(
+        title="feat: Enable Delegates to conveniently use stateful lambdas",
+        user=user_a,
+        labels=[Label(name="good")],
+        number=1234,
+        html_url="https://example.com",
+        assignee=user_b,
+        updated_at=datetime.now(),
+        created_at=datetime.now() - timedelta(days=2),
+        closed_at=None,
+        is_wip=False,
+        is_stale=False,
+        pull_request=[],
+    )
+    spec = Repository(name="acts-project/acts")
+
+    output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
+    assert "\\prmerged" in output
+    assert "\\prwip" not in output
+    assert "\\prstale" not in output
+    assert "EXTRA" in output
+    assert user_a.login in output
+    assert user_b.login in output
+    assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
+
+    item.is_wip = True
+    output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
+    assert "\\prmerged" in output
+    assert "\\prwip" in output
+    assert "\\prstale" not in output
+    assert "EXTRA" in output
+    assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
+
+    item.is_stale = True
+    output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
+    assert "\\prmerged" in output
+    assert "\\prwip" in output
+    assert "\\prstale" in output
+    assert "EXTRA" in output
+    assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
+
+    output = tpl.render(item=item, spec=spec, mode="OPEN", extra="EXTRA")
+    assert "\\propen" in output
+    assert "EXTRA" in output
+    assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
+
+    item = Issue(
+        title="Fatras: Bethe-Heitler calculation wrong?",
+        user=user_a,
+        labels=[],
+        html_url="https://example.com",
+        number=1234,
+        assignee=user_b,
+        updated_at=datetime.now(),
+        created_at=datetime.now() - timedelta(days=2),
+        closed_at=None,
+    )
+
+    output = tpl.render(item=item, spec=spec, mode=None, extra="EXTRA")
+    assert "\\iss" in output
+    assert user_a.login in output
+    assert user_b.login in output
+    assert "EXTRA" in output
+    assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
+
+    item.assignee = None
+    output = tpl.render(item=item, spec=spec, mode=None, extra="EXTRA")
+    assert user_b.login not in output
+    assert "no assignee" in output
+    assert "EXTRA" in output
+    assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
+
+
+prob = ["^", "_", "%", "#", "&", "<", ">", "$", "\\", "{", "}"]
+
+
+@pytest.mark.parametrize(
+    "prob", prob + [a + b for a, b in itertools.combinations_with_replacement(prob, 2)]
+)
+@pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
+def test_sanitization(try_render, prob):
+    repo = Repository(name="acts-project/acts")
+
+    ctpl = env.get_template("item_context.tex")
+
+    user_a = User(login=f"someone_{prob}", html_url="https://example.com")
+    user_b = User(login=f"another_{prob}", html_url="https://example.com")
+
+    item = PullRequest(
+        title=f"feat: I'm{prob} a {prob}PR: {prob} ",
+        user=user_a,
+        labels=[Label(name="good")],
+        number=1234,
+        html_url="https://example.com",
+        assignee=user_b,
+        updated_at=datetime.now(),
+        created_at=datetime.now() - timedelta(days=2),
+        closed_at=None,
+        is_wip=False,
+        is_stale=False,
+        pull_request=[],
+    )
+    spec = Repository(name="acts-project/acts")
+
+    assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED"))
