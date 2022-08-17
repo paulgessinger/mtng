@@ -22,7 +22,7 @@ jobs:
       - name: Install texlive
         run: >
           sudo apt-get update 
-          && sudo apt-get install -y texlive latexmk
+          && sudo apt-get install -y texlive texlive-latex-recommended texlive-latex-extra latexmk
       - name: Install nox
         run: pip install nox
       - uses: actions/checkout@v3
