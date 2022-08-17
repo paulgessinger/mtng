@@ -4,7 +4,8 @@ from datetime import datetime
 import urllib.parse
 import asyncio
 import dateutil.parser
-import json
+
+import pickle
 
 from gidgethub.abc import GitHubAPI
 import pydantic
@@ -52,22 +53,21 @@ class PullRequest(Issue):
 cache = diskcache.Cache(appdirs.user_cache_dir("mtng"))
 
 
-def memoize(expire=0):
+def memoize(expire=0, key_func=None):
     def decorator(fn):
         @functools.wraps(fn)
         async def wrapped(*args, **kwargs):
-            strings = []
-            for arg in args:
-                try:
-                    strings.append(json.dumps(arg, sort_keys=True))
-                except TypeError:
-                    pass
-            for key, value in kwargs.items():
-                try:
-                    strings.append(json.dumps({key: value}, sort_keys=True))
-                except TypeError:
-                    pass
-            key = fn.__name__ + "_" + "_".join(strings)
+            if key_func is None:
+                _args, _kwargs = args, kwargs
+            else:
+                _args, _kwargs = key_func(args, kwargs)
+            key = (
+                fn.__name__.encode("utf-8")
+                + b"_"
+                + pickle.dumps(_args)
+                + b"_"
+                + pickle.dumps(_kwargs)
+            )
 
             if hit := cache.get(key):
                 return hit
@@ -81,7 +81,13 @@ def memoize(expire=0):
     return decorator
 
 
-@memoize(expire=300)
+def strip_github_api(args, kwargs):
+    kwargs.pop("gh", None)
+    args = list(filter(lambda o: not isinstance(o, GitHubAPI), args))
+    return args, kwargs
+
+
+@memoize(expire=300, key_func=strip_github_api)
 async def get_merged_pulls(
     gh: GitHubAPI,
     repo_name: str,
@@ -97,15 +103,10 @@ async def get_merged_pulls(
     for label in with_labels:
         url += f'+label:"{urllib.parse.quote(label)}"'
 
-    return [
-        PullRequest.parse_obj(issue)
-        async for issue in gh.getiter(
-            url,
-        )
-    ]
+    return [PullRequest.parse_obj(issue) async for issue in gh.getiter(url)]
 
 
-@memoize(expire=300)
+@memoize(expire=300, key_func=strip_github_api)
 async def get_open_issues(
     gh: GitHubAPI,
     repo_name: str,
@@ -115,15 +116,15 @@ async def get_open_issues(
     end: Optional[datetime] = None,
     type: Literal["pr", "issue", "any"] = "issue",
 ) -> List[Issue]:
-    if not all([start is None, end is None]) and not all(
-        [start is not None, end is not None]
-    ):
-        raise ValueError("Either provide start and end or neither")
     url = f"/search/issues?q=repo:{repo_name}+is:open"
     if type != "any":
         url += f"+is:{type}"
     if start is not None and end is not None:
         url += f"+created:{start:%Y-%m-%d}..{end:%Y-%m-%d}"
+    elif start is not None:
+        url += f"+created:{start:%Y-%m-%d}..*"
+    elif end is not None:
+        url += f"+created:*..{end:%Y-%m-%d}"
     for label in without_labels:
         url += f'+-label:"{urllib.parse.quote(label)}"'
     for label in with_labels:

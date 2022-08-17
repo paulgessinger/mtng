@@ -22,7 +22,7 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
 {% macro show_item(item, mode = none) %}
     \item
     {%- set needs_space = false -%}
-    {%- if item.pull_request is defined or item.head is defined -%}
+    {%- if item.is_pr -%}
       {%- set needs_space = true -%}
       {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" -%}\prmerged{% endif %}
     {%- else -%}
@@ -44,7 +44,7 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
       {{- item.title|sanitize -}} 
     }}}
     (\href{ {{- item.html_url -}} }{
-    {%- if item.pull_request is defined or item.head is defined -%}
+    {%- if item.is_pr -%}
     PR
     {%- else -%}
     Issue
@@ -69,7 +69,7 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
 \begin{frame}[allowframebreaks]{ {{ repo_name }}: PRs merged {{ date_range() }}}
 
   \begin{itemize}
-    {% for pr in repo["merged_prs"]|sort(attribute="merged_at") %}
+    {% for pr in repo["merged_prs"]|sort(attribute="closed_at") %}
     {%- call show_item(pr, mode="MERGED") -%}
     , merged on {{ pr.closed_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
