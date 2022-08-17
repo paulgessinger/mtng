@@ -37,7 +37,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: latex-src
-          path: *.tex
+          path: "*.tex"
     
   compile:
     runs-on: ubuntu-latest
