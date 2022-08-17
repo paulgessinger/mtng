@@ -55,7 +55,7 @@ jobs:
         run: >
           printf "\\documentclass{beamer}\n\\\begin{document}\n" >> combined.tex
           && cat fragment.tex >> combined.tex
-          && printf "\\\\end" >> combined.tex
+          && printf "\\\\end{document}" >> combined.tex
           && latexmk -pdf -output-directory=combined combined.tex
       - uses: actions/upload-artifact@v3
         with:
