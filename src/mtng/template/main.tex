@@ -24,7 +24,12 @@
     Issue
     {%- endif -%}
     \#{{- item.number -}} }) \\
-    by \href{ {{- item.user.html_url -}} }{ @{{- item.user.login|sanitize -}} }
+    by \href{ {{- item.user.html_url -}} }{@{{- item.user.login|sanitize -}}}, {}
+    {%- if item.assignee -%}
+    assigned to \href{ {{- item.assignee.html_url -}} }{@{{- item.assignee.login|sanitize -}}}
+    {%- else -%}
+    no assignee
+    {%- endif -%}
     {{- caller() }}
 {% endmacro %}
 
