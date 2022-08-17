@@ -24,7 +24,6 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
 
     repo = Repository(
         name="acts-project/acts",
-        do_stale=True,
         stale_label="Stale",
         wip_label=":construction: WIP",
     )
@@ -80,7 +79,6 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
 async def test_collect():
     repo = Repository(
         name="acts-project/acts",
-        do_stale=True,
         stale_label="Stale",
         wip_label=":construction: WIP",
     )

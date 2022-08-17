@@ -6,6 +6,7 @@ import datetime
 from pathlib import Path
 import re
 import urllib.parse
+import json
 
 import typer
 from dotenv import load_dotenv
@@ -14,10 +15,12 @@ import gidgethub
 import aiohttp
 import dateutil.parser
 import yaml
-from mtng.generate import generate_latex
+import pydantic.schema
 
+from mtng.generate import generate_latex
 from mtng.spec import Spec
 from mtng.collect import collect_repositories
+from mtng.generate import env
 from mtng import __version__
 
 load_dotenv(dotenv_path=Path.cwd() / ".env")
@@ -106,13 +109,22 @@ async def generate(
         help="Github API token to use. Can be supplied with environment variable GH_TOKEN",
     ),
     since: datetime.datetime = typer.Option(
-        ..., prompt="When was the last meeting? (YYYY-MM-DD)"
+        ...,
+        prompt="When was the last meeting? (YYYY-MM-DD)",
+        help="Start window for queries",
     ),
     now: datetime.datetime = typer.Option(
-        datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        help="End window for queries",
     ),
-    event: Optional[str] = typer.Option(None, "--event"),
-    full_tex: bool = typer.Option(False, "--full"),
+    event: Optional[str] = typer.Option(
+        None,
+        "--event",
+        help="Optionally attach an Indico based agenda overview. This only works with public events!",
+    ),
+    full_tex: bool = typer.Option(
+        False, "--full", help="Write a full LaTeX file that is compileable on it's own"
+    ),
 ):
 
     spec = Spec.parse_obj(yaml.safe_load(config))
@@ -129,6 +141,18 @@ async def generate(
         contributions = await contributions if event is not None else []
 
     print(generate_latex(spec, data, since, contributions, full_tex=full_tex))
+
+
+@cli.command(help="Print a preamble suitable to render fancy output")
+def preamble():
+    out = env.loader.get_source(env, "preamble.tex")[0]
+
+    print(out)
+
+
+@cli.command(help="Print the configuration schema")
+def schema():
+    print(json.dumps(pydantic.schema.schema([Spec]), indent=2))
 
 
 @cli.callback()

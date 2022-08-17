@@ -105,6 +105,7 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
 {% endif %}
 {% endif %}
 
+{% if repo.spec.do_stale %}
 {% set newly_stale = repo["stale"] | selectattr("updated_at", ">", since) | list %}
 {% if newly_stale | length > 0 %}
 \section{ {{repo_name}} \\ Stale Issues and PRs}
@@ -132,6 +133,7 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
     {%- endfor %}
   \end{itemize}
 \end{frame}
+{% endif %}
 {% endif %}
 
 {% endfor %}
