@@ -141,7 +141,11 @@ async def generate(
 
         contributions = await contributions if event is not None else []
 
-    print(generate_latex(spec, data, since, contributions, full_tex=full_tex))
+    print(
+        generate_latex(
+            spec, data, since, contributions=contributions, full_tex=full_tex
+        )
+    )
 
 
 @cli.command(help="Print a preamble suitable to render fancy output")
