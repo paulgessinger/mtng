@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v4
       - uses: actions/checkout@v3
       - name: Install dependencies
-        run: pip install poetry && poetry install
+        run: pip install .
       - name: Generate tex output
         run: >
           mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 > fragment.tex
