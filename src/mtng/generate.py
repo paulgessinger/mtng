@@ -22,4 +22,4 @@ def generate_latex(
 
     return tpl.render(
         repos=data, spec=spec, last=last, contributions=contributions, full_tex=full_tex
-    )
+    ).strip()

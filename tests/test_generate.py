@@ -53,7 +53,9 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch):
         [repo], since=since, now=datetime(2022, 8, 11), gh=gh
     )
 
-    output = generate_latex(Spec(repos=[repo]), result, last=since, contributions=[])
+    output = generate_latex(
+        Spec(repos=[repo]), result, last=since, contributions=[], full_tex=False
+    )
 
     output += "\n"  # newline at end of file
 
