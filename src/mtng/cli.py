@@ -143,7 +143,12 @@ async def generate(
 
     print(
         generate_latex(
-            spec, data, since, contributions=contributions, full_tex=full_tex
+            spec,
+            data,
+            since=since,
+            now=now,
+            contributions=contributions,
+            full_tex=full_tex,
         )
     )
 
