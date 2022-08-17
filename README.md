@@ -1,5 +1,8 @@
 # mtng 
-Generate meeting notes from GitHub + [Indico](https://getindico.io/)
+Generate meeting notes from GitHub + [Indico](https://getindico.io/). This tool generates
+LaTeX code that can be compiled into a PDF presentation. The result looks something like this:
+
+![Screenshot of the tool's output](screen.png)
 
 ## Installation
 
