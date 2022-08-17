@@ -4,10 +4,14 @@
 
 {% block body %}
 
+\providecommand{\prmerged}{MERGED}
+\providecommand{\propen}{OPEN}
+
 {% for repo_name, repo in repos.items() %}
 
-{% macro show_item(item) %}
+{% macro show_item(item, mode = none) %}
     \item
+    {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" %}\prmerged{% endif %}
     \textbf{\href{
       {{- item.html_url -}}
     }{\textcolor{black}{
@@ -24,6 +28,9 @@
     {{- caller() }}
 {% endmacro %}
 
+{% for repo_name, repo in repos.items() %}
+
+
 {% if repo["merged_prs"]|length > 0 %}
 
 \section{ {{repo_name}} \\ Merged PRs}
@@ -31,7 +38,7 @@
 
   \begin{itemize}
     {% for pr in repo["merged_prs"]|sort(attribute="merged_at") %}
-    {%- call show_item(pr) -%}
+    {%- call show_item(pr, mode="MERGED") -%}
     , merged on {{ pr.merged_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
@@ -64,7 +71,7 @@
 
   \begin{itemize}
     {% for pr in repo["open_prs"]|sort(reverse=True, attribute="updated_at") %}
-    {%- call show_item(pr) -%}
+    {%- call show_item(pr, mode="OPEN") -%}
     , updated on {{ pr.updated_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
