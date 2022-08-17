@@ -160,5 +160,3 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
         raise
 
     print(tmp_path / "build" / "source.pdf")
-
-    shutil.copy(tmp_path / "build" / "source.pdf", Path(__file__).parent / "source.pdf")

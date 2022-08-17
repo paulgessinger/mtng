@@ -77,7 +77,13 @@ async def collect_repositories(
             )
 
             if not repo.show_wip:
-                open_prs = list(filter(lambda pr: not pr["is_wip"], open_prs))
+                open_prs = list(
+                    filter(
+                        lambda pr: repo.wip_label
+                        not in [l["name"] for l in pr["labels"]],
+                        open_prs,
+                    )
+                )
             data[repo.name]["open_prs"] = open_prs
 
         if repo.do_stale:

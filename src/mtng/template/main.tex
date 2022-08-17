@@ -6,8 +6,9 @@
 
 \providecommand{\prmerged}{MERGED }
 \providecommand{\propen}{OPEN }
-\providecommand{\prwip}{WIP}
-\providecommand{\prstale}{STALE}
+\providecommand{\prwip}{WIP }
+\providecommand{\prstale}{STALE }
+\providecommand{\iss}{}
     
 \providecolor{shivablue}{rgb}{0.6,0.86,0.99}
 \providecolor{Red}{rgb}{1.0,0.18,0.09}
@@ -22,8 +23,11 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
     \item
     {%- set needs_space = false -%}
     {%- if item.pull_request is defined or item.head is defined -%}
-    {%- set needs_space = true -%}
-    {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" -%}\prmerged{% endif %}
+      {%- set needs_space = true -%}
+      {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" -%}\prmerged{% endif %}
+    {%- else -%}
+      {%- set needs_space = true -%}
+      \iss
     {%- endif -%}
     {%- if item.is_wip -%}\prwip 
     {%- set needs_space = true -%}

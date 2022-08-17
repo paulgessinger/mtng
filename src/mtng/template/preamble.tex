@@ -8,7 +8,7 @@
 \tikzset{>={Triangle[angle=50:1.3pt 3]}}
 \newsavebox{\mrgbox}
 \sbox{\mrgbox}{%
-    \begin{tikzpicture}[scale=1,line width=1pt,color=white]
+    \begin{tikzpicture}[scale=1,line width=1pt,color=Purple]
       % \tikzset{>={Triangle[angle=50:1.3pt 3]}}
 
       \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
@@ -27,23 +27,17 @@
   \raisebox{-0.3\height}{
   \normalsize
   \begin{tikzpicture}[]
-    \node[rectangle,fill=Purple,rounded corners=0.5em,
-          minimum height=1.5em,minimum width=1.6em] (t) {};
-    \node[anchor=west] at ($(t.west)+(0.2em,0)$) {
-      \resizebox{0.9em}{!}{\usebox{\mrgbox}}
+    \node[]  {
+      \resizebox{1.1em}{!}{\usebox{\mrgbox}}
     };
-    % \node[anchor=east,text=white,font=\footnotesize] at ($(t.east)+(-0.2em,-0.1em)$) {
-    %   \textbf{Merged}
-    % };
-
   \end{tikzpicture}
-  \hspace*{-0.9em}
+  \hspace*{-1.5em}
   }
 }
 
 \newsavebox{\opnbox}
 \sbox{\opnbox}{%
-    \begin{tikzpicture}[scale=1,line width=1pt,color=white]
+    \begin{tikzpicture}[scale=1,line width=1pt,color=LimeGreen]
       % \tikzset{>={Triangle[angle=50:1.3pt 3]}}
 
       \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
@@ -63,16 +57,11 @@
   \raisebox{-0.3\height}{
   \normalsize
   \begin{tikzpicture}[]
-    \node[rectangle,fill=LimeGreen,rounded corners=0.5em,
-          minimum height=1.5em,minimum width=1.7em] (t) {};
-    \node[anchor=west] at ($(t.west)+(0.2em,0)$) {
-      \resizebox{0.9em}{!}{\usebox{\opnbox}}
+    \node[] {
+      \resizebox{1.1em}{!}{\usebox{\opnbox}}
     };
-    % \node[anchor=east,text=white,font=\footnotesize] at ($(t.east)+(-0.2em,-0.1em)$) {
-    %   \textbf{Open}
-    % };
   \end{tikzpicture}
-  \hspace*{-0.9em}
+  \hspace*{-1.5em}
 }
 }
 
@@ -101,5 +90,34 @@
           };
   \end{tikzpicture}
   \hspace*{-0.9em}
+}
+}
+
+\newsavebox{\issbox}
+\sbox{\issbox}{%
+    \begin{tikzpicture}[scale=1,line width=1pt,color=LimeGreen]
+      \draw[line width=2.5pt] (0,0) circle(1em);
+      \fill[] (0,0) circle(2.5pt);
+      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
+      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (br) at (8pt,0) {};
+      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
+      % \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,5pt) ..controls ++(0,3.5pt) and ++(4pt,0).. (tl);
+      % \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
+
+    \end{tikzpicture}
+}
+
+\providecommand{\iss}{
+  % \tikzset{external/export next=false}
+  \tikzsetnextfilename{iss}
+  \hspace*{-0.9em}
+  \raisebox{-0.3\height}{
+  \normalsize
+  \begin{tikzpicture}[]
+    \node[] {
+      \resizebox{1.1em}{!}{\usebox{\issbox}}
+    };
+  \end{tikzpicture}
+  \hspace*{-1.5em}
 }
 }
