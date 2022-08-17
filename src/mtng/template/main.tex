@@ -4,10 +4,10 @@
 
 {% block body %}
 
-\providecommand{\prmerged}{MERGED}
-\providecommand{\propen}{OPEN}
-
-{% for repo_name, repo in repos.items() %}
+\providecommand{\prmerged}{MERGED }
+\providecommand{\propen}{OPEN }
+    
+\providecolor{shivablue}{rgb}{0.6,0.86,0.99}
 
 {% macro show_item(item, mode = none) %}
     \item
@@ -28,13 +28,17 @@
     {{- caller() }}
 {% endmacro %}
 
+{% macro date_range() %}
+between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
+{% endmacro %}
+
 {% for repo_name, repo in repos.items() %}
 
 
 {% if repo["merged_prs"]|length > 0 %}
 
 \section{ {{repo_name}} \\ Merged PRs}
-\begin{frame}[allowframebreaks]{ {{ repo_name }}: PRs merged since {{ last.strftime('%Y-%m-%d') }} }
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: PRs merged {{ date_range() }}}
 
   \begin{itemize}
     {% for pr in repo["merged_prs"]|sort(attribute="merged_at") %}
@@ -50,10 +54,9 @@
 \begin{frame}[c]{}
   \begin{center}
     \Large
-    \providecolor{shivablue}{rgb}{0.6,0.86,0.99}
     \color{shivablue}
     \sffamily 
-    No merged PRs since \textbf{ {{ last.strftime('%Y-%m-%d') }} } in\\
+    No merged PRs since \textbf{ {{ since.strftime('%Y-%m-%d') }} } in\\
     \textbf{ {{ repo_name }} }
   \end{center}
 \end{frame}
@@ -82,8 +85,8 @@
 
 {% if repo["spec"].do_recent_issues %}
 {% if repo["recent_issues"] | length > 0 %}
-  \section{ {{repo_name}} \\ Issues opened since {{ last.strftime('%Y-%m-%d') }} }
-  \begin{frame}[allowframebreaks]{ {{ repo_name }}: Issues opened since {{ last.strftime('%Y-%m-%d') }} }
+  \section{ {{repo_name}} \\ Issues opened since {{ since.strftime('%Y-%m-%d') }} }
+  \begin{frame}[allowframebreaks]{ {{ repo_name }}: Issues opened since {{ since.strftime('%Y-%m-%d') }} }
     \begin{itemize}
       {% for item in repo["recent_issues"]|sort(reverse=True, attribute="updated_at") %}
       {%- call show_item(item) -%}
@@ -93,14 +96,14 @@
       \end{itemize}
   \end{frame}
 {% else %}
-  \section{ {{repo_name}} \\ No issues opened since {{ last.strftime('%Y-%m-%d') }} }
+  \section{ {{repo_name}} \\ No issues opened since {{ since.strftime('%Y-%m-%d') }} }
 {% endif %}
 {% endif %}
 
-{% set newly_stale = repo["stale"] | selectattr("updated_at", ">", last) | list %}
+{% set newly_stale = repo["stale"] | selectattr("updated_at", ">", since) | list %}
 {% if newly_stale | length > 0 %}
 \section{ {{repo_name}} \\ Stale Issues and PRs}
-\begin{frame}[allowframebreaks]{ {{ repo_name }}: New stale Issues / PRs since {{ last.strftime('%Y-%m-%d') }} }
+\begin{frame}[allowframebreaks]{ {{ repo_name }}: New stale Issues / PRs since {{ since.strftime('%Y-%m-%d') }} }
   \begin{itemize}
     {% for item in newly_stale %}
     {%- call show_item(item) -%}
@@ -110,7 +113,7 @@
   \end{itemize}
 \end{frame}
 {% else %}
-\section{ {{repo_name}} \\ No new stale issues or PRs since {{ last.strftime('%Y-%m-%d') }} }
+\section{ {{repo_name}} \\ No new stale issues or PRs since {{ since.strftime('%Y-%m-%d') }} }
 {% endif %}
 
 {% if repo["stale"]|length > 0 %}
@@ -125,6 +128,7 @@
   \end{itemize}
 \end{frame}
 {% endif %}
+
 {% endfor %}
 
 {% if contributions|length > 0 %}

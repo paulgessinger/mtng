@@ -6,7 +6,7 @@ from mtng.spec import Spec
 
 
 def generate_latex(
-    spec: Spec, data, last: datetime, contributions, full_tex: bool
+    spec: Spec, data, since: datetime, now: datetime, contributions, full_tex: bool
 ) -> str:
 
     env = Environment(
@@ -18,8 +18,14 @@ def generate_latex(
 
     env.filters["sanitize"] = sanitize
 
+    env.globals["include_raw"] = lambda q: env.loader.get_source(env, q)[0]
     tpl = env.get_template("main.tex")
 
     return tpl.render(
-        repos=data, spec=spec, last=last, contributions=contributions, full_tex=full_tex
+        repos=data,
+        spec=spec,
+        since=since,
+        now=now,
+        contributions=contributions,
+        full_tex=full_tex,
     ).strip()

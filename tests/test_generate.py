@@ -1,3 +1,4 @@
+from re import sub
 from unittest.mock import Mock
 import asyncio
 from datetime import datetime
@@ -17,7 +18,7 @@ from mtng.spec import Repository, Spec
 
 
 @pytest.mark.asyncio
-async def test_generate(monkeypatch: pytest.MonkeyPatch):
+async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
     gh = Mock()
 
     repo = Repository(
@@ -50,17 +51,27 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch):
         ),
     )
     since = datetime(2022, 8, 1)
+    now = datetime(2022, 8, 11)
     result = await mtng.collect.collect_repositories(
-        [repo], since=since, now=datetime(2022, 8, 11), gh=gh
+        [repo], since=since, now=now, gh=gh
     )
 
     output = generate_latex(
-        Spec(repos=[repo]), result, last=since, contributions=[], full_tex=False
+        Spec(repos=[repo]),
+        result,
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=False,
     )
 
     output += "\n"  # newline at end of file
 
-    assert output == (ref / "reference.tex").read_text()
+    act_file = tmp_path / "output.tex"
+    act_file.write_text(output)
+
+    ref_file = ref / "reference.tex"
+    assert output == ref_file.read_text(), str(act_file)
     #  print((ref / "reference.tex").read_text())
 
 
@@ -131,12 +142,18 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
         ),
     )
     since = datetime(2022, 8, 1)
+    now = datetime(2022, 8, 11)
     result = await mtng.collect.collect_repositories(
-        [repo], since=since, now=datetime(2022, 8, 11), gh=gh
+        [repo], since=since, now=now, gh=gh
     )
 
     tex = generate_latex(
-        Spec(repos=[repo]), result, last=since, contributions=[], full_tex=full_tex
+        Spec(repos=[repo]),
+        result,
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=full_tex,
     )
     source = tmp_path / "source.tex"
 
@@ -147,12 +164,18 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
         if not full_tex:
             fh.write("\n\\end{document}")
 
-    subprocess.check_call(
-        [
-            latexmk_path,
-            f"-output-directory={tmp_path/'build'}",
-            "-halt-on-error",
-            "-pdf",
-            str(source),
-        ]
-    )
+    try:
+        subprocess.check_call(
+            [
+                latexmk_path,
+                f"-output-directory={tmp_path/'build'}",
+                "-halt-on-error",
+                "-pdf",
+                str(source),
+            ]
+        )
+    except subprocess.CalledProcessError:
+        print(source)
+        raise
+
+    print(tmp_path / "build" / "source.pdf")
