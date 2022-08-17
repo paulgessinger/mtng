@@ -13,6 +13,9 @@
 \providecolor{shivablue}{rgb}{0.6,0.86,0.99}
 \providecolor{Red}{rgb}{1.0,0.18,0.09}
 
+\providecommand{\cusemoji}[1]{}
+\providecommand{\emojispace}[1]{}
+
 {% macro date_range() %}
 between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
 {% endmacro %}
@@ -54,8 +57,8 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
     {%- if item.assignee -%}
     assigned to \href{ {{- item.assignee.html_url -}} }{@{{- item.assignee.login|sanitize -}}}
     {%- else -%}
-    {%- if repo.spec.no_assignee_attention -%}
-    \textbf{\textcolor{Red}{no assignee}}
+    {%- if repo.spec.no_assignee_attention and mode != "MERGED" -%}
+    \emojispace{warning}\textbf{\textcolor{Red}{no assignee}}
     {%- else -%}
     no assignee
     {%- endif -%}

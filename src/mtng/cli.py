@@ -43,6 +43,18 @@ def find_latexmk() -> Path:
         return None
     return latexmk_path
 
+def have_lualatex() -> bool:
+    try:
+        latexmk_path = Path(
+            subprocess.check_output(["which", "lualatex"]).decode().strip()
+        )
+    except subprocess.CalledProcessError:
+        return False
+    if not latexmk_path.exists():
+        return False
+    return True
+
+
 
 def make_sync(fn):
     @functools.wraps(fn)
@@ -187,16 +199,17 @@ async def generate(
             d = Path(d)
             source = d / "source.tex"
             source.write_text(latex)
-            subprocess.check_call(
-                [
+            args = [
                     latexmk,
                     f"-output-directory={d}",
                     "-halt-on-error",
-                    # "-pdflatex=lualatex",
                     "-pdf",
-                    source,
                 ]
-            )
+
+            if have_lualatex():
+                args.append("-pdflatex=lualatex")
+            args.append(source)
+            subprocess.check_call(args)
             shutil.copy(d / "source.pdf", pdf)
 
 
