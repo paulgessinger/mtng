@@ -1,0 +1,123 @@
+\providecolor{Purple}{rgb}{0.56,0.27,0.64}
+\providecolor{LimeGreen}{rgb}{0.53,0.79,0.27}
+\providecolor{Yellow}{rgb}{1,0.92,0.24}
+\providecolor{beige}{HTML}{ffebc6}
+
+\usepackage{tikz}
+\usetikzlibrary{calc,arrows,arrows.meta,external}
+\tikzset{>={Triangle[angle=50:1.3pt 3]}}
+\newsavebox{\mrgbox}
+\sbox{\mrgbox}{%
+    \begin{tikzpicture}[scale=1,line width=1pt,color=Purple]
+      % \tikzset{>={Triangle[angle=50:1.3pt 3]}}
+
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (mr) at (8pt,3pt) {};
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
+      \draw[shorten <=-0.1pt,shorten >=-0.1pt] (mr) to[in=-90,out=180] (tl);
+      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
+
+    \end{tikzpicture}
+}
+
+\providecommand{\prmerged}{
+  % \tikzset{external/export next=false}
+  \tikzsetnextfilename{prmerged}
+  \hspace*{-0.9em}
+  \raisebox{-0.3\height}{
+  \normalsize
+  \begin{tikzpicture}[]
+    \node[]  {
+      \resizebox{1.1em}{!}{\usebox{\mrgbox}}
+    };
+  \end{tikzpicture}
+  \hspace*{-1.5em}
+  }
+}
+
+\newsavebox{\opnbox}
+\sbox{\opnbox}{%
+    \begin{tikzpicture}[scale=1,line width=1pt,color=LimeGreen]
+      % \tikzset{>={Triangle[angle=50:1.3pt 3]}}
+
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (br) at (8pt,0) {};
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
+      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,5pt) ..controls ++(0,3.5pt) and ++(4pt,0).. (tl);
+      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
+
+    \end{tikzpicture}
+}
+
+
+\providecommand{\propen}{
+  % \tikzset{external/export next=false}
+  \tikzsetnextfilename{propen}
+  \hspace*{-0.9em}
+  \raisebox{-0.3\height}{
+  \normalsize
+  \begin{tikzpicture}[]
+    \node[] {
+      \resizebox{1.1em}{!}{\usebox{\opnbox}}
+    };
+  \end{tikzpicture}
+  \hspace*{-1.5em}
+}
+}
+
+\providecommand{\prwip}{
+  \tikzsetnextfilename{prwip}
+  \hspace*{-0.9em}
+  \raisebox{-0.3\height}{
+  \small
+  \begin{tikzpicture}[]
+    \node[rectangle,fill=Yellow,rounded corners=0.5em,
+          minimum height=1.55em,minimum width=2.9em] (t) {WIP};
+  \end{tikzpicture}
+  \hspace*{-0.9em}
+}
+}
+
+\providecommand{\prstale}{
+  \tikzsetnextfilename{prstale}
+  \hspace*{-0.9em}
+  \raisebox{-0.3\height}{
+  \small
+  \begin{tikzpicture}[]
+    \node[rectangle,fill=beige,rounded corners=0.5em,
+          minimum height=1.55em] (t) {
+      Stale
+          };
+  \end{tikzpicture}
+  \hspace*{-0.9em}
+}
+}
+
+\newsavebox{\issbox}
+\sbox{\issbox}{%
+    \begin{tikzpicture}[scale=1,line width=1pt,color=LimeGreen]
+      \draw[line width=2.5pt] (0,0) circle(1em);
+      \fill[] (0,0) circle(2.5pt);
+      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
+      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (br) at (8pt,0) {};
+      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
+      % \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,5pt) ..controls ++(0,3.5pt) and ++(4pt,0).. (tl);
+      % \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
+
+    \end{tikzpicture}
+}
+
+\providecommand{\iss}{
+  % \tikzset{external/export next=false}
+  \tikzsetnextfilename{iss}
+  \hspace*{-0.9em}
+  \raisebox{-0.3\height}{
+  \normalsize
+  \begin{tikzpicture}[]
+    \node[] {
+      \resizebox{1.1em}{!}{\usebox{\issbox}}
+    };
+  \end{tikzpicture}
+  \hspace*{-1.5em}
+}
+}

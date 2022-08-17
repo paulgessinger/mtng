@@ -5,3 +5,14 @@ vscode
 
 build
 dist
+
+*.fdb_latexmk
+*.fls
+*.pdf
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.aux
