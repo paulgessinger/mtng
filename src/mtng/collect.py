@@ -29,14 +29,15 @@ async def get_open_issues(
     without_labels: List[str] = [],
     start: Optional[datetime] = None,
     end: Optional[datetime] = None,
-    type: Literal["pr", "issue"] = "issue",
+    type: Literal["pr", "issue", "any"] = "issue",
 ):
     if not all([start is None, end is None]) and not all(
         [start is not None, end is not None]
     ):
         raise ValueError("Either provide start and end or neither")
     url = f"/search/issues?q=repo:{repo_name}+is:open"
-    url += f"+is:{type}"
+    if type != "any":
+        url += f"+is:{type}"
     if start is not None and end is not None:
         url += f"+created:{start:%Y-%m-%d}..{end:%Y-%m-%d}"
     for label in without_labels:
@@ -75,8 +76,6 @@ async def collect_repositories(
                 type="pr",
             )
 
-            for pr in open_prs:
-                pr["is_wip"] = repo.wip_label in [l["name"] for l in pr["labels"]]
             if not repo.show_wip:
                 open_prs = list(filter(lambda pr: not pr["is_wip"], open_prs))
             data[repo.name]["open_prs"] = open_prs
@@ -84,7 +83,9 @@ async def collect_repositories(
         if repo.do_stale:
             if repo.stale_label is None:
                 raise ValueError("Provide stale label if do_stale=True")
-            stale = await get_open_issues(gh, repo.name, with_labels=[repo.stale_label])
+            stale = await get_open_issues(
+                gh, repo.name, with_labels=[repo.stale_label], type="any"
+            )
 
             data[repo.name]["stale"] = stale
 
@@ -95,6 +96,10 @@ async def collect_repositories(
 
         for prk in "open_prs", "merged_prs", "stale", "recent_issues":
             for pr in data[repo.name][prk]:
+
+                pr["is_wip"] = repo.wip_label in [l["name"] for l in pr["labels"]]
+                pr["is_stale"] = repo.stale_label in [l["name"] for l in pr["labels"]]
+
                 for k in "merged_at", "updated_at":
                     if not k in pr:
                         continue

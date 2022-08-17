@@ -42,6 +42,10 @@ class Repository(BaseModel):
         description="Show a list of issues opened in the time interval.",
     )
 
+    no_assignee_attention: bool = pydantic.Field(
+        True, description="Draw attention to items without an assignee"
+    )
+
     @property
     def do_stale(self):
         return self.stale_label is not None

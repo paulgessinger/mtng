@@ -1,4 +1,5 @@
 from re import sub
+import shutil
 from unittest.mock import Mock
 import asyncio
 from datetime import datetime
@@ -159,3 +160,5 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
         raise
 
     print(tmp_path / "build" / "source.pdf")
+
+    shutil.copy(tmp_path / "build" / "source.pdf", Path(__file__).parent / "source.pdf")

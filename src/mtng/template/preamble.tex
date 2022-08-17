@@ -1,6 +1,7 @@
 \providecolor{Purple}{rgb}{0.56,0.27,0.64}
 \providecolor{LimeGreen}{rgb}{0.53,0.79,0.27}
 \providecolor{Yellow}{rgb}{1,0.92,0.24}
+\providecolor{beige}{HTML}{ffebc6}
 
 \usepackage{tikz}
 \usetikzlibrary{calc,arrows,arrows.meta,external}
@@ -82,14 +83,23 @@
   \normalsize
   \begin{tikzpicture}[]
     \node[rectangle,fill=Yellow,rounded corners=0.5em,
-          minimum height=1.55em,minimum width=2.9em] (t) {};
-    \node[anchor=west] at ($(t.west)+(0.2em,0)$) {
-      WIP
-    };
-    % \node[anchor=east,text=white,font=\footnotesize] at ($(t.east)+(-0.2em,-0.1em)$) {
-    %   \textbf{Open}
-    % };
+          minimum height=1.55em,minimum width=2.9em] (t) {WIP};
   \end{tikzpicture}
-  \hspace*{-0.5em}
+  \hspace*{-0.9em}
+}
+}
+
+\providecommand{\prstale}{
+  \tikzsetnextfilename{prstale}
+  \hspace*{-0.9em}
+  \raisebox{-0.3\height}{
+  \normalsize
+  \begin{tikzpicture}[]
+    \node[rectangle,fill=beige,rounded corners=0.5em,
+          minimum height=1.55em] (t) {
+      Stale
+          };
+  \end{tikzpicture}
+  \hspace*{-0.9em}
 }
 }

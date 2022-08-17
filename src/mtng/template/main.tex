@@ -7,6 +7,7 @@
 \providecommand{\prmerged}{MERGED }
 \providecommand{\propen}{OPEN }
 \providecommand{\prwip}{WIP}
+\providecommand{\prstale}{STALE}
     
 \providecolor{shivablue}{rgb}{0.6,0.86,0.99}
 \providecolor{Red}{rgb}{1.0,0.18,0.09}
@@ -19,9 +20,20 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
 
 {% macro show_item(item, mode = none) %}
     \item
-    {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" %}\prmerged{% endif %}
-    {%- if item.is_wip -%}\prwip 
+    {%- set needs_space = false -%}
+    {%- if item.pull_request is defined or item.head is defined -%}
+    {%- set needs_space = true -%}
+    {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" -%}\prmerged{% endif %}
     {%- endif -%}
+    {%- if item.is_wip -%}\prwip 
+    {%- set needs_space = true -%}
+    {%- endif -%}
+    {%- if item.is_stale -%}\prstale
+    {%- set needs_space = true -%}
+    {%- endif -%}
+    {%- if needs_space %}
+    \hspace*{0.1em}
+    {% endif -%}
     \textbf{\href{
       {{- item.html_url -}}
     }{\textcolor{black}{
@@ -116,7 +128,7 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
 \begin{frame}[allowframebreaks]{ {{ repo_name }}: New stale Issues / PRs since {{ since.strftime('%Y-%m-%d') }} }
   \begin{itemize}
     {% for item in newly_stale %}
-    {%- call show_item(item) -%}
+    {%- call show_item(item, mode="OPEN") -%}
         , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
@@ -131,7 +143,7 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
 \begin{frame}[allowframebreaks]{ {{ repo_name }}: All stale Issues / PRs}
   \begin{itemize}
     {% for item in repo["stale"]|sort(reverse=True, attribute="updated_at") %}
-    {%- call show_item(item) -%}
+    {%- call show_item(item, mode="OPEN") -%}
         , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
