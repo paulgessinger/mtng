@@ -47,13 +47,16 @@ Options:
                                   Start window for queries  [required]
   --now [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]
                                   End window for queries  [default:
-                                  2022-08-17T15:45:26]
+                                  2022-08-17T21:24:07]
   --event TEXT                    Optionally attach an Indico based agenda
                                   overview. This only works with public
                                   events!
   --full                          Write a full LaTeX file that is compileable
                                   on it's own
+  --pdf FILE                      Compile the report as a PDF file. This
+                                  requires a LaTeX installation.
   --help                          Show this message and exit.
+
 ```
 
 ## Configuration
