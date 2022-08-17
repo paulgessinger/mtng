@@ -50,7 +50,20 @@ jobs:
         with:
           name: latex-src
       - name: Compile latex
-        run: latexmk -pdf -output-directory=full full.tex
+        run: > 
+          latexmk -pdf -output-directory=full full.tex
+          && printf "\\documentclass{beamer}\n\\\begin{document}\n" >> combined.tex
+          && cat fragment.tex >> combined.tex
+          && printf "\\\\end" >> combined.tex
+          && latexmk -pdf -output-directory=combined combined.tex
+      - uses: actions/upload-artifact@v3
+        with:
+          name: latex-pdf
+          path: full/*.pdf
+      - uses: actions/upload-artifact@v3
+        with:
+          name: latex-pdf
+          path: combined/*.pdf
 
   black:
     runs-on: ubuntu-latest
