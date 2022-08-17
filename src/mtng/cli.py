@@ -43,6 +43,7 @@ def find_latexmk() -> Path:
         return None
     return latexmk_path
 
+
 def have_lualatex() -> bool:
     try:
         latexmk_path = Path(
@@ -53,7 +54,6 @@ def have_lualatex() -> bool:
     if not latexmk_path.exists():
         return False
     return True
-
 
 
 def make_sync(fn):
@@ -200,11 +200,11 @@ async def generate(
             source = d / "source.tex"
             source.write_text(latex)
             args = [
-                    latexmk,
-                    f"-output-directory={d}",
-                    "-halt-on-error",
-                    "-pdf",
-                ]
+                latexmk,
+                f"-output-directory={d}",
+                "-halt-on-error",
+                "-pdf",
+            ]
 
             if have_lualatex():
                 args.append("-pdflatex=lualatex")
