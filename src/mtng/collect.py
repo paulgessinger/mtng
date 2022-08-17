@@ -68,12 +68,18 @@ async def collect_repositories(
             data[repo.name]["merged_prs"] = merged_prs
 
         if repo.do_open_prs:
-            data[repo.name]["open_prs"] = await get_open_issues(
+            open_prs = await get_open_issues(
                 gh,
                 repo.name,
-                without_labels=[repo.wip_label] if repo.wip_label is not None else [],
+                without_labels=repo.filter_labels,
                 type="pr",
             )
+
+            for pr in open_prs:
+                pr["is_wip"] = repo.wip_label in [l["name"] for l in pr["labels"]]
+            if not repo.show_wip:
+                open_prs = list(filter(lambda pr: not pr["is_wip"], open_prs))
+            data[repo.name]["open_prs"] = open_prs
 
         if repo.do_stale:
             if repo.stale_label is None:

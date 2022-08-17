@@ -3,3 +3,6 @@ repos:
     do_stale: true
     stale_label: Stale
     wip_label: ":construction: WIP"
+    show_wip: true
+    filter_labels: 
+      - backport

@@ -6,12 +6,22 @@
 
 \providecommand{\prmerged}{MERGED }
 \providecommand{\propen}{OPEN }
+\providecommand{\prwip}{WIP}
     
 \providecolor{shivablue}{rgb}{0.6,0.86,0.99}
+
+
+{% macro date_range() %}
+between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
+{% endmacro %}
+
+{% for repo_name, repo in repos.items() %}
 
 {% macro show_item(item, mode = none) %}
     \item
     {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" %}\prmerged{% endif %}
+    {%- if item.is_wip -%}\prwip 
+    {%- endif -%}
     \textbf{\href{
       {{- item.html_url -}}
     }{\textcolor{black}{
@@ -32,13 +42,6 @@
     {%- endif -%}
     {{- caller() }}
 {% endmacro %}
-
-{% macro date_range() %}
-between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
-{% endmacro %}
-
-{% for repo_name, repo in repos.items() %}
-
 
 {% if repo["merged_prs"]|length > 0 %}
 
@@ -67,21 +70,18 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
 \end{frame}
 {% endif %}
 
-\section{ {{repo_name}} \\ Open PRs 
-{%- if repo["spec"].wip_label is not none %} (non WIP)
-{%- endif -%}
-}
+\section{ {{repo_name}} \\ Open PRs}
 {% if repo["open_prs"]| length > 0 %}
 \begin{frame}[allowframebreaks]{ {{ repo_name }}: Open PRs
-{%- if repo["spec"].wip_label is not none %} (non WIP)
-{%- endif -%}
 }
 
   \begin{itemize}
-    {% for pr in repo["open_prs"]|sort(reverse=True, attribute="updated_at") %}
+    {% for wip in ["false", "true"] %}
+    {% for pr in repo["open_prs"]|selectattr("is_wip", wip)|sort(reverse=True, attribute="updated_at") %}
     {%- call show_item(pr, mode="OPEN") -%}
     , updated on {{ pr.updated_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
+    {%- endfor %}
     {%- endfor %}
   \end{itemize}
 

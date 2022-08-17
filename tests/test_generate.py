@@ -11,6 +11,7 @@ import subprocess
 import pytest
 import aiohttp
 from gidgethub.aiohttp import GitHubAPI
+import yaml
 
 import mtng.collect
 from mtng.generate import generate_latex
@@ -110,45 +111,26 @@ except:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("full_tex", [True, False], ids=["full", "fragment"])
 async def test_compile(monkeypatch, full_tex, tmp_path):
-    gh = Mock()
 
-    repo = Repository(
-        name="acts-project/acts",
-        do_stale=True,
-        stale_label="Stale",
-        wip_label=":construction: WIP",
-    )
-
-    ref = Path(__file__).parent / "ref"
-
-    def get_file_content(file: str):
-        f = asyncio.Future()
-        with (ref / file).open() as fh:
-            f.set_result(json.load(fh))
-        return f
-
-    monkeypatch.setattr(
-        "mtng.collect.get_merged_pulls",
-        Mock(return_value=get_file_content("merged_prs.json")),
-    )
-    monkeypatch.setattr(
-        "mtng.collect.get_open_issues",
-        Mock(
-            side_effect=[
-                get_file_content("open_prs.json"),
-                get_file_content("stale.json"),
-                get_file_content("recent_issues.json"),
-            ]
-        ),
-    )
     since = datetime(2022, 8, 1)
     now = datetime(2022, 8, 11)
-    result = await mtng.collect.collect_repositories(
-        [repo], since=since, now=now, gh=gh
-    )
+
+    with (Path(__file__).parent / "acts_spec.yml").open() as fh:
+        spec = Spec.parse_obj(yaml.safe_load(fh))
+
+    if "GH_TOKEN" not in os.environ:
+        warnings.warn(
+            "GH_TOKEN environment variable not found. API based tests will likely fail"
+        )
+
+    async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
+        gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
+        result = await mtng.collect.collect_repositories(
+            spec.repos, gh=gh, since=datetime(2022, 8, 1), now=datetime(2022, 8, 2)
+        )
 
     tex = generate_latex(
-        Spec(repos=[repo]),
+        Spec(repos=spec.repos),
         result,
         since=since,
         now=now,

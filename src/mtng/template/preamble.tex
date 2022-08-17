@@ -1,5 +1,6 @@
 \providecolor{Purple}{rgb}{0.56,0.27,0.64}
 \providecolor{LimeGreen}{rgb}{0.53,0.79,0.27}
+\providecolor{Yellow}{rgb}{1,0.92,0.24}
 
 \usepackage{tikz}
 \usetikzlibrary{calc,arrows,arrows.meta,external}
@@ -21,6 +22,7 @@
 \providecommand{\prmerged}{
   % \tikzset{external/export next=false}
   \tikzsetnextfilename{prmerged}
+  \hspace*{-0.9em}
   \raisebox{-0.3\height}{
   \normalsize
   \begin{tikzpicture}[]
@@ -34,6 +36,7 @@
     % };
 
   \end{tikzpicture}
+  \hspace*{-0.9em}
   }
 }
 
@@ -55,11 +58,12 @@
 \providecommand{\propen}{
   % \tikzset{external/export next=false}
   \tikzsetnextfilename{propen}
+  \hspace*{-0.9em}
   \raisebox{-0.3\height}{
   \normalsize
   \begin{tikzpicture}[]
     \node[rectangle,fill=LimeGreen,rounded corners=0.5em,
-          minimum height=1.5em,minimum width=1.6em] (t) {};
+          minimum height=1.5em,minimum width=1.7em] (t) {};
     \node[anchor=west] at ($(t.west)+(0.2em,0)$) {
       \resizebox{0.9em}{!}{\usebox{\opnbox}}
     };
@@ -67,5 +71,25 @@
     %   \textbf{Open}
     % };
   \end{tikzpicture}
+  \hspace*{-0.9em}
+}
+}
+
+\providecommand{\prwip}{
+  \tikzsetnextfilename{prwip}
+  \hspace*{-0.9em}
+  \raisebox{-0.3\height}{
+  \normalsize
+  \begin{tikzpicture}[]
+    \node[rectangle,fill=Yellow,rounded corners=0.5em,
+          minimum height=1.55em,minimum width=2.9em] (t) {};
+    \node[anchor=west] at ($(t.west)+(0.2em,0)$) {
+      WIP
+    };
+    % \node[anchor=east,text=white,font=\footnotesize] at ($(t.east)+(-0.2em,-0.1em)$) {
+    %   \textbf{Open}
+    % };
+  \end{tikzpicture}
+  \hspace*{-0.5em}
 }
 }

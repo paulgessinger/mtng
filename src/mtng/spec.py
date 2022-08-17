@@ -11,6 +11,8 @@ class BaseModel(pydantic.BaseModel):
 class Repository(BaseModel):
     name: str
     wip_label: Optional[str] = None
+    show_wip: bool = False
+    filter_labels: List[str] = pydantic.Field(default_factory=list)
     stale_label: Optional[str] = None
     do_open_prs: bool = True
     do_merged_prs: bool = True
