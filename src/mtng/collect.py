@@ -12,14 +12,12 @@ from mtng.spec import Repository
 async def get_merged_pulls(
     gh: GitHubAPI, repo_name: str, start: datetime, end: datetime
 ):
-    return await asyncio.gather(
-        *[
-            gh.getitem(f"/repos/{repo_name}/pulls/{issue['number']}")
-            async for issue in gh.getiter(
-                f"/search/issues?q=repo:{repo_name}+is:pr+merged:{start:%Y-%m-%d}..{end:%Y-%m-%d}",
-            )
-        ]
-    )
+    return [
+        issue
+        async for issue in gh.getiter(
+            f"/search/issues?q=repo:{repo_name}+is:pr+merged:{start:%Y-%m-%d}..{end:%Y-%m-%d}",
+        )
+    ]
 
 
 async def get_open_issues(
@@ -44,12 +42,7 @@ async def get_open_issues(
         url += f'+-label:"{urllib.parse.quote(label)}"'
     for label in with_labels:
         url += f'+label:"{urllib.parse.quote(label)}"'
-    return await asyncio.gather(
-        *[
-            gh.getitem(f"/repos/{repo_name}/issues/{issue['number']}")
-            async for issue in gh.getiter(url)
-        ]
-    )
+    return [issue async for issue in gh.getiter(url)]
 
 
 async def collect_repositories(
@@ -106,7 +99,7 @@ async def collect_repositories(
                 pr["is_wip"] = repo.wip_label in [l["name"] for l in pr["labels"]]
                 pr["is_stale"] = repo.stale_label in [l["name"] for l in pr["labels"]]
 
-                for k in "merged_at", "updated_at":
+                for k in "merged_at", "updated_at", "closed_at":
                     if not k in pr:
                         continue
                     pr[k] = (

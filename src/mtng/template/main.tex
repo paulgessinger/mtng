@@ -71,7 +71,7 @@ between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
   \begin{itemize}
     {% for pr in repo["merged_prs"]|sort(attribute="merged_at") %}
     {%- call show_item(pr, mode="MERGED") -%}
-    , merged on {{ pr.merged_at.strftime('%Y-%m-%d') }}
+    , merged on {{ pr.closed_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
   \end{itemize}
