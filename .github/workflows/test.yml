@@ -20,7 +20,9 @@ jobs:
         with:
           python-version: "${{ matrix.python }}"
       - name: Install texlive
-        run: sudo apt-get update && sudo apt-get install -y texlive
+        run: >
+          sudo apt-get update 
+          && sudo apt-get install -y texlive latexmk
       - name: Install nox
         run: pip install nox
       - uses: actions/checkout@v3
