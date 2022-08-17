@@ -3,6 +3,14 @@
 \providecolor{Yellow}{rgb}{1,0.92,0.24}
 \providecolor{beige}{HTML}{ffebc6}
 
+\usepackage{iftex}
+
+\ifluatex
+\usepackage{emoji}
+\providecommand{\cusemoji}[1]{\raisebox{-0.15\height}{\emoji{#1}}}
+\providecommand{\emojispace}[1]{\raisebox{-0.15\height}{\emoji{#1} }}
+\fi
+
 \usepackage{tikz}
 \usetikzlibrary{calc,arrows,arrows.meta,external}
 \tikzset{>={Triangle[angle=50:1.3pt 3]}}
@@ -72,7 +80,7 @@
   \small
   \begin{tikzpicture}[]
     \node[rectangle,fill=Yellow,rounded corners=0.5em,
-          minimum height=1.55em,minimum width=2.9em] (t) {WIP};
+          minimum height=1.55em,minimum width=2.9em] (t) {\emojispace{construction}WIP};
   \end{tikzpicture}
   \hspace*{-0.9em}
 }
