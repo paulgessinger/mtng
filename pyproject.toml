@@ -8,6 +8,9 @@ packages = [
 ]
 readme = "README.md"
 
+[project.urls]
+homepage = "https://github.com/paulgessinger/mtng"
+
 [tool.poetry.dependencies]
 python = "^3.8"
 python-dotenv = "^0.17.1"
