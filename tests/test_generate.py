@@ -130,16 +130,33 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
     with (Path(__file__).parent / "acts_spec.yml").open() as fh:
         spec = Spec.parse_obj(yaml.safe_load(fh))
 
-    if "GH_TOKEN" not in os.environ:
-        warnings.warn(
-            "GH_TOKEN environment variable not found. API based tests will likely fail"
-        )
+    ref = Path(__file__).parent / "ref"
 
-    async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
-        gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
-        result = await mtng.collect.collect_repositories(
-            spec.repos, gh=gh, since=since, now=now
-        )
+    def get_file_content(file: str, cls):
+        f = asyncio.Future()
+        with (ref / file).open() as fh:
+            f.set_result([cls.parse_obj(o) for o in json.load(fh)])
+        return f
+
+    monkeypatch.setattr(
+        "mtng.collect.get_merged_pulls",
+        Mock(return_value=get_file_content("merged_prs.json", PullRequest)),
+    )
+    monkeypatch.setattr(
+        "mtng.collect.get_open_issues",
+        Mock(
+            side_effect=[
+                get_file_content("open_prs.json", Issue),
+                get_file_content("stale.json", Issue),
+                get_file_content("recent_issues.json", Issue),
+            ]
+        ),
+    )
+
+    gh = Mock()
+    result = await mtng.collect.collect_repositories(
+        spec.repos, gh=gh, since=since, now=now
+    )
 
     tex = generate_latex(
         Spec(repos=spec.repos),
