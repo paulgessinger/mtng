@@ -13,96 +13,93 @@
 
 \usepackage{tikz}
 \usetikzlibrary{calc,arrows,arrows.meta,external}
-\tikzset{>={Triangle[angle=50:1.3pt 3]}}
+\tikzset{>={Triangle[angle=50:0.13em 3]}}
 
 \providecommand{\prmerged}{
-  % \tikzset{external/export next=false}
-  \tikzsetnextfilename{prmerged}
-  \hspace*{-0.9em}
-  \raisebox{-0.3\height}{
   \normalsize
+  \tikzsetnextfilename{prmerged}
+  \hspace*{-0.8em}
+  \raisebox{-0.3\height}{
   \begin{tikzpicture}[line width=1pt,color=Purple]
-    \begin{scope}[transform canvas={scale=0.85}]
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (mr) at (8pt,3pt) {};
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
+    \begin{scope}[transform canvas={scale=0.80}]
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (mr) at (0.9em,0.4em) {};
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};
       \draw[shorten <=-0.1pt,shorten >=-0.1pt] (mr) to[in=-90,out=180] (tl);
       \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
     \end{scope}
-    \coordinate (tl) at (-2pt,-2pt);
-    \coordinate (br) at (10pt,8pt);
+    \coordinate (tl) at (-0.3em,-0.3em);
+    \coordinate (br) at (1.1em,1em);
     \clip (tl) rectangle (br);
   \end{tikzpicture}
-  \hspace*{-1.5em}
+  \hspace*{-0.9em}
   }
 }
 
 
 \providecommand{\propen}{
+  \normalsize
   % \tikzset{external/export next=false}
   \tikzsetnextfilename{propen}
-  \hspace*{-0.9em}
+  \hspace*{-0.8em}
   \raisebox{-0.3\height}{
-  \normalsize
   \begin{tikzpicture}[line width=1pt,color=LimeGreen]
-    \begin{scope}[transform canvas={scale=0.85}]
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (br) at (8pt,0) {};
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
-      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,5pt) ..controls ++(0,3.5pt) and ++(4pt,0).. (tl);
+    \begin{scope}[transform canvas={scale=0.80}]
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (br) at (0.9em,0) {};
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};
+      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,0.5em) ..controls ++(0,0.4em) and ++(0.5em,0).. (tl);
       \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
     \end{scope}
-    \coordinate (tl) at (-2pt,-2pt);
-    \coordinate (br) at (10pt,8pt);
+    \coordinate (tl) at (-0.3em,-0.3em);
+    \coordinate (br) at (1.1em,1em);
     \clip (tl) rectangle (br);
   \end{tikzpicture}
-  \hspace*{-1.5em}
+  \hspace*{-0.9em}
 }
 }
 
 \providecommand{\prwip}{
+  \normalsize
   \tikzsetnextfilename{prwip}
-  \hspace*{-0.9em}
+  \hspace*{-1.1em}
   \raisebox{-0.3\height}{
-  \small
   \begin{tikzpicture}[]
     \node[rectangle,fill=Yellow,rounded corners=0.5em,
-          minimum height=1.55em,minimum width=2.9em] (t) {\emojispace{construction}WIP};
+          minimum height=1.55em,minimum width=2.9em] (t) {\small\emojispace{construction}WIP};
   \end{tikzpicture}
-  \hspace*{-0.9em}
+  \hspace*{-0.8em}
 }
 }
 
 \providecommand{\prstale}{
+  \normalsize
   \tikzsetnextfilename{prstale}
-  \hspace*{-0.9em}
+  \hspace*{-1.1em}
   \raisebox{-0.3\height}{
-  \small
   \begin{tikzpicture}[]
     \node[rectangle,fill=beige,rounded corners=0.5em,
-          minimum height=1.55em] (t) {
-      Stale
-          };
+          minimum height=1.55em] (t) {\small{}Stale};
   \end{tikzpicture}
-  \hspace*{-0.9em}
+  \hspace*{-0.8em}
 }
 }
 
 \providecommand{\iss}{
   % \tikzset{external/export next=false}
   \tikzsetnextfilename{iss}
-  \hspace*{-0.9em}
-  \raisebox{-0.3\height}{
   \normalsize
+  \hspace*{-0.7em}
+  \raisebox{-0.3\height}{
   \begin{tikzpicture}[line width=1pt,color=LimeGreen]
-    \begin{scope}[transform canvas={scale=0.85},shift={(3.5pt,4pt)}]
-      \draw[line width=1.0pt] (0,0) circle(5.0pt);
-      \fill[] (0,0) circle(1.5pt);
+    \begin{scope}[transform canvas={scale=0.85},shift={(0.4em,0.5em)}]
+      \draw[line width=1.0pt] (0,0) circle(0.6em);
+      \fill[] (0,0) circle(0.15em);
     \end{scope}
-    \coordinate (tl) at (-2pt,-2pt);
-    \coordinate (br) at (10pt,8pt);
+    \coordinate (tl) at (-0.3em,-0.3em);
+    \coordinate (br) at (1.1em,1em);
     \clip (tl) rectangle (br);
   \end{tikzpicture}
-  \hspace*{-1.5em}
+  \hspace*{-0.9em}
 }
 }
