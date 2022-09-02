@@ -14,19 +14,6 @@
 \usepackage{tikz}
 \usetikzlibrary{calc,arrows,arrows.meta,external}
 \tikzset{>={Triangle[angle=50:1.3pt 3]}}
-\newsavebox{\mrgbox}
-\sbox{\mrgbox}{%
-    \begin{tikzpicture}[scale=1,line width=1pt,color=Purple]
-      % \tikzset{>={Triangle[angle=50:1.3pt 3]}}
-
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (mr) at (8pt,3pt) {};
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
-      \draw[shorten <=-0.1pt,shorten >=-0.1pt] (mr) to[in=-90,out=180] (tl);
-      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
-
-    \end{tikzpicture}
-}
 
 \providecommand{\prmerged}{
   % \tikzset{external/export next=false}
@@ -34,27 +21,20 @@
   \hspace*{-0.9em}
   \raisebox{-0.3\height}{
   \normalsize
-  \begin{tikzpicture}[]
-    \node[]  {
-      \resizebox{1.1em}{!}{\usebox{\mrgbox}}
-    };
+  \begin{tikzpicture}[line width=1pt,color=Purple]
+    \begin{scope}[transform canvas={scale=0.85}]
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (mr) at (8pt,3pt) {};
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
+      \draw[shorten <=-0.1pt,shorten >=-0.1pt] (mr) to[in=-90,out=180] (tl);
+      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
+    \end{scope}
+    \coordinate (tl) at (-2pt,-2pt);
+    \coordinate (br) at (10pt,8pt);
+    \clip (tl) rectangle (br);
   \end{tikzpicture}
   \hspace*{-1.5em}
   }
-}
-
-\newsavebox{\opnbox}
-\sbox{\opnbox}{%
-    \begin{tikzpicture}[scale=1,line width=1pt,color=LimeGreen]
-      % \tikzset{>={Triangle[angle=50:1.3pt 3]}}
-
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (br) at (8pt,0) {};
-      \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
-      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,5pt) ..controls ++(0,3.5pt) and ++(4pt,0).. (tl);
-      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
-
-    \end{tikzpicture}
 }
 
 
@@ -64,10 +44,17 @@
   \hspace*{-0.9em}
   \raisebox{-0.3\height}{
   \normalsize
-  \begin{tikzpicture}[]
-    \node[] {
-      \resizebox{1.1em}{!}{\usebox{\opnbox}}
-    };
+  \begin{tikzpicture}[line width=1pt,color=LimeGreen]
+    \begin{scope}[transform canvas={scale=0.85}]
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (br) at (8pt,0) {};
+      \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
+      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,5pt) ..controls ++(0,3.5pt) and ++(4pt,0).. (tl);
+      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
+    \end{scope}
+    \coordinate (tl) at (-2pt,-2pt);
+    \coordinate (br) at (10pt,8pt);
+    \clip (tl) rectangle (br);
   \end{tikzpicture}
   \hspace*{-1.5em}
 }
@@ -101,30 +88,20 @@
 }
 }
 
-\newsavebox{\issbox}
-\sbox{\issbox}{%
-    \begin{tikzpicture}[scale=1,line width=1pt,color=LimeGreen]
-      \draw[line width=2.5pt] (0,0) circle(1em);
-      \fill[] (0,0) circle(2.5pt);
-      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (bl) at (0,0) {};
-      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (br) at (8pt,0) {};
-      % \node[draw,circle,inner sep=0,minimum width=2.5pt] (tl) at (0,8pt) {};
-      % \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,5pt) ..controls ++(0,3.5pt) and ++(4pt,0).. (tl);
-      % \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
-
-    \end{tikzpicture}
-}
-
 \providecommand{\iss}{
   % \tikzset{external/export next=false}
   \tikzsetnextfilename{iss}
   \hspace*{-0.9em}
   \raisebox{-0.3\height}{
   \normalsize
-  \begin{tikzpicture}[]
-    \node[] {
-      \resizebox{1.1em}{!}{\usebox{\issbox}}
-    };
+  \begin{tikzpicture}[line width=1pt,color=LimeGreen]
+    \begin{scope}[transform canvas={scale=0.85},shift={(3.5pt,4pt)}]
+      \draw[line width=1.0pt] (0,0) circle(5.0pt);
+      \fill[] (0,0) circle(1.5pt);
+    \end{scope}
+    \coordinate (tl) at (-2pt,-2pt);
+    \coordinate (br) at (10pt,8pt);
+    \clip (tl) rectangle (br);
   \end{tikzpicture}
   \hspace*{-1.5em}
 }
