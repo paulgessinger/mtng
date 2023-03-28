@@ -22,7 +22,7 @@
     {%- endif -%}
     }) \\
     by \href{ {{- item.user.html_url -}} }{@{{- item.user.login|sanitize -}}}
-    {%- if spec.do_assignee or spec.do_reviewers -%}
+    {%- if spec.do_assignee or (spec.do_reviewers and item.is_pr) -%}
         ,{}
     {%- endif -%}
     {%- if spec.do_assignee -%}
