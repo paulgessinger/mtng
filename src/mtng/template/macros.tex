@@ -38,7 +38,7 @@
     {%- endif -%}
     {%- if spec.do_reviewers and item.is_pr -%}
         {%- if item.reviews is defined and item.reviews|length > 0 -%}
-            {%- set review = item.reviews[0] -%}
+            {%- set review = item.reviews[-1] -%}
             {%- if review.state == "APPROVED" -%}
                 \emojispace{check-mark-button}
             {%- elif review.state == "COMMENTED" -%}
