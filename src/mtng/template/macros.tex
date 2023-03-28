@@ -21,7 +21,10 @@
     \issstr{ {{- item.number -}} }
     {%- endif -%}
     }) \\
-    by \href{ {{- item.user.html_url -}} }{@{{- item.user.login|sanitize -}}}, {}
+    by \href{ {{- item.user.html_url -}} }{@{{- item.user.login|sanitize -}}}
+    {%- if spec.do_assignee or spec.do_reviewers -%}
+        ,{}
+    {%- endif -%}
     {%- if spec.do_assignee -%}
         {%- if item.assignee -%}
             assigned to {{ user(item.assignee) }}

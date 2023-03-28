@@ -1,46 +1,806 @@
 [
   {
-    "title": "feat: Finite State Machine Navigator",
+    "title": "Bug: Unpredicatable navigation in layer with overlapping surface",
+    "user": {
+      "login": "Corentin-Allaire",
+      "html_url": "https://github.com/Corentin-Allaire"
+    },
+    "labels": [
+      {
+        "name": "Bug"
+      },
+      {
+        "name": "Component - Core"
+      },
+      {
+        "name": "Impact - Minor"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1852",
+    "number": 1852,
+    "assignee": null,
+    "body": "While helping people perform the material mapping with a simple \"testbeam like\" detector, I notice an issue with the navigation. If in a layer we have 2 (or more) surfaces at the same position (ie : the `pathlenght` from the previous surface is the same) then the navigation will only visit one of those surfaces (which expected) but which one is not predictable.\r\n\r\nIn the sorting of the layer surfaces (in Layer.cpp line 231) we chain a sort based on the surface memory address with one based on` pathlenght` this mean for two surface with the same `pathlenght` it is impossible to predict which one will be first.\r\n\r\nIn the particular example I mention at the start the representing surface and the sensitive surface ended up being at the same position, this meant that when trying to map onto the sensitive surface half of them did have material (since the representing surface was crossed first).\r\n\r\nI see three possible solutions to this issue : \r\n- Return an error during the layer construction if multiple layer overlap (but then someone would need to look at the TGeo conversion to see why does the layers it constructs have overlapping surfaces).\r\n- Modify the layer construction to slightly shift the surface at creation to avoid overlap (with maybe some warning ?).\r\n- Modify the navigation to have unambiguous surface ordering, but this would probably slow down navigation, which is not ideal. Here is an example of unambiguous ordering that always return the \"deepest\" surface in the hierarchy : \r\n```\r\n  // Sort by object address\r\n  std::sort(sIntersections.begin(), sIntersections.end(),\r\n            [](const auto& a, const auto& b) { return a.object < b.object; });\r\n  // Now look for duplicates. As we just sorted by path length, duplicates\r\n  // should be subsequent\r\n  auto it = std::unique(\r\n      sIntersections.begin(), sIntersections.end(),\r\n      [](const SurfaceIntersection& a, const SurfaceIntersection& b) -> bool {\r\n        return a.object == b.object;\r\n      });\r\n\r\n  // resize to remove all items that are past the unique range\r\n  sIntersections.resize(std::distance(sIntersections.begin(), it));\r\n\r\n  std::sort(sIntersections.begin(), sIntersections.end(),\r\n            [](const auto& a, const auto& b) { return a.object->geometryId() < b.object->geometryId(); });\r\n\r\n  // sort according to the path length\r\n  if (options.navDir == NavigationDirection::Forward) {\r\n    std::stable_sort(sIntersections.begin(), sIntersections.end());\r\n  } else {\r\n    std::stable_sort(sIntersections.begin(), sIntersections.end(), std::greater<>());\r\n  }\r\n\r\n  return sIntersections;\r\n}\r\n```\r\nIf anybody has an opinion on this please let me know !\r\n\r\nPS : while looking at the navigation I realised we might also have an issue with boundary material being missed when navigating backward through the detector. This is something I need to investigate.\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1852",
+    "updated_at": "2023-03-25T09:17:54+00:00",
+    "created_at": "2023-02-10T10:34:43+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "feat!: new cubic volume building",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": ":construction: WIP"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1821",
+    "number": 1821,
+    "assignee": null,
+    "body": "This PR introduces a new `CubicVolumeHelper` and aligns the interface of `ITrackingVolumeHelper` to use `Extent` rather than specified `locZ, locR`, which does not make sense in an interface.\r\n\r\nIt also allows the KDTreeGeometryBuilder to build telescope like detectors if configured to do so.\r\n\r\n![Screenshot 2023-02-02 at 15 19 22](https://user-images.githubusercontent.com/26623879/216368001-42f2c4c8-cb3c-46b9-bff3-a8a0094c55c8.png)\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1821",
+    "updated_at": "2023-03-18T05:27:53+00:00",
+    "created_at": "2023-02-02T15:30:23+00:00",
+    "closed_at": null,
+    "is_wip": true,
+    "is_stale": true,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1821",
+      "html_url": "https://github.com/acts-project/acts/pull/1821",
+      "diff_url": "https://github.com/acts-project/acts/pull/1821.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1821.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "Make central minimum track momentum threshold",
     "user": {
       "login": "paulgessinger",
       "html_url": "https://github.com/paulgessinger"
     },
     "labels": [
       {
-        "name": ":construction: WIP"
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1761",
+    "number": 1761,
+    "assignee": null,
+    "body": "        should we make this configurable? not necessarily in this pr but we can also follow up with a ticket\r\n\r\n_Originally posted by @andiwand in https://github.com/acts-project/acts/pull/1649#discussion_r1052134329_\r\n      \r\nContext: our $q/p$ is not valid for $p=0$. The material interaction code was updated to set a minimum momentum threshold (arbitrarily set to 10 MeV). This should be centralized, and the particle stop-aborter updated to recognize this. I guess we could use some agreed on very small sentinel value that the particle stop aborter picks up on, @andiwand?",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1761",
+    "updated_at": "2023-01-21T02:16:56+00:00",
+    "created_at": "2022-12-19T12:57:05+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Drop `boost progress` from examples where it is not used",
+    "user": {
+      "login": "tboldagh",
+      "html_url": "https://github.com/tboldagh"
+    },
+    "labels": [
+      {
+        "name": "Improvement"
+      },
+      {
+        "name": "Impact - Minor"
       },
       {
         "name": "Stale"
       }
     ],
-    "html_url": "https://github.com/acts-project/acts/pull/1291",
-    "number": 1291,
+    "html_url": "https://github.com/acts-project/acts/issues/1736",
+    "number": 1736,
     "assignee": null,
-    "updated_at": "2022-07-30T17:22:32+00:00",
-    "created_at": "2022-06-27T09:54:14+00:00",
+    "body": "In this two files:\r\nhttps://github.com/acts-project/acts/blob/main/Examples/Scripts/MaterialMapping/MaterialComposition.cpp\r\nhttps://github.com/acts-project/acts/blob/main/Examples/Scripts/TrackingPerformance/TrackSummary.cpp\r\nThe boost progress display is defined (which generates deprecation warnings when compiling in docker image) but seems not to be used. Should it be still kept around?\r\n```\r\n[199/1062] Building CXX object Examples/Scripts/MaterialMapping/CMakeFiles/ActsAnalysisMaterialComposition.dir/MaterialComposition.cpp.o\r\nIn file included from /usr/include/boost/config/header_deprecated.hpp:18,\r\n                 from /usr/include/boost/progress.hpp:22,\r\n                 from /ATLAS/tbold/acts/ht-py-bindings/acts/Examples/Scripts/MaterialMapping/MaterialComposition.cpp:21:\r\n/usr/include/boost/progress.hpp:23:1: note: #pragma message: This header is deprecated. Use the facilities in <boost/timer/timer.hpp> instead.\r\n   23 | BOOST_HEADER_DEPRECATED( \"the facilities in <boost/timer/timer.hpp>\" )\r\n```\r\n\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1736",
+    "updated_at": "2023-01-16T01:09:50+00:00",
+    "created_at": "2022-12-12T16:17:42+00:00",
     "closed_at": null,
-    "is_wip": true,
+    "is_wip": false,
     "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1291",
-      "html_url": "https://github.com/acts-project/acts/pull/1291",
-      "diff_url": "https://github.com/acts-project/acts/pull/1291.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1291.patch",
-      "merged_at": null
-    }
+    "pull_request": null
   },
   {
-    "title": "feat: Enable more fine-grained digitization configuration",
+    "title": "Remove `volumeSignature` from geometry building",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1731",
+    "number": 1731,
+    "assignee": null,
+    "body": "I think this is a relic from the ATLAS software originally.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1731",
+    "updated_at": "2023-01-16T01:09:50+00:00",
+    "created_at": "2022-12-12T14:30:53+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Optimal seeding parameters for a detector",
+    "user": {
+      "login": "CouthuresJeremy",
+      "html_url": "https://github.com/CouthuresJeremy"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1699",
+    "number": 1699,
+    "assignee": null,
+    "body": "Hello,\r\nWould it be possible to add the set of default seeding parameters for each detector in the documentation?\r\nWe are interested in studying ODD first:\r\n[https://acts.readthedocs.io/en/latest/getting_started.html#the-opendatadetector](url)\r\nAnd later we would like to work with ITk and the same question will arise.\r\n@stephenswat @LuisFelipeCoelho ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1699",
+    "updated_at": "2023-01-05T05:04:35+00:00",
+    "created_at": "2022-11-28T14:26:58+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Create volume restricted BFieldMap ",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1659",
+    "number": 1659,
+    "assignee": null,
+    "body": "As discussed in the context of `FASER2` a convenient volume restricted Bfield map could be very useful.\r\n\r\nPossible implementation:\r\n\r\n```c++\r\n\r\ntemplate <typename field_type>\r\nRestrictedBField {\r\n public:\r\n   RestrictedBField(std::unique_ptr <Volume> volume);\r\n\r\n\r\n  /// @copydoc MagneticFieldProvider::getFieldGradient(const Vector3&,ActsMatrix<3,3>&,MagneticFieldProvider::Cache&) const\r\n  ///\r\n  /// @note The @p position is ignored and only kept as argument to provide\r\n  ///       a consistent interface with other magnetic field services.\r\n  /// @note currently the derivative is not calculated\r\n  /// @todo return derivative\r\n  Result<Vector3> getFieldGradient(\r\n      const Vector3& position, ActsMatrix<3, 3>& derivative,\r\n      MagneticFieldProvider::Cache& cache) const override;\r\n\r\n  /// and other access methods\r\n\r\n private : \r\n  std::unique_ptr<Volume> m_magVolume;\r\n\r\n};\r\n```\r\n\r\nAnd then simply do in the `getX(...)` implementations:\r\n\r\n```c++\r\n  if (m_magVolume->inside(position)){\r\n    // forward call to field_type::getX(...)\r\nreturn;\r\n  }\r\n  // set field to (0,0,0) otherwise\r\n```",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1659",
+    "updated_at": "2022-12-21T04:10:09+00:00",
+    "created_at": "2022-11-07T16:24:06+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Particle smearing assertion with Geant4",
     "user": {
       "login": "benjaminhuth",
       "html_url": "https://github.com/benjaminhuth"
     },
     "labels": [
       {
-        "name": "Component - Examples"
+        "name": "Bug"
       },
       {
-        "name": "Feature"
+        "name": "Impact - Minor"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1603",
+    "number": 1603,
+    "assignee": {
+      "login": "benjaminhuth",
+      "html_url": "https://github.com/benjaminhuth"
+    },
+    "body": "When enabling `ACTS_FORCE_ASSERTIONS=ON` and doing some simulation with Geant4 + Particle smearing, this assertion can occur:\r\n\r\n![issue](https://user-images.githubusercontent.com/37871400/196447645-41d51a14-c5d6-4f6a-90f9-b7e2f2f65fe2.png)\r\n\r\nThe reason seems to be that there is this particle with PDG `1000140300` is produced by geant, which as charge `+14` or so, but this does not work with the `Acts::SinglyCharged`-charge.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1603",
+    "updated_at": "2022-12-21T04:10:59+00:00",
+    "created_at": "2022-10-18T13:51:08+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Add Primary Vertex Label to tracks",
+    "user": {
+      "login": "Lucas-Borgna",
+      "html_url": "https://github.com/Lucas-Borgna"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1544",
+    "number": 1544,
+    "assignee": null,
+    "body": "Adding new feature that gives a label to tracks that indicate if they originate from the primary hard scattering vertex or if they came from a pileup. This is not tagetted for a particular release or milestone. \r\n\r\nThe changes should be contained within [TrackFitterPerformanceWriter.cpp](https://github.com/acts-project/acts/blob/main/Examples/Io/Performance/ActsExamples/Io/Performance/TrackFitterPerformanceWriter.cpp) file.\r\n\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1544",
+    "updated_at": "2022-10-22T18:34:48+00:00",
+    "created_at": "2022-09-21T14:02:46+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "EDM Memory usage",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1516",
+    "number": 1516,
+    "assignee": null,
+    "body": "The peak memory consumption of the track state EDM strongly increases when pileup and even complexity is increased. For ttbar events at $\\mu=200$ from Pythia8, it can go up to a few gigabytes per event, which is suboptimal.\r\n\r\nThis issue tracks progress to improve and optimize the memory consumption.\r\n\r\n## Associated PRs:\r\n\r\n- #1507\r\n  This helps centralize the `MultiTrajectory` usage: a single instance is used by the examples algorithms to accumulate tracks from all seeds\r\n- #1512\r\n  Switches from overallocating vectors and matrices for the measurements to using a jagged vector structure that looks like this:\r\n  ```\r\n   | x x x | x | x x |  ...\r\n     ^       ^     ^\r\n   M1,D=3 M2,D=1 M3,D=2\r\n  ```\r\n- #1511\r\n  Implements statistics on the memory usage of `Acts::VectorMultiTrajectory` to give us an idea of what's going on.\r\n\r\n## Status quo\r\nThe tooling from #1511 gives the following measurements from `MultiTrajectory`:\r\n### ODD full chain example with Pythia8 ttbar @ mu200\r\n```\r\nother:\r\n               count: 1877425.000000\r\n               index:   128.91M\r\n             parPred:    85.94M\r\n             covPred:   515.65M\r\n             parFilt:     0.00M\r\n             covFilt:     0.00M\r\n             parSmth:    85.94M\r\n             covSmth:   515.65M\r\n                meas:    25.08M\r\n             measCov:   150.46M\r\n                 jac:   515.65M\r\n         sourceLinks:    18.50M\r\n          projectors:     4.18M\r\n               total:  2045.97M\r\nmeas:\r\n               count: 653022.00\r\n               index:    44.84M\r\n             parPred:    27.47M\r\n             covPred:   164.82M\r\n             parFilt:    29.89M\r\n             covFilt:   179.36M\r\n             parSmth:    29.89M\r\n             covSmth:   179.36M\r\n                meas:    29.89M\r\n             measCov:   179.36M\r\n                 jac:   164.82M\r\n         sourceLinks:     9.96M\r\n          projectors:     4.98M\r\n               total:  1044.66M\r\n```\r\n### ODD truth tracking with Pythia8 ttbar @ mu200\r\n```\r\n               count: 40146.000000\r\n               index:     2.76M\r\n             parPred:     1.84M\r\n             covPred:    11.03M\r\n             parFilt:     0.00M\r\n             covFilt:     0.00M\r\n             parSmth:     1.84M\r\n             covSmth:    11.03M\r\n                meas:     0.00M\r\n             measCov:     0.00M\r\n                 jac:    11.03M\r\n         sourceLinks:     0.31M\r\n          projectors:     0.00M\r\n               total:    39.82M\r\nmeas:\r\n               count: 37159.00\r\n               index:     2.55M\r\n             parPred:     1.70M\r\n             covPred:    10.21M\r\n             parFilt:     1.70M\r\n             covFilt:    10.21M\r\n             parSmth:     1.70M\r\n             covSmth:    10.21M\r\n                meas:     1.70M\r\n             measCov:    10.21M\r\n                 jac:    10.21M\r\n         sourceLinks:     0.57M\r\n          projectors:     0.28M\r\n               total:    61.24M\r\n```\r\n\r\n\r\n## Other ideas\r\n- [ ] Switch to float for storage of parameters and covariances to float\r\n- [ ] Only store lower left triangle of covariance matrices. @tboldagh points out there is actually a triangular view [directly in Eigen](https://github.com/acts-project/acts/issues/1516#issue-1372460714)",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1516",
+    "updated_at": "2022-10-22T18:34:46+00:00",
+    "created_at": "2022-09-14T06:57:30+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "bug: interpolation out of bounds with ATLAS B-field map",
+    "user": {
+      "login": "timadye",
+      "html_url": "https://github.com/timadye"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1484",
+    "number": 1484,
+    "assignee": null,
+    "body": "Using the propagator with the ATLAS B-field map can give error messages:\r\n```\r\nTrackFinding ERROR Step failed with MagneticFieldError:1: Interpolation out of bounds was requested\r\n```\r\nThis can give a *lot* of messages: ~259 `MagneticFieldError`s per ttbar+\u03bc=200 event, each of which produces 2 errors, and 4 warnings (1.6 GB logfile for 1000 events)!\r\n\r\nThis error is due to `InterpolatedBFieldMap::getField()` called for a position outside the mapped ATLAS B-field\r\n* The ATLAS B-field is mapped in (-10000,-10000,-15000) to (10000,10000,15000)\r\n* but I see, calls for e.g. `getField({-2849, -2486, 54450})`\r\n  * These are presumably for extension of seeds that will eventually be cut or rejected\r\n\r\n#1467 removes these error messages by trying to return the edge-bin values instead of giving an error. That is still WiP because I couldn't yet get it to pass the unit tests: seems to work with B=(0,0,0) at the edges (as for ATLAS), but not otherwise.\r\n\r\nEven if that can be resolved, the question remains: why is `getField()` called for points so far outside the detector? @Corentin-Allaire suggested (ACTS-ITk meeting) that the world volume is too large. If so, it may be an ATLAS-specific error, but I hope it's OK to discuss here.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1484",
+    "updated_at": "2022-11-12T05:29:35+00:00",
+    "created_at": "2022-09-01T16:29:36+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Optionally have the vertex finding recalculate perigee parameters relative to consistent reference",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1482",
+    "number": 1482,
+    "assignee": null,
+    "body": null,
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1482",
+    "updated_at": "2022-10-01T15:28:32+00:00",
+    "created_at": "2022-09-01T15:12:02+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Monitor Floating Point Exceptions in CI",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1481",
+    "number": 1481,
+    "assignee": null,
+    "body": "Currently, we don't systematically monitor FPEs in our CI runs. ATLAS does this, and it would be beneficial to have this in our CI.\r\n\r\n@stephenswat is this something that you could look into potentially?",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1481",
+    "updated_at": "2022-10-01T15:29:18+00:00",
+    "created_at": "2022-09-01T14:44:46+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "fix: B-field interpolation errors",
+    "user": {
+      "login": "timadye",
+      "html_url": "https://github.com/timadye"
+    },
+    "labels": [
+      {
+        "name": ":construction: WIP"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1467",
+    "number": 1467,
+    "assignee": null,
+    "body": "* Remove `InterpolatedBFieldMap` boundary check. Instead, use the under/overflow bins to return the B-field outside the grid.\r\n  * Was generating ~259 errors per event (`full_chain_itk.py` ttbar+PU200), with each error generating 2 error messages (one quite verbose) and 4 warnings.\r\n  * We don't need to propagate these track candidates further, but we should leave that decision up to the caller and not flood the logfile.\r\n* Remove unneeded/misleading partial initialisation.\r\n  * Note `std::array<Vector3, 8> neighbors{Vector3{0.0, 0.0, 0.0}};` only initialises the first element of the `std::array`.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1467",
+    "updated_at": "2022-10-12T12:52:14+00:00",
+    "created_at": "2022-08-25T11:12:44+00:00",
+    "closed_at": null,
+    "is_wip": true,
+    "is_stale": true,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1467",
+      "html_url": "https://github.com/acts-project/acts/pull/1467",
+      "diff_url": "https://github.com/acts-project/acts/pull/1467.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1467.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "Documentation: hints for debugging",
+    "user": {
+      "login": "timadye",
+      "html_url": "https://github.com/timadye"
+    },
+    "labels": [
+      {
+        "name": "Improvement"
+      },
+      {
+        "name": "Needs Decision"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1463",
+    "number": 1463,
+    "assignee": null,
+    "body": "It would be nice to have some documentation with hints for debugging ACTS. There are a few specifics:\r\n1. how to debug C++ with the Python examples\r\n2. setting breakpoints after shared library loading\r\n3. debug single-threaded if possible\r\n4. often simpler to set breakpoints by source file location, rather than using heavily templated symbols.\r\n5. `Debug` build can help, but default `RelWithDebInfo` still possible.\r\n\r\nHere is an example I posted to Mattermost that deals with most of these issues. Maybe it would be a good starting point for the documentation. I only have experience of `gdb`. Andi suggested adding links to the different debuggers.\r\n\r\nI didn't yet make a WiP PR, because I don't know where to put this. Should it go on a page of its own, or in a section elsewhere?\r\n\r\n---\r\n\r\nIt's much easier to run with 1 thread. It's fine to use the Python examples. I edited to set `numThreads=1` in `acts.examples.Sequencer()`. Then ran `gdb`:\r\n```\r\ngdb --args python3 Examples/Scripts/Python/full_chain_itk.py\r\n(gdb) b ActsExamples::Sequencer::run()\r\nFunction \"ActsExamples::Sequencer::run()\" not defined.\r\nMake breakpoint pending on future shared library load? (y or [n]) y\r\nBreakpoint 1 (ActsExamples::Sequencer::run()) pending.\r\n```\r\n\r\nAfter that, the log includes 8 messages like:\r\n```\r\n[Detaching after fork from child process 254497]\r\n```\r\nbut those are mostly ROOT running various commands, so not a problem for debugging ACTS. It breaks here:\r\n```\r\nBreakpoint 1, ActsExamples::Sequencer::run (this=this@entry=0x3df39000) at Examples/Framework/src/Framework/Sequencer.cpp:242\r\n242       Timepoint clockWallStart = Clock::now();\r\n```\r\n\r\nAt this point, the program has loaded all the ACTS shared libraries, so you can now set breakpoints directly, not just pending ones. Of course if you want to debug the sequence setup, you'll have to set a breakpoint earlier. But for algorithm execution, `Sequencer::run()` is a good place to start.\r\n\r\nIt can be very difficult to set breakpoints using the fully qualified templated symbols, but easy to use the source line, eg.\r\n```\r\n(gdb) b EigenStepper.ipp:128\r\nBreakpoint 2 at 0x7fffefa2522f: EigenStepper.ipp:128. (10 locations)\r\n(gdb) c\r\n```\r\n\r\nThe 10 locations are probably different template instantiations. This one breaks quite quickly, and shows the full (enormous) class name:\r\n```\r\nBreakpoint 2, Acts::EigenStepper<Acts::StepperExtensionList<Acts::detail::GenericDefaultExtension<double> >, Acts::detail::VoidAuctioneer>::step<Acts::Propagator<Acts::EigenStepper<>, Acts::Navigator>::State<Acts::PropagatorOptions<Acts::ActionList<ActsFatras::detail::SimulationActor<std::mersenne_twister_engine<long unsigned int, 32, 624, 397, 31, 2567483615, 11, 4294967295, 7, 2636928640, 15, 4022730752, 18, 1812433253>, ActsFatras::NoDecay, ActsFatras::InteractionList<ActsFatras::ContinuousProcess<ActsFatras::detail::ScatteringImpl<ActsFatras::detail::Highland>, ActsFatras::ChargedSelector, ActsFatras::EveryParticle, ActsFatras::EveryParticle>, ActsFatras::ContinuousProcess<ActsFatras::BetheBloch, ActsFatras::ChargedSelector, ActsFatras::Min<ActsFatras::Casts::P>, ActsFatras::EveryParticle>, ActsFatras::ContinuousProcess<ActsFatras::BetheHeitler, ActsFatras::AbsPdgSelector<(Acts::PdgParticle)11>, ActsFatras::Min<ActsFatras::Casts::P>, ActsFatras::Min<ActsFatras::Casts::P> > >, (anonymous namespace)::HitSurfaceSelector> >, Acts::AbortList<ActsFatras::detail::SimulationActor<std::mersenne_twister_engine<long unsigned int, 32, 624, 397, 31, 2567483615, 11, 4294967295, 7, 2636928640, 15, 4022730752, 18, 1812433253>, ActsFatras::NoDecay, ActsFatras::InteractionList<ActsFatras::ContinuousProcess<ActsFatras::detail::ScatteringImpl<ActsFatras::detail::Highland>, ActsFatras::ChargedSelector, ActsFatras::EveryParticle, ActsFatras::EveryParticle>, ActsFatras::ContinuousProcess<ActsFatras::BetheBloch, ActsFatras::ChargedSelector, ActsFatras::Min<ActsFatras::Casts::P>, ActsFatras::EveryParticle>, ActsFatras::ContinuousProcess<ActsFatras::BetheHeitler, ActsFatras::AbsPdgSelector<(Acts::PdgParticle)11>, ActsFatras::Min<ActsFatras::Casts::P>, ActsFatras::Min<ActsFatras::Casts::P> > >, (anonymous namespace)::HitSurfaceSelector>::ParticleNotAlive, Acts::EndOfWorldReached, Acts::PathLimitReached> > > >(Acts::Propagator<Acts::EigenStepper<Acts::StepperExtensionList<Acts::detail::GenericDefaultExtension<double> >, Acts::detail::VoidAuctioneer>, Acts::Navigator>::State<Acts::PropagatorOptions<Acts::ActionList<ActsFatras::detail::SimulationActor<std::mersenne_twister_engine<unsigned long, 32, 624, 397, 31, 2567483615, 11, 4294967295, 7, 2636928640, 15, 4022730752, 18, 1812433253>, ActsFatras::NoDecay, ActsFatras::InteractionList<ActsFatras::ContinuousProcess<ActsFatras::detail::ScatteringImpl<ActsFatras::detail::Highland>, ActsFatras::ChargedSelector, ActsFatras::EveryParticle, ActsFatras::EveryParticle>, ActsFatras::ContinuousProcess<ActsFatras::BetheBloch, ActsFatras::ChargedSelector, ActsFatras::Min<ActsFatras::Casts::P>, ActsFatras::EveryParticle>, ActsFatras::ContinuousProcess<ActsFatras::BetheHeitler, ActsFatras::AbsPdgSelector<(Acts::PdgParticle)11>, ActsFatras::Min<ActsFatras::Casts::P>, ActsFatras::Min<ActsFatras::Casts::P> > >, (anonymous namespace)::HitSurfaceSelector> >, Acts::AbortList<ActsFatras::detail::SimulationActor<std::mersenne_twister_engine<unsigned long, 32, 624, 397, 31, 2567483615, 11, 4294967295, 7, 2636928640, 15, 4022730752, 18, 1812433253>, ActsFatras::NoDecay, ActsFatras::InteractionList<ActsFatras::ContinuousProcess<ActsFatras::detail::ScatteringImpl<ActsFatras::detail::Highland>, ActsFatras::ChargedSelector, ActsFatras::EveryParticle, ActsFatras::EveryParticle>, ActsFatras::ContinuousProcess<ActsFatras::BetheBloch, ActsFatras::ChargedSelector, ActsFatras::Min<ActsFatras::Casts::P>, ActsFatras::EveryParticle>, ActsFatras::ContinuousProcess<ActsFatras::BetheHeitler, ActsFatras::AbsPdgSelector<(Acts::PdgParticle)11>, ActsFatras::Min<ActsFatras::Casts::P>, ActsFatras::Min<ActsFatras::Casts::P> > >, (anonymous namespace)::HitSurfaceSelector>::ParticleNotAlive, Acts::EndOfWorldReached, Acts::PathLimitReached> > > &) const (this=0x7f6ae8, state=...) at Core/include/Acts/Propagator/EigenStepper.ipp:197\r\n197       while (true) {\r\n```\r\nIn this case, it breaks at a different line from that selected, presumably due to inlining the `tryRungeKuttaStep` lambda. If this is a problem, it might help to compile with `-DCMAKE_BUILD_TYPE=Debug`, rather than the default `RelWithDebInfo`.\r\n\r\nYou can use `where` to see the full stack trace and all the other `gdb` commands.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1463",
+    "updated_at": "2022-09-24T09:12:40+00:00",
+    "created_at": "2022-08-23T15:55:32+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Fatras: Bethe-Heitler calculation wrong?",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1437",
+    "number": 1437,
+    "assignee": null,
+    "body": "While writing the documentation for Fatras, I've added some basic UnitTests to #1402 in order to create and show the principles of the particle interaction mode.\r\n\r\nThis is the test:\r\n```c++\r\n  for (auto i : loop){\r\n     ActsFatras::Particle after = before;\r\n     const auto outgoing = process(gen, materialSlab, after);\r\n     fileOutput( before.energy()-after.energy() );\r\n  }\r\n```\r\n\r\nWith `typeid(process) == BetheBloch` this gives a Landau distribution as expected:\r\n\r\n![Unknown](https://user-images.githubusercontent.com/26623879/184827680-735725d1-d32f-4a1f-ad79-f7769463844a.png)\r\n\r\nWhile with `typeid(process) ==BetheHetiler` It looks to me as if the distribution shows what you would expect from `after.energy()/before.energy()`:\r\n\r\n![Unknown-1](https://user-images.githubusercontent.com/26623879/184828017-daca52a9-6fc0-4669-976b-ef0066166b11.png)\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1437",
+    "updated_at": "2022-09-20T21:44:48+00:00",
+    "created_at": "2022-08-16T07:57:15+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Documentation update: Contribution guidelines",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Component - Documentation"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1423",
+    "number": 1423,
+    "assignee": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "body": "- [ ] `CONTRIBUTING.rst` remove style guide part + link to docs style guide\r\n- #1525\r\n  - [x] How to run the formatting (@AJPfleger)\r\n  - [x] How to build the documentation (@paulgessinger)\r\n  - [x] What is clang-tidy (@paulgessinger)\r\n  - [x] What is physmon (@paulgessinger)\r\n  - [x] What are root file hash checks (@paulgessinger)\r\n  - [x] MyST markdown cheat sheet (@benjaminhuth)",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1423",
+    "updated_at": "2022-10-19T02:39:02+00:00",
+    "created_at": "2022-08-11T14:24:51+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Documentation update: How-to (core)",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Component - Documentation"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1422",
+    "number": 1422,
+    "assignee": null,
+    "body": "- [ ] How to run the material mapping and validation in an experiment (not specific to the examples framework!)\r\n- [ ] How to produce a digitizer config for your experiment\r\n- [ ] How to produce a geometry selection config for SP making for your experiment (@benjaminhuth)",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1422",
+    "updated_at": "2022-11-23T00:10:18+00:00",
+    "created_at": "2022-08-11T14:24:48+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Documentation update: Plugins",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Component - Documentation"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1421",
+    "number": 1421,
+    "assignee": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "body": "- [ ] #1397 (@niermann999)\r\n- [ ] CUDA (remove)\r\n- [ ] DD4hep (@paulgessinger)\r\n- [ ] ExaTrkX (@benjaminhuth)\r\n- [ ] Identification (remove)\r\n- [ ] JSON (@niermann999)\r\n- [ ] Legacy (?)\r\n- [ ] ONNX (Rename)\r\n- [ ] SYCL (remove)\r\n- [ ] TGeo (@niermann999)",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1421",
+    "updated_at": "2022-10-22T18:34:51+00:00",
+    "created_at": "2022-08-11T14:13:36+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Documentation update: Examples",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Component - Documentation"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1420",
+    "number": 1420,
+    "assignee": {
+      "login": "andiwand",
+      "html_url": "https://github.com/andiwand"
+    },
+    "body": "- [ ] Examples framework + infrastructure (@paulgessinger)\r\n  - [ ] List examples workflows, with minimal description \r\n- [ ] Python bindings (@paulgessinger, @andiwand)\r\n- [x] #1401 (@andiwand)\r\n- [ ] Howto: tgeo building in examples (@niermann999)\r\n- [ ] Howto: material mapping in the examples context (@asalzburger)\r\n- [ ] Howto: digitizer config in examples (@niermann999)\r\n- [ ] Howto: geo selection in examples (@benjaminhuth)\r\n- [ ] Alignment protoype\r\n- [ ] Analysis helpers / scripts (how to run, what the outputs mean, screenshots?) (@AJPfleger)",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1420",
+    "updated_at": "2022-11-23T00:10:19+00:00",
+    "created_at": "2022-08-11T14:13:08+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Documentation update: FATRAS",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Component - Documentation"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1419",
+    "number": 1419,
+    "assignee": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "body": "- [ ] #1402 (@asalzburger)\r\n- [ ] G4 + FATRAS",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1419",
+    "updated_at": "2022-10-22T18:34:50+00:00",
+    "created_at": "2022-08-11T14:09:45+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Documentation update: Core",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Component - Documentation"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1418",
+    "number": 1418,
+    "assignee": {
+      "login": "andiwand",
+      "html_url": "https://github.com/andiwand"
+    },
+    "body": "- [ ] Algebra & units\r\n- [ ] Event Data\r\n  - [ ] Add MultiTrajectory documentation (@paulgessinger)\r\n- #1395 (@asalzburger)\r\n- #1518 (@paulgessinger)\r\n- [ ] Material: what is our material model, describe concept, no howto on mapping etc\r\n- #1396 (@benjaminhuth)\r\n- #1476 (@LuisFelipeCoelho)\r\n  - #1340 (@robertlangenberg)\r\n- #1398 (@AJPfleger)\r\n  - [ ] Kalman Filter \r\n  - #1403 (@benjaminhuth)\r\n  - [ ] GX2F (@AJPfleger)\r\n- [ ]  Track finding (@paulgessinger)\r\n  - [ ] CKF\r\n  - [ ] #1517 (@benjaminhuth)\r\n- [ ] Vertexing (@andiwand)\r\n- [ ] Utilities (@paulgessinger)\r\n  - [ ] Grid and axis\r\n- [ ] Logging (log thresholds) (@paulgessinger)\r\n  - #1338 \r\n  - #1520",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1418",
+    "updated_at": "2022-11-23T00:10:22+00:00",
+    "created_at": "2022-08-11T14:04:52+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Full chain vertexing with AMVF",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1406",
+    "number": 1406,
+    "assignee": null,
+    "body": "> Looks ok, let's go with IVF first and look into AMVF. Do you know if AMVF runs into errors in the current status?\r\n\r\nAMVF will produce an error in the current scenario. I guess it is because we loose one of the muons and then fail to fit the vertex. with 4 muons AMVF works but IVF even works with 2 but I am not sure why\r\n\r\n_Originally posted by @andiwand in https://github.com/acts-project/acts/issues/1299#issuecomment-1206199044_",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1406",
+    "updated_at": "2022-10-01T11:10:08+00:00",
+    "created_at": "2022-08-09T08:19:51+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "docs: adding Fatras description",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": ":construction: WIP"
+      },
+      {
+        "name": "Component - Documentation"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1402",
+    "number": 1402,
+    "assignee": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "body": "This PR adds the Fatras documentation consisting of\r\n* Fatras simulation\r\n* Digitisation\r\n* Configuration",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1402",
+    "updated_at": "2023-02-18T06:29:17+00:00",
+    "created_at": "2022-08-08T14:45:50+00:00",
+    "closed_at": null,
+    "is_wip": true,
+    "is_stale": true,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1402",
+      "html_url": "https://github.com/acts-project/acts/pull/1402",
+      "diff_url": "https://github.com/acts-project/acts/pull/1402.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1402.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "docs: first brush over the geometry pages",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": ":construction: WIP"
+      },
+      {
+        "name": "Component - Documentation"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1395",
+    "number": 1395,
+    "assignee": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "body": "This PR combines the two geometry pages into one and adds some additional info and highlights.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1395",
+    "updated_at": "2023-02-18T06:28:58+00:00",
+    "created_at": "2022-08-08T12:38:14+00:00",
+    "closed_at": null,
+    "is_wip": true,
+    "is_stale": true,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1395",
+      "html_url": "https://github.com/acts-project/acts/pull/1395",
+      "diff_url": "https://github.com/acts-project/acts/pull/1395.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1395.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "refactor: Create and use Acts::SpacePoint as input for public interface of Seedfinder!",
+    "user": {
+      "login": "robertlangenberg",
+      "html_url": "https://github.com/robertlangenberg"
+    },
+    "labels": [
+      {
+        "name": ":construction: WIP"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1394",
+    "number": 1394,
+    "assignee": null,
+    "body": "BREAKING CHANGE: Seedfinder requires use of Acts::SpacePoint as input.\r\nSeedfinder does not create InternalSpacePoints anymore. Instead, it requires the Acts::SpacePoint to be non-const, as it stores intermediate information in them. \r\n\r\nSince Seedfinder shares the SeedFilters with SeedfinderOrthogonal, I hacked the conversion from InternalSpacePoint to SpacePoint into the SeedfinderOrthogonal at the point the SeedFilters are called. To be changed before un-WIP-ing\r\n\r\nSo far, Acts::SpacePoint have to be created from SimSpacePoint in the SeedingAlgorithm, as SimSpacePoint come from the eventStore. Change to Acts::SpacePoint and retrieve info directly from measurements?\r\n\r\nShould Seed output contain a vector of SourceLinks, which point to the SimSpacePoints, or the full Acts::SpacePoint? If the former, destructor should garbage collect SourceLinks as well. If the latter, eventStore should contain Acts::SpacePoint. ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1394",
+    "updated_at": "2022-11-12T05:24:54+00:00",
+    "created_at": "2022-08-08T12:22:34+00:00",
+    "closed_at": null,
+    "is_wip": true,
+    "is_stale": true,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1394",
+      "html_url": "https://github.com/acts-project/acts/pull/1394",
+      "diff_url": "https://github.com/acts-project/acts/pull/1394.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1394.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "Ambiguous perigees with low momentum",
+    "user": {
+      "login": "andiwand",
+      "html_url": "https://github.com/andiwand"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1386",
+    "number": 1386,
+    "assignee": null,
+    "body": "While looking into https://github.com/acts-project/acts/pull/1354 I noticed that a track can have more than one perigee if the momentum is small enough to allow a circular track inside the detector.\r\n\r\nAlso if we propagate from a perigee into the detector we limit the path length to `helix/2`. So if not stopped we will end up with a particle state that fulfills the current perigee condition. This is what happens in https://github.com/acts-project/acts/pull/1354 with ?`p=0.1` and `q=1`.\r\n\r\nSince this sounds like a very rare case (and might not be likely/possible in a real detector?) I wondered if we want to deal with this or if we accept this as a limitation?\r\n\r\ncc @paulgessinger @asalzburger ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1386",
+    "updated_at": "2022-09-20T21:45:31+00:00",
+    "created_at": "2022-08-05T15:12:08+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Vertexing produces unexpectedly poor efficiency",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Bug"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1362",
+    "number": 1362,
+    "assignee": null,
+    "body": null,
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1362",
+    "updated_at": "2022-09-20T21:45:49+00:00",
+    "created_at": "2022-08-02T15:19:49+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Vertexing produces vertex candidates that are unreasonable",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Bug"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1361",
+    "number": 1361,
+    "assignee": null,
+    "body": "Edit @andiwand:\r\n\r\nAMVF without beam spot constraints seems to seed reasonable vertices with `x=0`, `y=0` and `z` close to `0` with a toy example of 2 muons. The problem I am seeing is that the kalman update [here](https://github.com/acts-project/acts/blob/main/Core/include/Acts/Vertexing/KalmanVertexUpdater.ipp#L99) will blow up the vertex position for some reason.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1361",
+    "updated_at": "2022-10-22T18:34:49+00:00",
+    "created_at": "2022-08-02T15:17:19+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "feat: Adding unit tests for perigee propagation outside beam pipe",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
       },
       {
         "name": ":construction: WIP"
@@ -49,21 +809,116 @@
         "name": "Stale"
       }
     ],
-    "html_url": "https://github.com/acts-project/acts/pull/1272",
-    "number": 1272,
+    "html_url": "https://github.com/acts-project/acts/pull/1354",
+    "number": 1354,
     "assignee": null,
-    "updated_at": "2022-07-10T02:38:52+00:00",
-    "created_at": "2022-05-25T19:08:35+00:00",
+    "body": "This adds a (currently failing) unit test when starting from a perigee that is not within the beam pipe but within the pixel barrel volume.\r\n\r\nSeveral issues can be studies here:\r\n- path length estimates for low momentum tracks\r\n- wrong destimation volume checks\r\n\r\n@andiwand @paulgessinger ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1354",
+    "updated_at": "2022-09-09T00:19:46+00:00",
+    "created_at": "2022-07-29T10:54:32+00:00",
     "closed_at": null,
     "is_wip": true,
     "is_stale": true,
     "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1272",
-      "html_url": "https://github.com/acts-project/acts/pull/1272",
-      "diff_url": "https://github.com/acts-project/acts/pull/1272.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1272.patch",
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1354",
+      "html_url": "https://github.com/acts-project/acts/pull/1354",
+      "diff_url": "https://github.com/acts-project/acts/pull/1354.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1354.patch",
       "merged_at": null
     }
+  },
+  {
+    "title": "Vertexing produces propagation errors",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Bug"
+      },
+      {
+        "name": "Impact - Critical"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1345",
+    "number": 1345,
+    "assignee": null,
+    "body": "During propagation to the vertex position, the propagation seems to get stuck.\r\n\r\n@andiwand has observed \r\n\r\n```\r\nStep failed with EigenStepperError:3: Step size adjustment exceeds maximum trials\r\n```\r\n\r\nwhich seems to be the accurracy correction flip flopping between two step sizes and failing to converge.\r\n\r\nIn addition to this error, ATLAS observes an error\r\n\r\n```\r\n18:35:26 18:35:26    HelTrkLinPro   WARNING   Pixel::Barrel | No further navigation action, proceed to target. This is very likely an error\r\n```\r\n\r\nin minbias events with low-pt in reprocessing ([JIRA ticket](https://its.cern.ch/jira/browse/ATLASRECTS-7148))",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1345",
+    "updated_at": "2022-09-20T21:45:31+00:00",
+    "created_at": "2022-07-26T15:07:21+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "fix: Energy loss function",
+    "user": {
+      "login": "beomki-yeo",
+      "html_url": "https://github.com/beomki-yeo"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1323",
+    "number": 1323,
+    "assignee": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "body": "This PR fixes the Bethe energy loss function in `Interactions.cpp`\r\n\r\n`Acts::computeEnergyLossBethe` and `Acts::computeEnergyLossLandau` is implemented from equation 33.5 and 33.11 of [Review in Particle Physics](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.98.030001)\r\n\r\nAnd their first term is computed with `computeEpsilon` function, following the notation of equation 33.11:\r\n\r\n```c++\r\n/// Compute epsilon energy pre-factor for RPP2018 eq. 33.11.\r\n///\r\n/// Defined as\r\n///\r\n///     (K/2) * (Z/A)*rho * x * (q\u00b2/beta\u00b2)\r\n///\r\n/// where (Z/A)*rho is the electron density in the material and x is the\r\n/// traversed length (thickness) of the material.\r\ninline float computeEpsilon(float molarElectronDensity, float thickness,\r\n                            const RelativisticQuantities& rq) {\r\n  return 0.5f * K * molarElectronDensity * thickness * rq.q2OverBeta2;\r\n}\r\n```\r\n\r\nProblem is that the epsilon term of equation 33.5 for Bethe function doesnt have the `0.5f` term\r\n\r\nEq. 33.5\r\n![image](https://user-images.githubusercontent.com/63090140/178590990-e4982315-42e2-4033-9bc7-84c6500b0b71.png)\r\n\r\nEq. 33.11\r\n![image](https://user-images.githubusercontent.com/63090140/178591191-37bb33ba-93b9-424e-bb8b-9755c931d675.png)\r\n\r\nIf we are going to use the same epsilon term, we need to multiply 2 in the next term of Bethe energy loss function\r\n\r\nAfter the change, the output of `Acts::computeEnergyLossBethe` gets consistent with Figure 33.2 of the reference.\r\n\r\n### Update July 18th\r\n\r\nLooks like there is a _literature_ error in Landau energy loss function (eq. 33.11).\r\nIt used the mass term of the incident particle (`m`), but I guess it should be the mass of electron (`m_e`) as equation 33.5.\r\n**I need a cross-check from someone who can access [Straggling in thin silicon detectors](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.60.663), which I cannot** (Update: It is confirmed that it should be the rest mass of electron)\r\n\r\nFinally, to get a consistent result of energy loss function, we need to fix the `computeDeltaHalf` term as well.\r\nBut this is already mentioned in the comment which says: \"Should we use RPP2018 eq. 33.7 instead w/ tabulated constants?\"\r\n\r\n```c++\r\n/// Compute the density correction factor delta/2.\r\n///\r\n/// Uses RPP2018 eq. 33.6 which is only valid for high energies.\r\n///\r\n/// @todo Should we use RPP2018 eq. 33.7 instead w/ tabulated constants?\r\ninline float computeDeltaHalf(float meanExitationPotential,\r\n                              float molarElectronDensity,\r\n                              const RelativisticQuantities& rq) {\r\n```\r\n\r\nYeah it does make big difference between 33.6 (valid for very high energy particles) and 33.7.\r\n**I am not going to include delatHalf term correction in this PR**, but it is included in acts-project/detray#282\r\n\r\n\r\nAfter fixing codes (including the deltaHalf term), the Bethe energy loss function matches to the value in ([PDG](https://pdg.lbl.gov/2022/AtomicNuclearProperties/index.html))\r\n\r\nIn the following figure, Bethe energy loss (dE/dx) in Silicon is compared for Acts main, this PR, acts-project/detray#282, and PDG value. The value from this PR is not accurate yet due to the incorrect deltaHalf term\r\n\r\n<img src=\"https://user-images.githubusercontent.com/63090140/179622322-6c7170c9-7773-4eb4-a621-63e7429e3425.png\" width=\"700\">\r\n\r\nFor the most probable energy loss from Landau equation under the same condition of Figure 33.7 of [Review in Particle Physics](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.98.030001)\r\n, detray#282 got 0.526 MeV, which is very close to the value in the figure.\r\nThis PR got 0.739 MeV due to the incorrect delatHalf term\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1323",
+    "updated_at": "2023-03-18T05:27:55+00:00",
+    "created_at": "2022-07-12T20:43:52+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1323",
+      "html_url": "https://github.com/acts-project/acts/pull/1323",
+      "diff_url": "https://github.com/acts-project/acts/pull/1323.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1323.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "add monitoring for vertexing in physmon",
+    "user": {
+      "login": "andiwand",
+      "html_url": "https://github.com/andiwand"
+    },
+    "labels": [
+      {
+        "name": "Improvement"
+      },
+      {
+        "name": "Component - Examples"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1313",
+    "number": 1313,
+    "assignee": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "body": "we have vertexing as part of the odd full chain now in [\u00b4full_chain_odd.py\u00b4](https://github.com/acts-project/acts/blob/main/Examples/Scripts/Python/full_chain_odd.py) but no monitoring in [`physmon.py`](https://github.com/acts-project/acts/blob/main/CI/physmon/physmon.py)\r\n\r\nsee discussion here https://github.com/acts-project/acts/pull/1299",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1313",
+    "updated_at": "2022-09-20T21:45:31+00:00",
+    "created_at": "2022-07-11T09:29:07+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
   },
   {
     "title": "Reproducibility test using hash checks for non-linear KF",
@@ -82,6 +937,8 @@
       "login": "XiaocongAi",
       "html_url": "https://github.com/XiaocongAi"
     },
+    "body": "Briefly discussed this with @XiaocongAi: we should really lock down the non-linear corrections for the KF (#1233). This would ideally go into a python based test (maybe `truth_test_kalman.py` after #1232 is merged).\r\n\r\nUltimately, we should strive to have performance histogram comparisons for the residuals and pulls as well (which @andiwand is working on independently).",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1246",
     "updated_at": "2022-06-12T09:39:01+00:00",
     "created_at": "2022-05-09T07:51:40+00:00",
     "closed_at": null,
@@ -109,6 +966,8 @@
     "html_url": "https://github.com/acts-project/acts/issues/1239",
     "number": 1239,
     "assignee": null,
+    "body": "According to @asalzburger the magnetic field is nominally stored in the `Grid` class as a vector of doubles. It would be convenient to have this reworked as a vector of floats to reduce memory storage, given that (in my expectation, at least) magnetic field mappings will never need the precision of doubles.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1239",
     "updated_at": "2022-06-12T09:39:03+00:00",
     "created_at": "2022-04-29T18:18:16+00:00",
     "closed_at": null,
@@ -130,6 +989,8 @@
     "html_url": "https://github.com/acts-project/acts/issues/1221",
     "number": 1221,
     "assignee": null,
+    "body": "Hi,\r\nI saw a small difference in the particle final states between python and executable when running fatras.\r\n\r\nHere are the args that I used for the executable:\r\n```\r\nActsExampleFatrasGeneric \\\r\n  --events=1 \\\r\n  --rnd-seed=42 \\\r\n  --gen-eta=-4:4 \\\r\n  --gen-mom-gev=1:5 \\\r\n  --gen-mom-transverse \\\r\n  --gen-pdg=13 \\\r\n  --gen-randomize-charge \\\r\n  --bf-constant-tesla=0:0:2 \\\r\n  --output-dir=fatras \\\r\n  --output-csv \\\r\n  --loglevel=0\r\n```\r\n\r\nHere is the python file that I used:\r\n```\r\n#!/usr/bin/env python3\r\nimport pathlib, acts, acts.examples\r\n\r\nu = acts.UnitConstants\r\noutputDir = pathlib.Path.cwd()\r\n\r\ngdc = acts.examples.GenericDetector.Config()\r\ndetector = acts.examples.GenericDetector()\r\ntrackingGeometry, contextDecorators = detector.finalize(gdc, None)\r\n\r\nfield = acts.ConstantBField(acts.Vector3(0.0, 0.0, 2.0 * u.T))\r\nrnd = acts.examples.RandomNumbers(seed=42)\r\n\r\nfrom particle_gun import addParticleGun, MomentumConfig, EtaConfig, ParticleConfig\r\nfrom fatras import addFatras\r\n\r\ns = acts.examples.Sequencer(events=1, numThreads=-1)\r\ns.config.logLevel = acts.logging.VERBOSE\r\ns = addParticleGun(\r\n    s,\r\n    momentumConfig=MomentumConfig(1.0 * u.GeV, 5.0 * u.GeV, True),\r\n    etaConfig=EtaConfig(-4.0, 4.0),\r\n    particleConfig=ParticleConfig(1, acts.PdgParticle.eMuon, True),\r\n    rnd=rnd,\r\n)\r\n\r\ns = addFatras(\r\n    s,\r\n    trackingGeometry,\r\n    field,\r\n    outputDirCsv = outputDir / \"csv\",\r\n    rnd=rnd,\r\n)\r\ns.run()\r\n```\r\n\r\nevent000000000-particles_final.csv:\r\nExecutable:\r\n```\r\nparticle_id,particle_type,process,vx,vy,vz,vt,px,py,pz,m,q\r\n4503599644147712,13,0,-715.953308,738.44519,84.6097717,3.44791126,-2.75245881,2.39595652,0.301638216,0.105658367,-1\r\n```\r\nPython:\r\n```\r\nparticle_id,particle_type,process,vx,vy,vz,vt,px,py,pz,m,q\r\n4503599644147712,13,0,-715.985718,738.413757,85.0053482,3.44800162,-2.76315808,2.40676093,0.30248946,0.105658367,-1\r\n```\r\n\r\nFirst difference that I saw in the logs:\r\nExecutable:\r\n```\r\n16:56:57    Simulation     VERBOSE   BeamPipe::Barrel | Try to find boundaries, \r\nwe are at: -12.0544  14.6864  1.56843, dir: -0.633436  0.769426 0.0821147\r\n```\r\nPython:\r\n```\r\n16:56:58    Simulation     VERBOSE   BeamPipe::Barrel | Try to find boundaries, \r\nwe are at: -12.0544  14.6864  1.56843, dir: -0.633487  0.769367 0.0822692\r\n```\r\n\r\nDoes anyone have an idea of where it might come from?",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1221",
     "updated_at": "2022-05-01T18:57:10+00:00",
     "created_at": "2022-03-31T15:39:38+00:00",
     "closed_at": null,
@@ -154,6 +1015,8 @@
       "login": "paulgessinger",
       "html_url": "https://github.com/paulgessinger"
     },
+    "body": "See #1210 ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1211",
     "updated_at": "2022-04-29T16:57:10+00:00",
     "created_at": "2022-03-28T17:26:15+00:00",
     "closed_at": null,
@@ -162,10 +1025,10 @@
     "pull_request": null
   },
   {
-    "title": "feat!: Allow regional seeding configuration",
+    "title": "perf: Tile 8\u00d78 covariance matrix multiplication",
     "user": {
-      "login": "Corentin-Allaire",
-      "html_url": "https://github.com/Corentin-Allaire"
+      "login": "stephenswat",
+      "html_url": "https://github.com/stephenswat"
     },
     "labels": [
       {
@@ -175,25 +1038,27 @@
         "name": "Improvement"
       },
       {
-        "name": ":construction: WIP"
+        "name": "Impact - Minor"
       },
       {
         "name": "Stale"
       }
     ],
-    "html_url": "https://github.com/acts-project/acts/pull/1187",
-    "number": 1187,
+    "html_url": "https://github.com/acts-project/acts/pull/1181",
+    "number": 1181,
     "assignee": null,
-    "updated_at": "2022-07-30T17:22:35+00:00",
-    "created_at": "2022-03-09T16:17:30+00:00",
+    "body": "Currently, we are multiplying an 8x8 covariance matrix with an 8x8 transport matrix, and we see that Eigen is failing to optimize this properly, because it is calling a generalized GEMM method rather than an optimized small matrix method. In order to resolve this, we change the code to use a tiled multiplication method which splits the matrices into 4x4 sub-matrices which can be multiplied and added to achieve the desired effect. This has two advantages:\r\n\r\n  1. It allows Eigen to use its hand-rolled optimized 4x4 matrix multiplication methods.\r\n  2. It allows us to perform some trickery with matrix identities to reduce the number of floating point operations.\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1181",
+    "updated_at": "2023-03-18T05:27:49+00:00",
+    "created_at": "2022-03-03T10:11:11+00:00",
     "closed_at": null,
-    "is_wip": true,
+    "is_wip": false,
     "is_stale": true,
     "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1187",
-      "html_url": "https://github.com/acts-project/acts/pull/1187",
-      "diff_url": "https://github.com/acts-project/acts/pull/1187.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1187.patch",
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/1181",
+      "html_url": "https://github.com/acts-project/acts/pull/1181",
+      "diff_url": "https://github.com/acts-project/acts/pull/1181.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/1181.patch",
       "merged_at": null
     }
   },
@@ -220,6 +1085,8 @@
       "login": "asalzburger",
       "html_url": "https://github.com/asalzburger"
     },
+    "body": "Proposed labels: Improvement, Needs Discussion\r\n\r\nProposed next steps on cut tube support that touch the Acts code base:\r\n\r\n1) Extend TGeoTubeConversionTests.cpp with a TGeoCtub (like done [here](https://github.com/acts-project/acts/blob/main/Tests/UnitTests/Plugins/TGeo/TGeoTubeConversionTests.cpp#L64) for TGeoTubeSeg), this test will fail until support below is added,\r\n\r\n    a) Extend Acts::TGeoSurfaceConverter::cylinderComponents (like done [here](https://github.com/acts-project/acts/blob/main/Plugins/TGeo/src/TGeoSurfaceConverter.cpp#L88) \r\n        for TGeoTubeSeg) to support TGeoCtub (TGeoCtub inherits TGeoTubeSeg inherits TGeoTube, so \r\n        the same strategy taken there simply extends), and similarly extends \r\n       Acts::TGeoSurfaceConverter::discComponents  (like [here](https://github.com/acts-project/acts/blob/main/Plugins/TGeo/src/TGeoSurfaceConverter.cpp#L240))\r\n   The test above should now succeed.\r\n\r\n2) extend Acts::DD4hepLayerBuilder::endcapLayers (like done [here](https://github.com/acts-project/acts/blob/main/Plugins/DD4hep/src/DD4hepLayerBuilder.cpp#L90) for TGeoTubeSeg) and Acts::DD4hepLayerBuilder::centralLayers (like done [here](https://github.com/acts-project/acts/blob/main/Plugins/DD4hep/src/DD4hepLayerBuilder.cpp#L238) for TGeoTubeSeg) to support TGeoCtub.\r\n \r\n3) Are there any DD4hep unit tests that should be updated to test?\r\n\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1146",
     "updated_at": "2022-05-25T23:03:12+00:00",
     "created_at": "2022-02-02T18:16:24+00:00",
     "closed_at": null,
@@ -256,6 +1123,8 @@
     "html_url": "https://github.com/acts-project/acts/issues/1139",
     "number": 1139,
     "assignee": null,
+    "body": "TLDR; I hit an odd issue after upgrading to DD4hep 1.19 on my system today.  I think it's an issue with the DD4hep's cmake setup, but I'm documenting this here until I have time to look into this again.\r\n\r\nLonger summary: \r\n\r\nBasically, the build fails with:\r\n\r\n```\r\n[ 26%] Generating libActsExamplesDetectorDD4hep.components\r\nERROR: failed to load libActsExamplesDetectorDD4hep.so: libDDCore.so.1.16: cannot open shared object file: No such file or directory\r\n```\r\nThe odd part is that libDDCore.so.1.16 is not present at all on this system. However, as I'm building, there's a previous acts version installed in /usr which is linked against it:\r\n```\r\n $ ldd /usr/lib/libActsExamplesDetectorDD4hep.so | grep DD\r\n\tlibActsPluginDD4hep.so => /usr/lib/../lib/libActsPluginDD4hep.so (0x00007f1dfd1b5000)\r\n\tlibDDCore.so.1.16 => not found\r\n\tlibDDCore.so.1.16 => not found\r\n```\r\nBuilding with VERBOSE=1:\r\n```\r\n[ 26%] Generating libActsExamplesDetectorDD4hep.components\r\ncd /home/glg/ACTS/packaging/acts-main/src/acts/build/Examples/Detectors/DD4hepDetector && LD_LIBRARY_PATH=/home/glg/ACTS/packaging/acts-main/src/acts/build/Examples/Detectors/DD4hepDetector:/usr/lib: /usr/bin/listcomponents_dd4hep -o libActsExamplesDetectorDD4hep.components libActsExamplesDetectorDD4hep.so\r\nERROR: failed to load libActsExamplesDetectorDD4hep.so: libDDCore.so.1.16: cannot open shared object file: No such file or directory\r\n```\r\n\r\nBut :\r\n```\r\n$ ldd /home/glg/ACTS/packaging/acts-main/src/acts/build/Examples/Detectors/DD4hepDetector/libActsExamplesDetectorDD4hep.so | grep DD\r\n\tlibActsPluginDD4hep.so => /home/glg/ACTS/packaging/acts-main/src/acts/build/lib/libActsPluginDD4hep.so (0x00007f0bdd889000)\r\n\tlibDDCore.so.1.19 => /usr/lib/libDDCore.so.1.19 (0x00007f0bdd1cf000)\r\n\tlibDDParsers.so.1.19 => /usr/lib/libDDParsers.so.1.19 (0x00007f0bdbb06000)\r\n```\r\n\r\nSo, for some reason, the `listcomponents_dd4hep` ignores the version in the local directory. If I add $PWD/ in front of the .so path, it works as expected. \r\n\r\nEither we're configuring something wrongly, or there's an issue with DD4hep cmake's setup. I propose to keep this open until I can figure that part out. \r\n\r\nEasy workaround: either uninstall the global acts while building the new one, or patch the build script to add the $PWD.\r\n\r\n\r\n\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1139",
     "updated_at": "2022-02-22T00:22:28+00:00",
     "created_at": "2022-01-19T22:50:32+00:00",
     "closed_at": null,
@@ -277,48 +1146,14 @@
     "html_url": "https://github.com/acts-project/acts/issues/1100",
     "number": 1100,
     "assignee": null,
+    "body": "As discovered by @mesmerisa, the vertex fitting algorithm was supplying constraints in the wrong format. This apparently was never run in any automated tests.\r\n\r\nWe should add an example that runs in the configuration where this fails, so we can add a test for this.\r\n\r\n/cc @asalzburger ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1100",
     "updated_at": "2022-01-07T07:16:46+00:00",
     "created_at": "2021-12-07T16:10:33+00:00",
     "closed_at": null,
     "is_wip": false,
     "is_stale": true,
     "pull_request": null
-  },
-  {
-    "title": "feat: global chi2 fitter / GX2F",
-    "user": {
-      "login": "r4lv",
-      "html_url": "https://github.com/r4lv"
-    },
-    "labels": [
-      {
-        "name": "Component - Core"
-      },
-      {
-        "name": "Component - Examples"
-      },
-      {
-        "name": ":construction: WIP"
-      },
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1099",
-    "number": 1099,
-    "assignee": null,
-    "updated_at": "2022-08-11T21:07:54+00:00",
-    "created_at": "2021-12-06T16:44:23+00:00",
-    "closed_at": null,
-    "is_wip": true,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1099",
-      "html_url": "https://github.com/acts-project/acts/pull/1099",
-      "diff_url": "https://github.com/acts-project/acts/pull/1099.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1099.patch",
-      "merged_at": null
-    }
   },
   {
     "title": "Vertexing issues observed in python vertexing example",
@@ -334,45 +1169,14 @@
     "html_url": "https://github.com/acts-project/acts/issues/1091",
     "number": 1091,
     "assignee": null,
+    "body": "### TruthVertex Finder + VertexFitterAlgorithm with reconstructed input tracks crashes with a SEGFAULT\r\nThis combination doesn't make too much sense I suppose, but right now it gives a hard SEGFAULT.\r\nI think this should work on a technical level. My understanding is that the Truth particles are used for the vertex finding, and then the vertex fit runs on reconstructed tracks. This seems to be fine if the tracks are reconstructed in the same job, but not if the tracks are read back in from the summary. My guess is that there's some link between tracks and truth particles that the fitter uses and the reader doesn't recover correctly.\r\n\r\n### Vertex performance writer warnings\r\nThe vertex performance writer (I think) complains with a WARNING if the number of reconstructed tracks and the number of truth particles doesn't match. I guess this case is expected, since tracking efficiency is not 100%? Should this be a loud WARNING? Right now I have to work around that in the python based tests because in the CI, a WARNING log message will throw an exception\r\n\r\n### AMVF gives error for empty input\r\nThe AMVF gives a `VertexingError` when the input collection is empty. I guess it makes sense that the vertexing can't run in this case, but the question is if that should be a hard error, or more of a noop: not enough tracks => no vertices. Otherwise, I'm guessing the vertexing algorithm around the AMVF in this case should check if the input is empty and not call the AMVF at all in this case.\r\n\r\nThoughts / input / discussion is welcome!\r\n\r\n/cc @Corentin-Allaire @robertlangenberg @asalzburger @baschlag ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1091",
     "updated_at": "2022-08-11T21:07:59+00:00",
     "created_at": "2021-11-30T16:46:30+00:00",
     "closed_at": null,
     "is_wip": false,
     "is_stale": true,
     "pull_request": null
-  },
-  {
-    "title": "feat!: EXPERIMENTAL! world without layers",
-    "user": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
-    },
-    "labels": [
-      {
-        "name": "Feature"
-      },
-      {
-        "name": ":construction: WIP"
-      },
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1039",
-    "number": 1039,
-    "assignee": null,
-    "updated_at": "2022-02-16T21:56:31+00:00",
-    "created_at": "2021-10-11T14:46:16+00:00",
-    "closed_at": null,
-    "is_wip": true,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1039",
-      "html_url": "https://github.com/acts-project/acts/pull/1039",
-      "diff_url": "https://github.com/acts-project/acts/pull/1039.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1039.patch",
-      "merged_at": null
-    }
   },
   {
     "title": "Improvement: Estimate track parameters from seed at perigee surface",
@@ -391,6 +1195,8 @@
     "html_url": "https://github.com/acts-project/acts/issues/1036",
     "number": 1036,
     "assignee": null,
+    "body": "Currently, the `estimateTrackParamsFromSeed` estimate the track parameters at the bottom space point for a seed. However, it's better to do the estimation at the beam line, say a perigee surface is specified as the reference surface of the estimated track parameters. \r\n\r\nThis requires some adaption of the calculation in this method [here](https://github.com/acts-project/acts/blob/main/Core/include/Acts/Seeding/EstimateTrackParamsFromSeed.hpp#L156).",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1036",
     "updated_at": "2021-11-10T01:03:00+00:00",
     "created_at": "2021-10-10T19:35:01+00:00",
     "closed_at": null,
@@ -424,6 +1230,8 @@
       "login": "stephenswat",
       "html_url": "https://github.com/stephenswat"
     },
+    "body": "The seed finding interface (see [Seedfinder.hpp](https://github.com/acts-project/acts/blob/main/Core/include/Acts/Seeding/Seedfinder.hpp)) is currently defined as a single method, which is given as:\r\n\r\n```cpp\r\ntemplate <template <typename...> typename container_t, typename sp_range_t>\r\nvoid createSeedsForGroup(\r\n    State& state,\r\n    std::back_insert_iterator<container_t<Seed<external_spacepoint_t>>> outIt,\r\n    sp_range_t bottomSPs, sp_range_t middleSPs, sp_range_t topSPs) const;\r\n```\r\n\r\nTo me, this seems like a sub-optimal way to interface with the seed finding code. I say that because this interface seems to follow the binning model, where space points are divided into bottom, middle, and top candidates. As far as I can tell the reason for this is so you can call this method on adjacent bins for performance gains.\r\n\r\nHowever, I feel like this interface makes it harder to implement seeding algorithms that do not use binning. For binning-less algorithms, this sort of forces you to put your data in a mold that doesn't really fit it. On the other hand I do understand why this design is the way it is: it allows us to separate the concerns of the binning code and the seed finding code, and I think that separation is useful to preserve as well.\r\n\r\nMy goal in creating this issue to start a little bit of a discussion on how the seeding interface should look. On the one hand, it would be cool (I think) to have different seeding implementations unified under a single interface so they can be easily used and tested. On the other hand, like I mentioned, there is value in the separation that exists right now.\r\n\r\nSo I think it might be a good idea to discuss this a little bit. Here are a few possible ideas on how we can move forward here:\r\n\r\n1. We could choose not to unify seeding interfaces at all. This would be the easiest solution in the short term, but it would make it much harder in the long term to switch out seeding algorithms, and it might also make it harder in the future to develop new seeding algorithms.\r\n2. We could use the current interface for any future seeding algorithms. This would work, because you can just dump all of your space points in one of the three space point ranges and ignore the rest. However, that is obviously not a \"clean\" way to use the interface. However, it would minimize the effort required in the current code.\r\n3. We could add a higher level interface for the seed finder. As far as I am concerned, the minimal sensible API looks something like `std::vector<Seed> findSeeds(const std::vector<SpacePoint>) const`, possibly with some more abstract templated types. However, the problem with this would be that we could no longer rely on external space point binning. The binning would somehow have to be moved inside of the seeding algorithm. I'm not sure that's something we want to do.\r\n\r\nI'm not really sure what would be best here, and perhaps I'm overthinking this. Please feel free to share your opinions on the matter, I would be interested. :smile: ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/988",
     "updated_at": "2021-11-25T19:05:57+00:00",
     "created_at": "2021-09-13T20:01:36+00:00",
     "closed_at": null,
@@ -451,6 +1259,8 @@
       "login": "robertlangenberg",
       "html_url": "https://github.com/robertlangenberg"
     },
+    "body": "The current implementation of the Acts seeding algorithm has no debug or verbose statements that could be turned on with the Acts logging functionality. It would be useful, for e.g. debugging when no seeds are found, if there were some options for understanding what the seeding algorithm is doing with the input that is provided to it, e.g. with some logging statements. \r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/944",
     "updated_at": "2021-10-21T16:11:17+00:00",
     "created_at": "2021-08-16T13:40:17+00:00",
     "closed_at": null,
@@ -478,6 +1288,8 @@
       "login": "asalzburger",
       "html_url": "https://github.com/asalzburger"
     },
+    "body": "Hello,\r\n\r\nI get the following error when the \"layer\" volume associated with an \"endcap\" is offset from the z axis:\r\n\r\n```\r\n17:16:40    D2A_L:B0Trac   VERBOSE    Received layers for positive volume -> creating disc layers\r\n17:16:40    D2A_L:B0Trac   VERBOSE    Disc layer has 12 senstive surfaces.\r\n17:16:40    D2A_LAC        VERBOSE   Creating a disk Layer:\r\n17:16:40    D2A_LAC        VERBOSE    - at Z position    = 5405.09\r\n17:16:40    D2A_LAC        VERBOSE    - from Z min/max   = 5401.27 / 5408.41\r\n17:16:40    D2A_LAC        VERBOSE    - with Z thickness = 9.99688\r\n17:16:40    D2A_LAC        VERBOSE      - incl envelope  = 1.17385 / 1.6762\r\n17:16:40    D2A_LAC        VERBOSE    - with R min/max   = 35 (-2.65614) / 150 (+137.582)\r\n17:16:40    D2A_LAC        VERBOSE    - with phi min/max = -3.14159 / 3.13982\r\n17:16:40    D2A_LAC        VERBOSE    - # of modules     = 12\r\n17:16:40    D2A_SAC        VERBOSE   Creating a SurfaceArray on a disc\r\n17:16:40    D2A_SAC        VERBOSE   Create equidistant binning Axis for binned SurfaceArray\r\n17:16:40    D2A_SAC        VERBOSE   \tBinningValue: 3\r\n17:16:40    D2A_SAC        VERBOSE   \t(binX = 0, binY = 1, binZ = 2, binR = 3, binPhi = 4, binRPhi = 5, binH = 6, binEta = 7)\r\n17:16:40    D2A_SAC        VERBOSE   \tNumber of bins: 6\r\n17:16:40    D2A_SAC        VERBOSE   \t(Min/Max) = (35/150)\r\n**************************************************** \r\n*  A runtime error has occured :                     \r\n*    vector::_M_range_check: __n (which is 7) >= this->size() (which is 6)\r\n*  the program will have to be terminated - sorry.   \r\n**************************************************** \r\n```\r\n\r\nI think we have hit the limit of the imposed barrel-endcap construction paradigm in the dd4hep plugin. The detector in this case is a far forward detector without a corresponding negative endcap. (Perhaps this endcap pair requirement should be the first to go in upgrading the dd4hep plugin?) So, I added a negative endcap to get the plugin functioning, but only the positive endcap is offset from the z axis.\r\n\r\nHere are the verbose outputs for two configurations:\r\n- Tracker layer centered on z axis: https://eicweb.phy.anl.gov/EIC/detectors/athena/-/jobs/222479\r\n- Tracker slightly offset from z axis: https://eicweb.phy.anl.gov/EIC/detectors/athena/-/jobs/222615\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/942",
     "updated_at": "2021-11-25T19:05:57+00:00",
     "created_at": "2021-08-12T17:23:55+00:00",
     "closed_at": null,
@@ -502,6 +1314,8 @@
       "login": "Corentin-Allaire",
       "html_url": "https://github.com/Corentin-Allaire"
     },
+    "body": "I understand why this is done, but it is likely not a great situation. I think writing should occur at the end of `Sequencer::run` and not when the sequencer is deallocated.\r\n\r\nI propose we either:\r\n\r\n1. Refactor `JsonMaterialWriter` (and consequently `MaterialMapping`) so that it can become an `IWriter`, that gets an `endRun` call when the event loop finishes.\r\n2. Add functionality to `Sequencer` such that algorithms also receive an `endRun` (or `finalize`?) call, so that `MaterialMapping` can call a write function on `JsonMaterialWriter`.\r\n\r\nWhat do you think @Corentin-Allaire?",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/881",
     "updated_at": "2022-08-11T21:08:00+00:00",
     "created_at": "2021-07-15T10:48:36+00:00",
     "closed_at": null,
@@ -526,6 +1340,8 @@
     "html_url": "https://github.com/acts-project/acts/issues/822",
     "number": 822,
     "assignee": null,
+    "body": "See [this pull request](https://github.com/acts-project/acts/pull/820) for some background.\r\n\r\nFor some reason the positive endcap rmin is not set correctly. It should be 22 below but it is not set as the value but the envelope. \r\nI think it is related to the rather confusing use of [envelope and extent](https://github.com/acts-project/acts/blob/main/Core/include/Acts/Geometry/ProtoLayer.hpp#L31) in `Protolayer`.\r\n\r\nIf I [insert here](https://github.com/acts-project/acts/blob/main/Plugins/DD4hep/src/DD4hepLayerBuilder.cpp#L130) the following line:\r\n```\r\npl.extent.ranges[Acts::binR] = {rMin, rMax};\r\n``` \r\nThen things seem to work. \r\n\r\n```\r\n...\r\n01:06:45    D2A_LAC        VERBOSE   Creating a disk Layer:\r\n01:06:45    D2A_LAC        VERBOSE    - at Z position    = 176.5\r\n01:06:45    D2A_LAC        VERBOSE    - from Z min/max   = 176 / 177\r\n01:06:45    D2A_LAC        VERBOSE    - with Z thickness = 3\r\n01:06:45    D2A_LAC        VERBOSE      - incl envelope  = 1 / 1\r\n01:06:45    D2A_LAC        VERBOSE    - with R min/max   = 0 (-22) / 150 (+0)\r\n01:06:45    D2A_LAC        VERBOSE    - with phi min/max = -3.14159 / 3.14159\r\n01:06:45    D2A_LAC        VERBOSE    - # of modules     = 1\r\n01:06:45    D2A_SAC        VERBOSE   Creating a SurfaceArray on a disc\r\n01:06:45    D2A_SAC        VERBOSE   Create equidistant binning Axis for binned SurfaceArray\r\n01:06:45    D2A_SAC        VERBOSE      BinningValue: 3\r\n01:06:45    D2A_SAC        VERBOSE      (binX = 0, binY = 1, binZ = 2, binR = 3, binPhi = 4, binRPhi = 5, binH = 6, binEta = 7)\r\n01:06:45    D2A_SAC        VERBOSE      Number of bins: 1\r\n01:06:45    D2A_SAC        VERBOSE      (Min/Max) = (0/150)\r\n01:06:45    D2A_SAC        VERBOSE   Create equidistant binning Axis for binned SurfaceArray\r\n01:06:45    D2A_SAC        VERBOSE      BinningValue: 4\r\n01:06:45    D2A_SAC        VERBOSE      (binX = 0, binY = 1, binZ = 2, binR = 3, binPhi = 4, binRPhi = 5, binH = 6, binEta = 7)\r\n01:06:45    D2A_SAC        VERBOSE      Number of bins: 1\r\n01:06:45    D2A_SAC        VERBOSE      (Min/Max) = (-3.14159/3.14159)\r\n01:06:45    D2A_SAC        VERBOSE   - z-position of disk estimated as 176.5\r\n01:06:45    D2A_SAC        VERBOSE    -- with 1 surfaces.\r\n01:06:45    D2A_SAC        VERBOSE    -- with r x phi  = 1 x 1 = 1 bins.\r\n01:06:45    D2A_SAC        VERBOSE   Complete binning by filling closest neighbour surfaces into empty bins.\r\n01:06:45    D2A_SAC        VERBOSE          filled  : 0 (includes under/overflow)\r\n01:06:45    D2A_LAC        VERBOSE   Performing consistency check\r\n01:06:45    D2A_LAC        VERBOSE    - Checked 1 valid bins\r\n01:06:45    D2A_LAC        VERBOSE    -- All bins point to a surface\r\n01:06:45    D2A_LAC        VERBOSE    -- All sensitive surfaces are accessible through binning.\r\n\r\n****************************************************\r\n*  A runtime error has occured :\r\n*    RadialBounds: invalid radial setup\r\n*  the program will have to be terminated - sorry.\r\n****************************************************\r\n```\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/822",
     "updated_at": "2022-02-19T23:11:09+00:00",
     "created_at": "2021-06-01T06:26:50+00:00",
     "closed_at": null,
@@ -553,8 +1369,42 @@
       "login": "paulgessinger",
       "html_url": "https://github.com/paulgessinger"
     },
+    "body": "This error showed up in various cases when the floating point type was made globally configurable.\r\n\r\nSee #743, #156 \r\n\r\n/cc @asalzburger ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/752",
     "updated_at": "2021-11-04T09:57:08+00:00",
     "created_at": "2021-03-18T08:26:15+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "2D r-z Magnetic Field Map Improperly Read",
+    "user": {
+      "login": "osbornjd",
+      "html_url": "https://github.com/osbornjd"
+    },
+    "labels": [
+      {
+        "name": "Bug"
+      },
+      {
+        "name": "Impact - Minor"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/669",
+    "number": 669,
+    "assignee": {
+      "login": "timadye",
+      "html_url": "https://github.com/timadye"
+    },
+    "body": "When sPHENIX runs Acts with a constant 1.4 T magnetic field, we get a reasonably good momentum resolution; when trying to run the same thing with our field map, the tracking resolution degrades significantly. We use essentially the same code as [GeometryExampleBase](https://github.com/acts-project/acts/blob/4bd3a88df4f0926593ab1401c0041bb6123bf045/Examples/Run/Common/src/GeometryExampleBase.cpp#L31) lines 31-56 to build our geometry, with the following options:\r\n\r\n```\r\n -n1 -l0 --response-file sphenixResponse.response --mat-input-type file --mat-input-file materialFile --bf-map fieldMap.root --bf-name fieldmap --bf-lscalor 10 --bf-bscalor 9.3333e-05 --bf-rz true\r\n```\r\n\r\nThe below plots show some tests of 20 pi+ 20 pi- events.\r\n\r\nRunning with a constant 1.4T field gives us the nominal momentum/phi/eta resolution seen here:\r\n[constFieldEtaRes.pdf](https://github.com/acts-project/acts/files/5867707/constFieldEtaRes.pdf)\r\n[constFieldPhiRes.pdf](https://github.com/acts-project/acts/files/5867708/constFieldPhiRes.pdf)\r\n[constFieldpTRes.pdf](https://github.com/acts-project/acts/files/5867709/constFieldpTRes.pdf)\r\n\r\nNote that the arguments to run this are as follows:\r\n```\r\n -n1 -l0 --response-file sphenixResponse.response --mat-input-type file --mat-input-file materialFile -bf-values 0 0 1.5 --bf-bscalor 0.9333333\r\n```\r\n\r\nRunning with the same code but with the field map gives the degraded resolution seen here, which seems to be correlated with a phi offset that is charge dependent:\r\n[fieldMapEtaRes.pdf](https://github.com/acts-project/acts/files/5867711/fieldMapEtaRes.pdf)\r\n[fieldMapPhiRes.pdf](https://github.com/acts-project/acts/files/5867712/fieldMapPhiRes.pdf)\r\n[fieldMappTRes.pdf](https://github.com/acts-project/acts/files/5867713/fieldMappTRes.pdf)\r\n\r\nThe phi separation indicates that there must be some charge dependent way the field is being interpreted incorrectly, I suspect. Note that I tried flipping the field sign for Acts (this leads to many failed track fits) and flipping the charge of the tracks going into the fitter (Acts just sees the tracks as the opposite sign but is still able to fit them) so it seems like Acts is interpreting the direction of the field correctly.\r\n\r\nThe obvious first step to try to do this is to see if it can be reproduced in the Acts only framework, outside of sPHENIX using our response/material/field map files. These are attached here, in addition to the sPHENIX geometry in Root and GDML format:\r\n\r\n[sPHENIXGeometry.zip](https://github.com/acts-project/acts/files/5867795/sPHENIXGeometry.zip)\r\n\r\nI will see if I can do that with the default Acts executables.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/669",
+    "updated_at": "2022-09-20T21:45:27+00:00",
+    "created_at": "2021-01-25T16:13:03+00:00",
     "closed_at": null,
     "is_wip": false,
     "is_stale": true,
@@ -577,6 +1427,8 @@
       "login": "asalzburger",
       "html_url": "https://github.com/asalzburger"
     },
+    "body": "```suggestion\r\n  SimParticle fw(particleId, pdg,\r\n```\r\n\r\n_Originally posted by @FabianKlimpel in https://github.com/acts-project/acts/pull/638#discussion_r552395121_",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/647",
     "updated_at": "2021-10-21T16:11:16+00:00",
     "created_at": "2021-01-06T08:11:33+00:00",
     "closed_at": null,
@@ -604,6 +1456,8 @@
       "login": "asalzburger",
       "html_url": "https://github.com/asalzburger"
     },
+    "body": "The polyhedron surfaces tests in `Tests/UnitTests/Core/Surfaces/PolyhedronSurfacesTests.cpp` is not part of the CMake build. It should be re-added and updated to the latest changes in master.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/454",
     "updated_at": "2021-11-04T09:57:11+00:00",
     "created_at": "2020-09-09T19:14:57+00:00",
     "closed_at": null,
@@ -634,6 +1488,8 @@
       "login": "asalzburger",
       "html_url": "https://github.com/asalzburger"
     },
+    "body": "Using a TPC/DC for measuring trajectories of charged particles is related to a setup in which the detecting element is located at a different position than the origin of the measurement. Hence the scenario is different to e.g. modules in a tracking detector. A current method for tracking in TPC/DC relies on the construction of surfaces for each measurement at its origin such that the Kalman filter formalism can be applied. However this involves the construction/destruction of many surfaces as well as coordinate transformations of the particle's parametrisation for each surface. In order to avoid this workload, further development is required to allow track reconstruction without surface dependencies for TPCs/DCs.\r\nThe therefore required steps can be grouped as:\r\n1. Measurement description\r\n- [x]  Free measurement description\r\nOur current measurements are restricted to a bound parametrisation. In order to handle a free measurement, appropriate adaptions are required\r\n- [ ]  Event storage\r\nAs the measurements need modifications the same would account to the storage of their collection.\r\n- [ ] Calibrator\r\nA calibrator for the measurements is required that locates the measurements including corrections like space charge distortions.\r\n2. Track extrapolation\r\n- [ ] Propagation needs to handle FreeParameters\r\nThe current Propagator and stepper classes can only handle bound parametrisation. This concept needs to be extended such that FreeParameters can be used.\r\n- [ ] Actor to stop propagation at right position\r\nAn actor is required to stop the propagation at a given position for applying the Kalman filter formalism.\r\n3. Track finding & fitting\r\n- [ ]  Kalman filter for free parameters\r\nThe current Kalman filter is able to handle only bound parametrisations and must be extended therefore by FreeParameters.\r\n- [ ]  TrackState\r\nThe current TrackState stores bound parametrisations and jacobians from bound to bound parametrisations. When FreeParameters should become possible, the dimensions are not fixed anymore.\r\n- [ ] CKF\r\nSimilar to the Kalman filter the CKF needs to learn when and how to act.\r\n\r\nAs these modifications strongly interfere with common tracking algorithms, the existing functionality should be preserved and moreover, as the TPC/DC can be considered as special cases, the modifications should be explicitly demanded by the user. The regular applications outside the TPC/DC should be as less affected from the changes as possible.  ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/165",
     "updated_at": "2021-11-04T09:57:09+00:00",
     "created_at": "2020-04-30T08:25:19+00:00",
     "closed_at": null,

@@ -20,7 +20,7 @@ from dateutil.tz import tzlocal
 import mtng.collect
 from mtng.generate import generate_latex, env
 from mtng.spec import Repository, Spec
-from mtng.collect import Label, PullRequest, Issue, User, get_open_pulls
+from mtng.collect import Label, PullRequest, Issue, Review, User, get_open_pulls
 
 
 @pytest.mark.asyncio
@@ -49,9 +49,16 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
         "mtng.collect.get_open_issues",
         Mock(
             side_effect=[
-                get_file_content("open_prs.json", Issue),
                 get_file_content("stale.json", Issue),
                 get_file_content("recent_issues.json", Issue),
+            ]
+        ),
+    )
+    monkeypatch.setattr(
+        "mtng.collect.get_open_pulls",
+        Mock(
+            side_effect=[
+                get_file_content("open_prs.json", Issue),
             ]
         ),
     )
@@ -166,9 +173,16 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
         "mtng.collect.get_open_issues",
         Mock(
             side_effect=[
-                get_file_content("open_prs.json", Issue),
                 get_file_content("stale.json", Issue),
                 get_file_content("recent_issues.json", Issue),
+            ]
+        ),
+    )
+    monkeypatch.setattr(
+        "mtng.collect.get_open_pulls",
+        Mock(
+            side_effect=[
+                get_file_content("open_prs.json", Issue),
             ]
         ),
     )
@@ -268,6 +282,10 @@ def test_item_render(try_render):
         labels=[Label(name="good")],
         number=1234,
         html_url="https://example.com",
+        url="https://example.com",
+        reviews=[
+            Review(user=user_b, state="APPROVED", body="", submitted_at=datetime.now())
+        ],
         assignee=user_b,
         updated_at=datetime.now(),
         created_at=datetime.now() - timedelta(days=2),
@@ -277,6 +295,7 @@ def test_item_render(try_render):
         pull_request=[],
     )
     spec = Repository(name="acts-project/acts")
+    spec.do_reviewers = True
 
     output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
     assert "\\prmerged" in output
@@ -308,11 +327,14 @@ def test_item_render(try_render):
     assert "EXTRA" in output
     assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
 
+    spec.do_assignee = True
+
     item = Issue(
         title="Fatras: Bethe-Heitler calculation wrong?",
         user=user_a,
         labels=[],
         html_url="https://example.com",
+        url="https://example.com",
         number=1234,
         assignee=user_b,
         updated_at=datetime.now(),
@@ -356,6 +378,7 @@ def test_sanitization(try_render, prob):
         labels=[Label(name="good")],
         number=1234,
         html_url="https://example.com",
+        url="https://example.com",
         assignee=user_b,
         updated_at=datetime.now(),
         created_at=datetime.now() - timedelta(days=2),
