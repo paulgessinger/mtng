@@ -160,7 +160,6 @@ async def generate(
         help="Compile the report as a PDF file. This requires a LaTeX installation.",
     ),
 ):
-
     now = now.replace(tzinfo=tzlocal())
     since = since.replace(tzinfo=tzlocal())
 
@@ -173,7 +172,6 @@ async def generate(
     spec = Spec.parse_obj(yaml.safe_load(config))
 
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
-
         if event is not None:
             contributions = handle_event(event, session)
 

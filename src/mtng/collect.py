@@ -119,7 +119,6 @@ async def get_merged_pulls(
     with_labels: List[str] = [],
     without_labels: List[str] = [],
 ) -> List[PullRequest]:
-
     url = f"/search/issues?q=repo:{repo_name}+is:pr+merged:{start:%Y-%m-%d}..{end:%Y-%m-%d}"
     for label in without_labels:
         url += f'+-label:"{urllib.parse.quote(label)}"'

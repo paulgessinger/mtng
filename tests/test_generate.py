@@ -150,7 +150,6 @@ except:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("full_tex", [True, False], ids=["full", "fragment"])
 async def test_compile(monkeypatch, full_tex, tmp_path):
-
     since = datetime(2022, 8, 1, tzinfo=tzlocal())
     now = datetime(2022, 8, 11, tzinfo=tzlocal())
 
@@ -229,7 +228,6 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
 @pytest.fixture
 def try_render(tmp_path):
     if have_latexmk:
-
         n = 0
 
         def render(source):
