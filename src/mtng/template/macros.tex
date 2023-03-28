@@ -22,18 +22,18 @@
     {%- endif -%}
     }) \\
     by \href{ {{- item.user.html_url -}} }{@{{- item.user.login|sanitize -}}}, {}
-    {%- if spec.do_assignee-%}
+    {%- if spec.do_assignee -%}
         {%- if item.assignee -%}
             assigned to {{ user(item.assignee) }}
         {%- else -%}
-            {%- if spec.no_assignee_attention and mode != "MERGED" -%}
+            {%- if spec.no_assignee_attention and mode != "MERGED"-%}
                 \emojispace{warning}\textbf{\textcolor{Red}{no assignee}}
             {%- else -%}
                 no assignee
             {%- endif -%}
         {%- endif -%}
     {%- endif -%}
-    {%- if spec.do_reviewers -%}
+    {%- if spec.do_reviewers and item.is_pr -%}
         {%- if item.reviews is defined and item.reviews|length > 0 -%}
             {%- set review = item.reviews[0] -%}
             {%- if review.state == "APPROVED" -%}

@@ -1,4 +1,25 @@
 {% from "macros.tex" import show_item %}
+
+
+{% if repo["needs_discussion"]|length > 0 %}
+{% for item in repo["needs_discussion"] %}
+\begin{frame}[allowframebreaks,t]{Needs discussion}
+
+  \begin{itemize}
+    {%- call show_item(item, repo.spec, mode) -%}
+    {%- endcall %}
+  \end{itemize}
+
+  \vspace{1em}
+  {% if item.body is not none %}
+    {{ item.body | sanitize }}
+  {% endif %}
+
+\end{frame}
+{%- endfor %}
+
+{% endif %}
+
 {% if repo["merged_prs"]|length > 0 %}
 
 \section{ {{repo_name}} \\ Merged PRs}

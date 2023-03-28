@@ -58,6 +58,12 @@ class Repository(BaseModel):
         decription="Show reviewers, or requested reviewers",
     )
 
+    needs_discussion_label: Optional[str] = pydantic.Field(
+        None,
+        title="Label for items to list as 'needs discussion'",
+        decription="Adds the item to a dedicated group of slides",
+    )
+
     @property
     def do_stale(self):
         return self.stale_label is not None

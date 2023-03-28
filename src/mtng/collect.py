@@ -40,6 +40,7 @@ class IssueBase(pydantic.BaseModel):
     number: int
     assignee: Optional[User]
 
+    body: Optional[str]
     url: str
 
     updated_at: datetime
@@ -202,6 +203,7 @@ async def collect_repositories(
         data[repo.name]["open_prs"] = []
         data[repo.name]["stale"] = []
         data[repo.name]["recent_issues"] = []
+        data[repo.name]["needs_discussion"] = []
         data[repo.name]["spec"] = repo
 
         if repo.do_merged_prs:
@@ -256,8 +258,12 @@ async def collect_repositories(
 
         for prk in "open_prs", "merged_prs", "stale", "recent_issues":
             for pr in data[repo.name][prk]:
-
                 pr.is_wip = repo.wip_label in [l.name for l in pr.labels]
                 pr.is_stale = repo.stale_label in [l.name for l in pr.labels]
+
+        for key in "open_prs", "stale", "recent_issues":
+            for item in data[repo.name][key]:
+                if repo.needs_discussion_label in [l.name for l in item.labels]:
+                    data[repo.name]["needs_discussion"].append(item)
 
     return data
