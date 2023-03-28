@@ -24,13 +24,23 @@ class User(pydantic.BaseModel):
     html_url: str
 
 
-class Issue(pydantic.BaseModel):
+class Review(pydantic.BaseModel):
+    user: User
+    state: Literal["APPROVED", "COMMENTED", "CHANGES_REQUESTED"]
+    body: str
+
+    submitted_at: datetime
+
+
+class IssueBase(pydantic.BaseModel):
     title: str
     user: User
     labels: List[Label]
     html_url: str
     number: int
     assignee: Optional[User]
+
+    url: str
 
     updated_at: datetime
     created_at: datetime
@@ -39,6 +49,8 @@ class Issue(pydantic.BaseModel):
     is_wip: bool = False
     is_stale: bool = False
 
+
+class Issue(IssueBase):
     pull_request: Optional[Any] = None
 
     @property
@@ -46,8 +58,13 @@ class Issue(pydantic.BaseModel):
         return self.pull_request is not None
 
 
-class PullRequest(Issue):
-    pass
+class PullRequest(IssueBase):
+    requested_reviewers: List[User] = pydantic.Field(default_factory=list)
+    reviews: List[Review] = pydantic.Field(default_factory=list)
+
+    @property
+    def is_pr(self) -> bool:
+        return True
 
 
 cache = diskcache.Cache(appdirs.user_cache_dir("mtng"))
@@ -88,6 +105,11 @@ def strip_github_api(args, kwargs):
 
 
 @memoize(expire=300, key_func=strip_github_api)
+async def getitem(gh: GitHubAPI, url: str, *args: Any, **kwargs: Any) -> Any:
+    return await gh.getitem(url, *args, **kwargs)
+
+
+#  @memoize(expire=300, key_func=strip_github_api)
 async def get_merged_pulls(
     gh: GitHubAPI,
     repo_name: str,
@@ -103,7 +125,19 @@ async def get_merged_pulls(
     for label in with_labels:
         url += f'+label:"{urllib.parse.quote(label)}"'
 
-    return [PullRequest.parse_obj(issue) async for issue in gh.getiter(url)]
+    items = [Issue.parse_obj(issue) async for issue in gh.getiter(url)]
+
+    prs = [
+        PullRequest.parse_obj(await getitem(gh, item.pull_request["url"]))
+        for item in items
+    ]
+
+    for pr in prs:
+        pr.reviews = [
+            Review.parse_obj(r) for r in await getitem(gh, f"{pr.url}/reviews")
+        ]
+
+    return prs
 
 
 @memoize(expire=300, key_func=strip_github_api)
@@ -129,7 +163,33 @@ async def get_open_issues(
         url += f'+-label:"{urllib.parse.quote(label)}"'
     for label in with_labels:
         url += f'+label:"{urllib.parse.quote(label)}"'
-    return [Issue.parse_obj(issue) async for issue in gh.getiter(url)]
+    obj = [Issue.parse_obj(issue) async for issue in gh.getiter(url)]
+
+    if type == "pr":
+        obj
+
+    return obj
+
+
+@memoize(expire=300, key_func=strip_github_api)
+async def get_open_pulls(
+    gh: GitHubAPI,
+    *args: Any,
+    **kwargs: Any,
+) -> List[PullRequest]:
+    items = await get_open_issues(gh, *args, type="pr", **kwargs)
+
+    prs = [
+        PullRequest.parse_obj(await getitem(gh, item.pull_request["url"]))
+        for item in items
+    ]
+
+    for pr in prs:
+        pr.reviews = [
+            Review.parse_obj(r) for r in await getitem(gh, f"{pr.url}/reviews")
+        ]
+
+    return prs
 
 
 async def collect_repositories(
@@ -155,11 +215,10 @@ async def collect_repositories(
             data[repo.name]["merged_prs"] = merged_prs
 
         if repo.do_open_prs:
-            open_prs = await get_open_issues(
+            open_prs = await get_open_pulls(
                 gh,
                 repo.name,
                 without_labels=repo.filter_labels,
-                type="pr",
             )
 
             if not repo.show_wip:

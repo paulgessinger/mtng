@@ -42,8 +42,20 @@ class Repository(BaseModel):
         description="Show a list of issues opened in the time interval.",
     )
 
+    do_assignee: bool = pydantic.Field(
+        False,
+        title="Do assignee",
+        decription="Show assignees",
+    )
+
     no_assignee_attention: bool = pydantic.Field(
         True, description="Draw attention to items without an assignee"
+    )
+
+    do_reviewers: bool = pydantic.Field(
+        False,
+        title="Do reviewers",
+        decription="Show reviewers, or requested reviewers",
     )
 
     @property

@@ -20,7 +20,7 @@ from dateutil.tz import tzlocal
 import mtng.collect
 from mtng.generate import generate_latex, env
 from mtng.spec import Repository, Spec
-from mtng.collect import Label, PullRequest, Issue, User
+from mtng.collect import Label, PullRequest, Issue, User, get_open_pulls
 
 
 @pytest.mark.asyncio
@@ -107,6 +107,26 @@ async def test_collect(tmp_path):
         print(outf)
         with outf.open("w") as fh:
             json.dump([json.loads(o.json()) for o in repo[k]], fh, indent=2)
+
+
+@pytest.mark.asyncio
+async def test_get_open_pulls():
+    repo = Repository(
+        name="acts-project/acts",
+        stale_label="Stale",
+        wip_label=":construction: WIP",
+    )
+
+    async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
+        gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
+        open_prs = await get_open_pulls(
+            gh,
+            repo.name,
+            without_labels=repo.filter_labels,
+        )
+
+        for pr in open_prs:
+            print(pr.json(indent=2))
 
 
 # check if we have latexmk
