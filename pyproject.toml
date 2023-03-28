@@ -4,7 +4,7 @@ version = "0.6.0"
 description = ""
 authors = ["Paul Gessinger <hello@paulgessinger.com>"]
 packages = [
-    { include = "mtng", from = "src" },
+{ include = "mtng", from = "src" },
 ]
 readme = "README.md"
 
@@ -32,7 +32,7 @@ mtng = 'mtng.cli:cli'
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"
-black = "^22.6.0"
+black = "^23.1.0"
 nox = "^2022.8.7"
 
 [build-system]

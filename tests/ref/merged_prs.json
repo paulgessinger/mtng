@@ -16,18 +16,30 @@
     "html_url": "https://github.com/acts-project/acts/pull/1415",
     "number": 1415,
     "assignee": null,
+    "body": "This is needed for backporting.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1415",
     "updated_at": "2022-08-16T09:19:39+00:00",
     "created_at": "2022-08-10T12:44:13+00:00",
     "closed_at": "2022-08-10T15:29:38+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1415",
-      "html_url": "https://github.com/acts-project/acts/pull/1415",
-      "diff_url": "https://github.com/acts-project/acts/pull/1415.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1415.patch",
-      "merged_at": "2022-08-10T15:29:38Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "andiwand",
+        "html_url": "https://github.com/andiwand"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "niermann999",
+          "html_url": "https://github.com/niermann999"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-10T15:27:28+00:00"
+      }
+    ]
   },
   {
     "title": "feat: Enable Delegates to conveniently use stateful lambdas [backport #1410 to develop/v19.x]",
@@ -46,18 +58,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1414",
     "number": 1414,
     "assignee": null,
+    "body": "Backport f6731263d4ead325f67348c98a0a34eae30bb4ec from #1410.\n---\nThis PR adds functionality to the `Acts::Delegate`, that enables to construct, assign and connect stateful lambdas like this:\r\n\r\n```c++\r\nint n = 0;\r\nauto lambda = [&](){ ++n; };\r\n\r\nActs::Delegate<void()> d(lambda);\r\nd = lambda;\r\nd.connect(lambda);\r\n```\r\n\r\nThe use of temporary stateful lambdas is forbidden due to deleted overloads with `Callable &&`:\r\n```c++\r\nActs::Delegate<void()> d([&](){ ++n; }); // compile error\r\n```\r\n\r\nI havn't checked yet if this can simplify code somewhere in Core or Examples, but I ran in situations myself where this would be useful.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1414",
     "updated_at": "2022-08-16T09:19:07+00:00",
     "created_at": "2022-08-10T12:36:05+00:00",
     "closed_at": "2022-08-10T16:19:39+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1414",
-      "html_url": "https://github.com/acts-project/acts/pull/1414",
-      "diff_url": "https://github.com/acts-project/acts/pull/1414.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1414.patch",
-      "merged_at": "2022-08-10T16:19:39Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-10T15:30:36+00:00"
+      }
+    ]
   },
   {
     "title": "fix: change typeid check to dynamic_cast [backport #1409 to develop/v19.x]",
@@ -76,18 +95,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1413",
     "number": 1413,
     "assignee": null,
+    "body": "Backport fdc6075366aa7020dfeba1c1676e834b95206b16 from #1409.\n---\nThis PR changes the way we check for compatibility in the `WhiteBoard` as sometimes the typeid check would fail, even if the cast would work.\r\n\r\nThe reason for the failure is not fully understood, but a `dynamic_cast` is ok in this case, as this is not a time-critical operation.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1413",
     "updated_at": "2022-08-16T09:19:07+00:00",
     "created_at": "2022-08-10T12:36:03+00:00",
     "closed_at": "2022-08-10T17:24:21+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1413",
-      "html_url": "https://github.com/acts-project/acts/pull/1413",
-      "diff_url": "https://github.com/acts-project/acts/pull/1413.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1413.patch",
-      "merged_at": "2022-08-10T17:24:21Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-10T15:32:00+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Move Analysis job from required pattern to explicit name",
@@ -99,18 +125,15 @@
     "html_url": "https://github.com/acts-project/acts/pull/1411",
     "number": 1411,
     "assignee": null,
+    "body": "Otherwise it requires Analysis jobs that are only triggered on main.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1411",
     "updated_at": "2022-08-16T09:17:58+00:00",
     "created_at": "2022-08-09T15:07:47+00:00",
     "closed_at": "2022-08-09T15:14:03+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1411",
-      "html_url": "https://github.com/acts-project/acts/pull/1411",
-      "diff_url": "https://github.com/acts-project/acts/pull/1411.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1411.patch",
-      "merged_at": "2022-08-09T15:14:03Z"
-    }
+    "requested_reviewers": [],
+    "reviews": []
   },
   {
     "title": "feat: Enable Delegates to conveniently use stateful lambdas",
@@ -132,18 +155,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1410",
     "number": 1410,
     "assignee": null,
-    "updated_at": "2022-08-16T09:17:57+00:00",
+    "body": "This PR adds functionality to the `Acts::Delegate`, that enables to construct, assign and connect stateful lambdas like this:\r\n\r\n```c++\r\nint n = 0;\r\nauto lambda = [&](){ ++n; };\r\n\r\nActs::Delegate<void()> d(lambda);\r\nd = lambda;\r\nd.connect(lambda);\r\n```\r\n\r\nThe use of temporary stateful lambdas is forbidden due to deleted overloads with `Callable &&`:\r\n```c++\r\nActs::Delegate<void()> d([&](){ ++n; }); // compile error\r\n```\r\n\r\nI havn't checked yet if this can simplify code somewhere in Core or Examples, but I ran in situations myself where this would be useful.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1410",
+    "updated_at": "2023-02-22T07:45:39+00:00",
     "created_at": "2022-08-09T14:41:27+00:00",
     "closed_at": "2022-08-10T07:34:15+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1410",
-      "html_url": "https://github.com/acts-project/acts/pull/1410",
-      "diff_url": "https://github.com/acts-project/acts/pull/1410.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1410.patch",
-      "merged_at": "2022-08-10T07:34:15Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "So this just explicitly tries to grab the `operator()` function pointer for a lambda? Should be ok I think!",
+        "submitted_at": "2022-08-09T15:24:19+00:00"
+      }
+    ]
   },
   {
     "title": "fix: change typeid check to dynamic_cast",
@@ -162,18 +192,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1409",
     "number": 1409,
     "assignee": null,
+    "body": "This PR changes the way we check for compatibility in the `WhiteBoard` as sometimes the typeid check would fail, even if the cast would work.\r\n\r\nThe reason for the failure is not fully understood, but a `dynamic_cast` is ok in this case, as this is not a time-critical operation.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1409",
     "updated_at": "2022-08-16T09:17:57+00:00",
     "created_at": "2022-08-09T13:20:59+00:00",
     "closed_at": "2022-08-10T09:38:17+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1409",
-      "html_url": "https://github.com/acts-project/acts/pull/1409",
-      "diff_url": "https://github.com/acts-project/acts/pull/1409.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1409.patch",
-      "merged_at": "2022-08-10T09:38:17Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-09T15:55:04+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Fix path-ignore for docs",
@@ -185,18 +222,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1408",
     "number": 1408,
     "assignee": null,
+    "body": "I had a typo in the previous yml file changes. This should make the default jobs run again.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1408",
     "updated_at": "2022-08-16T09:17:56+00:00",
     "created_at": "2022-08-09T09:16:56+00:00",
     "closed_at": "2022-08-09T10:53:00+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1408",
-      "html_url": "https://github.com/acts-project/acts/pull/1408",
-      "diff_url": "https://github.com/acts-project/acts/pull/1408.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1408.patch",
-      "merged_at": "2022-08-09T10:53:00Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "thank you!",
+        "submitted_at": "2022-08-09T10:22:09+00:00"
+      }
+    ]
   },
   {
     "title": "docs: minor corrections. followup to PR #1405",
@@ -212,18 +256,34 @@
     "html_url": "https://github.com/acts-project/acts/pull/1407",
     "number": 1407,
     "assignee": null,
+    "body": "I was too late, to comment on some things in [PR #1405](https://github.com/acts-project/acts/pull/1405/), therefore a new PR.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1407",
     "updated_at": "2022-08-16T09:17:56+00:00",
     "created_at": "2022-08-09T08:36:52+00:00",
     "closed_at": "2022-08-09T15:47:59+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1407",
-      "html_url": "https://github.com/acts-project/acts/pull/1407",
-      "diff_url": "https://github.com/acts-project/acts/pull/1407.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1407.patch",
-      "merged_at": "2022-08-09T15:47:59Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "APPROVED",
+        "body": "Seems like yesterday wasn't the best day of my spelling skills :D Thanks again",
+        "submitted_at": "2022-08-09T08:40:16+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-09T10:29:39+00:00"
+      }
+    ]
   },
   {
     "title": "docs: minor corrections",
@@ -239,18 +299,34 @@
     "html_url": "https://github.com/acts-project/acts/pull/1405",
     "number": 1405,
     "assignee": null,
+    "body": "minor corrections to the doc we added yesterday",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1405",
     "updated_at": "2022-08-16T09:17:55+00:00",
     "created_at": "2022-08-08T15:23:03+00:00",
     "closed_at": "2022-08-09T08:18:33+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1405",
-      "html_url": "https://github.com/acts-project/acts/pull/1405",
-      "diff_url": "https://github.com/acts-project/acts/pull/1405.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1405.patch",
-      "merged_at": "2022-08-09T08:18:33Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-09T06:57:32+00:00"
+      },
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-09T06:58:36+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Do not run analysis jobs on docs-only changes",
@@ -262,18 +338,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1400",
     "number": 1400,
     "assignee": null,
+    "body": null,
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1400",
     "updated_at": "2022-08-16T09:17:55+00:00",
     "created_at": "2022-08-08T14:04:55+00:00",
     "closed_at": "2022-08-09T07:53:40+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1400",
-      "html_url": "https://github.com/acts-project/acts/pull/1400",
-      "diff_url": "https://github.com/acts-project/acts/pull/1400.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1400.patch",
-      "merged_at": "2022-08-09T07:53:40Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-08T14:29:29+00:00"
+      }
+    ]
   },
   {
     "title": "docs: Propagation",
@@ -289,18 +372,34 @@
     "html_url": "https://github.com/acts-project/acts/pull/1396",
     "number": 1396,
     "assignee": null,
-    "updated_at": "2022-08-16T09:17:54+00:00",
+    "body": "New docs page for the propagation.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1396",
+    "updated_at": "2022-09-13T14:39:58+00:00",
     "created_at": "2022-08-08T12:42:57+00:00",
     "closed_at": "2022-08-08T14:58:28+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1396",
-      "html_url": "https://github.com/acts-project/acts/pull/1396",
-      "diff_url": "https://github.com/acts-project/acts/pull/1396.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1396.patch",
-      "merged_at": "2022-08-08T14:58:28Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "asalzburger",
+          "html_url": "https://github.com/asalzburger"
+        },
+        "state": "CHANGES_REQUESTED",
+        "body": "Two minor changes, otherwise nicely done!",
+        "submitted_at": "2022-08-08T14:51:48+00:00"
+      },
+      {
+        "user": {
+          "login": "asalzburger",
+          "html_url": "https://github.com/asalzburger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-08T14:57:47+00:00"
+      }
+    ]
   },
   {
     "title": "docs: Add docs clean target to cmake",
@@ -316,18 +415,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1393",
     "number": 1393,
     "assignee": null,
+    "body": "This PR adds a target `docs-clean` to CMake which will clean out all files generated by the docs build.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1393",
     "updated_at": "2022-08-16T09:17:54+00:00",
     "created_at": "2022-08-08T11:47:09+00:00",
     "closed_at": "2022-08-10T08:49:32+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1393",
-      "html_url": "https://github.com/acts-project/acts/pull/1393",
-      "diff_url": "https://github.com/acts-project/acts/pull/1393.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1393.patch",
-      "merged_at": "2022-08-10T08:49:32Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "APPROVED",
+        "body": "lgtm. thanks",
+        "submitted_at": "2022-08-08T11:59:46+00:00"
+      }
+    ]
   },
   {
     "title": "docs: adding acts project page",
@@ -343,18 +449,52 @@
     "html_url": "https://github.com/acts-project/acts/pull/1392",
     "number": 1392,
     "assignee": null,
+    "body": "This PR adds a high level \"ACTS Project\" documentation page with some basic information and pointers.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1392",
     "updated_at": "2022-08-16T09:17:53+00:00",
     "created_at": "2022-08-08T11:39:48+00:00",
     "closed_at": "2022-08-10T16:59:30+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1392",
-      "html_url": "https://github.com/acts-project/acts/pull/1392",
-      "diff_url": "https://github.com/acts-project/acts/pull/1392.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1392.patch",
-      "merged_at": "2022-08-10T16:59:30Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-08T12:47:07+00:00"
+      },
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "CHANGES_REQUESTED",
+        "body": "",
+        "submitted_at": "2022-08-10T05:22:53+00:00"
+      },
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T05:23:56+00:00"
+      },
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-10T08:10:45+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Docs job always runs",
@@ -366,18 +506,15 @@
     "html_url": "https://github.com/acts-project/acts/pull/1391",
     "number": 1391,
     "assignee": null,
+    "body": null,
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1391",
     "updated_at": "2022-08-16T09:17:53+00:00",
     "created_at": "2022-08-08T11:00:55+00:00",
     "closed_at": "2022-08-08T11:01:07+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1391",
-      "html_url": "https://github.com/acts-project/acts/pull/1391",
-      "diff_url": "https://github.com/acts-project/acts/pull/1391.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1391.patch",
-      "merged_at": "2022-08-08T11:01:07Z"
-    }
+    "requested_reviewers": [],
+    "reviews": []
   },
   {
     "title": "docs: correct affiliation in CITATION.cff",
@@ -389,18 +526,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1390",
     "number": 1390,
     "assignee": null,
-    "updated_at": "2022-08-08T11:21:48+00:00",
+    "body": "self explaining",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1390",
+    "updated_at": "2022-09-13T14:39:50+00:00",
     "created_at": "2022-08-08T09:42:04+00:00",
     "closed_at": "2022-08-08T11:21:47+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1390",
-      "html_url": "https://github.com/acts-project/acts/pull/1390",
-      "diff_url": "https://github.com/acts-project/acts/pull/1390.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1390.patch",
-      "merged_at": "2022-08-08T11:21:47Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "Whoops.",
+        "submitted_at": "2022-08-08T11:21:33+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Fix sentinel yml",
@@ -412,18 +556,15 @@
     "html_url": "https://github.com/acts-project/acts/pull/1389",
     "number": 1389,
     "assignee": null,
+    "body": "I broke the YAML.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1389",
     "updated_at": "2022-08-16T09:17:53+00:00",
     "created_at": "2022-08-08T09:35:41+00:00",
     "closed_at": "2022-08-08T09:35:53+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1389",
-      "html_url": "https://github.com/acts-project/acts/pull/1389",
-      "diff_url": "https://github.com/acts-project/acts/pull/1389.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1389.patch",
-      "merged_at": "2022-08-08T09:35:53Z"
-    }
+    "requested_reviewers": [],
+    "reviews": []
   },
   {
     "title": "ci: Do not run build jobs on docs-only changes",
@@ -435,18 +576,15 @@
     "html_url": "https://github.com/acts-project/acts/pull/1388",
     "number": 1388,
     "assignee": null,
+    "body": "This should skip all the build jobs if only files inside docs were changed. Once merged, in principle merge-sentinel should only require the correct jobs \ud83e\udd1e ",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1388",
     "updated_at": "2022-08-16T09:17:52+00:00",
     "created_at": "2022-08-08T09:22:42+00:00",
     "closed_at": "2022-08-08T09:31:15+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1388",
-      "html_url": "https://github.com/acts-project/acts/pull/1388",
-      "diff_url": "https://github.com/acts-project/acts/pull/1388.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1388.patch",
-      "merged_at": "2022-08-08T09:31:15Z"
-    }
+    "requested_reviewers": [],
+    "reviews": []
   },
   {
     "title": "docs: restructure docs tree",
@@ -462,18 +600,39 @@
     "html_url": "https://github.com/acts-project/acts/pull/1387",
     "number": 1387,
     "assignee": null,
+    "body": "restructure doc tree according to https://codimd.web.cern.ch/2zTN00uDQtWlO3x8KbPu_Q?view",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1387",
     "updated_at": "2022-08-16T09:17:52+00:00",
     "created_at": "2022-08-08T09:14:11+00:00",
     "closed_at": "2022-08-08T11:33:30+00:00",
     "is_wip": true,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1387",
-      "html_url": "https://github.com/acts-project/acts/pull/1387",
-      "diff_url": "https://github.com/acts-project/acts/pull/1387.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1387.patch",
-      "merged_at": "2022-08-08T11:33:30Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "paulgessinger",
+        "html_url": "https://github.com/paulgessinger"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-08T09:27:53+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-08T10:08:26+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Cleaned up the workflow files a little.",
@@ -485,18 +644,52 @@
     "html_url": "https://github.com/acts-project/acts/pull/1384",
     "number": 1384,
     "assignee": null,
+    "body": "There were many instances of trailing `--` in the CMake commands, followed by nothing, which I removed. Moreover, many of the targets were passed  to the underlying build system as a build-system-specific flag. I changed those to make it so that the `--target` CMake flag is used.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1384",
     "updated_at": "2022-08-16T09:17:51+00:00",
     "created_at": "2022-08-05T08:34:49+00:00",
     "closed_at": "2022-08-08T06:39:23+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1384",
-      "html_url": "https://github.com/acts-project/acts/pull/1384",
-      "diff_url": "https://github.com/acts-project/acts/pull/1384.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1384.patch",
-      "merged_at": "2022-08-08T06:39:23Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "we need to clarify on the comment but otherwise happy to put this in",
+        "submitted_at": "2022-08-05T08:38:52+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-05T13:03:53+00:00"
+      },
+      {
+        "user": {
+          "login": "wermos",
+          "html_url": "https://github.com/wermos"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-06T02:16:18+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-06T10:35:12+00:00"
+      }
+    ]
   },
   {
     "title": "fix: TrackingVolume intersection check didn't copy sign [backport #1115 to develop/v9.1.x]",
@@ -512,18 +705,15 @@
     "html_url": "https://github.com/acts-project/acts/pull/1383",
     "number": 1383,
     "assignee": null,
+    "body": "Backport 67afb407cae99d38c5ac061abb4d86aae1e67ce3 from #1115.\n---\nI noticed in #1103 that the navigation failed in backward mode after we merged #1107.\r\n\r\nIndeed, during the change in #1107, `TrackingVolume` lost a line that copied the sign from the navigation direction onto the path length in `compatibleBoundaries`. This made the navigation go haywire when it tried to target boundaries in reverse propagation mode.\r\n\r\nThis PR adds that back in, and should fix #1103's test runs.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1383",
     "updated_at": "2022-08-16T11:22:11+00:00",
     "created_at": "2022-08-05T06:36:34+00:00",
     "closed_at": "2022-08-09T11:05:26+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1383",
-      "html_url": "https://github.com/acts-project/acts/pull/1383",
-      "diff_url": "https://github.com/acts-project/acts/pull/1383.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1383.patch",
-      "merged_at": "2022-08-09T11:05:26Z"
-    }
+    "requested_reviewers": [],
+    "reviews": []
   },
   {
     "title": "fix: Multi-Stepper stepping error in multiple components + refactoring [backport #1339 to develop/v19.x]",
@@ -539,18 +729,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1382",
     "number": 1382,
     "assignee": null,
+    "body": "Backport 1b973d52cbd015bc0ef746f7a73b195ac5a8ae5e from #1339.\n---\nThis PR does refactor the `MultiEigenStepperLoop` and fixes a situation, where a few stepping-erros could break the whole propagation.\r\n- **Fix:** If some components had stepping errors and all other components where on a surface, the propagation terminated\r\n- **Refactor:**\r\n  - remove internal logger from `MultiEigenStepperLoop` since it is not really configurable from outside\r\n  - improve `MultiEigenStepperLoop::step` (only construct summary-string in `VERBOSE` mode or on error, remove unnecessary loops and vectors, move things to lambdas, ...)\r\n\r\n**NOTE:** This does not fix the reason why stepping errors occur in some situations, this (hopefully) will be done in a subsequent PR)",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1382",
     "updated_at": "2022-08-16T09:19:06+00:00",
     "created_at": "2022-08-05T06:34:55+00:00",
     "closed_at": "2022-08-10T12:32:27+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1382",
-      "html_url": "https://github.com/acts-project/acts/pull/1382",
-      "diff_url": "https://github.com/acts-project/acts/pull/1382.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1382.patch",
-      "merged_at": "2022-08-10T12:32:27Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-05T08:06:14+00:00"
+      }
+    ]
   },
   {
     "title": "fix: RootBFieldWriter incorrect output",
@@ -566,18 +763,111 @@
     "html_url": "https://github.com/acts-project/acts/pull/1381",
     "number": 1381,
     "assignee": null,
+    "body": "* Fix `RootBFieldWriter` to write out the correct binning. The file can now be read back in for identical result.\r\n  * Don't write out phi bins for the `(R,z)` field map, since there is no place for the phi coordinate in the root file. Uses `phi=0`.\r\n  * In principle, this code is supposed to allow writing 2D or 3D file format, whether the source is `(R,z)` or `(x,y,z)`. I don't know if this is useful, and I haven't tested it.\r\n* Tidy up BField reading in `FieldMapRootIo.cpp` and `BFieldMapUtils.cpp`\r\n* Add `pytest` `test_bfield_writing`. This uses an expanded `bfield_writing.py` example to:\r\n  1. create a 2T `acts.SolenoidBField`\r\n  2. write it out as an `(R,z)` field-map to `solenoid.root`\r\n  3. read it back in from `solenoid.root`\r\n  4. write it again to `solenoid2.root`\r\n  5. check that both files have the correct (identical) number of entries and `root_file_hashes.txt`.\r\n    * Note: The two files should be identical, but don't have the same `root_file_hashes.txt`.\r\n    * I have checked that they have the same entries using `root` `solenoid->Scan(\"*\")`.\r\n\r\nThe test doesn't check the `(x,y,z)` field-map I/O, but I have tested read/write gives identical results with the ITk field-map.\r\n\r\nThis PR fixes the problems I reported in #669. @osbornjd, please check if it fixes your issues too.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1381",
     "updated_at": "2022-08-16T09:20:34+00:00",
     "created_at": "2022-08-04T18:01:43+00:00",
     "closed_at": "2022-08-10T18:03:15+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1381",
-      "html_url": "https://github.com/acts-project/acts/pull/1381",
-      "diff_url": "https://github.com/acts-project/acts/pull/1381.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1381.patch",
-      "merged_at": "2022-08-10T18:03:15Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "osbornjd",
+        "html_url": "https://github.com/osbornjd"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "look good to me - thank you for fixing this!",
+        "submitted_at": "2022-08-10T09:17:57+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T15:15:32+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T15:31:41+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T15:32:19+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T15:51:33+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T16:11:07+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-10T16:41:58+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T16:43:40+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T17:20:15+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-10T17:22:07+00:00"
+      }
+    ]
   },
   {
     "title": "fix: Comparison bug in updateSingleSurfaceStatus [backport #1107 to develop/v9.1.x]",
@@ -596,18 +886,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1380",
     "number": 1380,
     "assignee": null,
+    "body": "Backport 34adc81917fb6700e2c621414151f6008327f199 from #1107.\n---\nI think I found actually two small bugs in the `updateSingleSurfaceStatus` function:\r\n\r\n1) The first one is older I think: when `pLimit == cLimit + s_onSurfaceTolerance`, then the intersection is not accepted, but there is also no message printed out, because it is only checkt for `<` and `>`, but one should be `<=` or `>=` in this case I think.\r\n\r\n2) With the `s_onSurfaceTolerance`, I think we do not compare what we accually want here anymore:\r\n\r\n   What we check is something like `a*a < b*b + c`, but what we (I think) want to check is `|a| < |b| + c`. This is obviously not the same (e.g. with a=4, b=3, c=2).\r\n\r\n   So I know also added `std::abs` in the computation of the `accept`-boolean. Not sure if that is the best way, since it seems that was not done for performance reasons or something like that before. One could also change the verbose message to print out the actual criterion...",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1380",
     "updated_at": "2022-08-16T11:22:10+00:00",
     "created_at": "2022-08-04T13:39:00+00:00",
     "closed_at": "2022-08-05T06:19:23+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1380",
-      "html_url": "https://github.com/acts-project/acts/pull/1380",
-      "diff_url": "https://github.com/acts-project/acts/pull/1380.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1380.patch",
-      "merged_at": "2022-08-05T06:19:23Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-04T16:27:42+00:00"
+      }
+    ]
   },
   {
     "title": "docs: spelling, delete unused figures, beautify [backport #1353 to develop/v19.x]",
@@ -626,18 +923,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1379",
     "number": 1379,
     "assignee": null,
+    "body": "Backport 85eb6543521b8126689f92d67483bab305ea45c3 from #1353.\n---\n- Fix: spelling, grammar, typos, ...\r\n- Del: doubled words like in in here\r\n- Del: the figures used in file `docs/integration/fcc.md`, that got deleted in [PR #1338](https://github.com/acts-project/acts/pull/1338)\r\n- beautify some code examples",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1379",
     "updated_at": "2022-08-16T09:19:06+00:00",
     "created_at": "2022-08-04T12:30:22+00:00",
     "closed_at": "2022-08-04T13:43:55+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1379",
-      "html_url": "https://github.com/acts-project/acts/pull/1379",
-      "diff_url": "https://github.com/acts-project/acts/pull/1379.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1379.patch",
-      "merged_at": "2022-08-04T13:43:55Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-04T13:43:39+00:00"
+      }
+    ]
   },
   {
     "title": "fix: any direction for helical track linearizer [backport #1363 to develop/v19.x]",
@@ -656,18 +960,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1377",
     "number": 1377,
     "assignee": null,
+    "body": "Backport 8639c37faff32a288e2417df0a7f099131132b35 from #1363.\n---\nPreviously the `HelicalTrackLinearizer` assumed that the vertex we are fitting has to be reachable by back propagation. This is not always the case. In this PR we try to estimate the direction in which we will find the vertex and use it for the propagation.\r\n\r\n@asalzburger mentioned that it would be good to back propagate from the first measurement of the particle on the track as this will always be \"ahead\" of the vertex\r\n\r\ncc @paulgessinger ",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1377",
     "updated_at": "2022-08-16T09:19:05+00:00",
     "created_at": "2022-08-04T11:06:41+00:00",
     "closed_at": "2022-08-04T13:36:34+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1377",
-      "html_url": "https://github.com/acts-project/acts/pull/1377",
-      "diff_url": "https://github.com/acts-project/acts/pull/1377.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1377.patch",
-      "merged_at": "2022-08-04T13:36:34Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-04T13:36:09+00:00"
+      }
+    ]
   },
   {
     "title": "chore: clang-tidy modernize-use-nullptr [backport #1358 to develop/v19.x]",
@@ -686,18 +997,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1376",
     "number": 1376,
     "assignee": null,
+    "body": "Backport 789ce6962892025d24dd08ae87766c4e6543a632 from #1358.\n---\nThis enables the `modernize-use-nullptr` check in clang-tidy. This prevents using `0` for a null pointer.\r\nThis PR also changes `0` to `nullptr` wherever already used as a null pointer.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1376",
     "updated_at": "2022-08-16T09:19:05+00:00",
     "created_at": "2022-08-04T07:15:46+00:00",
     "closed_at": "2022-08-04T10:55:18+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1376",
-      "html_url": "https://github.com/acts-project/acts/pull/1376",
-      "diff_url": "https://github.com/acts-project/acts/pull/1376.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1376.patch",
-      "merged_at": "2022-08-04T10:55:18Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-04T10:54:49+00:00"
+      }
+    ]
   },
   {
     "title": "fix: initialising world in GdmlDetectorConstruction [backport #1371 to develop/v19.x]",
@@ -716,18 +1034,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1375",
     "number": 1375,
     "assignee": null,
+    "body": "Backport 511528b19a94e8fb62d552ae983f76762d94916c from #1371.\n---\nThis PR is a one-liner (a few characters actually), which fixes the initialised world value to `nullptr` hence the detector construction runs now after checking\r\n```c++\r\nif (m_world == nullptr){\r\nconstruct()\r\n}\r\n```",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1375",
     "updated_at": "2022-08-16T09:19:04+00:00",
     "created_at": "2022-08-03T19:23:36+00:00",
     "closed_at": "2022-08-03T20:40:13+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1375",
-      "html_url": "https://github.com/acts-project/acts/pull/1375",
-      "diff_url": "https://github.com/acts-project/acts/pull/1375.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1375.patch",
-      "merged_at": "2022-08-03T20:40:13Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-03T19:25:07+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Disable macOS job in v9.1.x",
@@ -739,18 +1064,34 @@
     "html_url": "https://github.com/acts-project/acts/pull/1374",
     "number": 1374,
     "assignee": null,
+    "body": "It's too much work to get the macOS job to build correctly for that old release, so I'm removing it for that series.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1374",
     "updated_at": "2022-08-16T11:22:10+00:00",
     "created_at": "2022-08-03T19:13:58+00:00",
     "closed_at": "2022-08-03T20:39:24+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1374",
-      "html_url": "https://github.com/acts-project/acts/pull/1374",
-      "diff_url": "https://github.com/acts-project/acts/pull/1374.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1374.patch",
-      "merged_at": "2022-08-03T20:39:24Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-03T19:23:12+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "fair enough!\r\n\r\nlets take out the trash :grin: ",
+        "submitted_at": "2022-08-03T20:05:48+00:00"
+      }
+    ]
   },
   {
     "title": "chore: clang tidy check uninitialized members",
@@ -762,18 +1103,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1373",
     "number": 1373,
     "assignee": null,
-    "updated_at": "2022-08-16T09:17:50+00:00",
+    "body": "add check for uninitialized primitive struct/class members https://clang.llvm.org/extra/clang-tidy/checks/cppcoreguidelines/pro-type-member-init.html",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1373",
+    "updated_at": "2022-10-26T08:31:54+00:00",
     "created_at": "2022-08-03T15:53:28+00:00",
     "closed_at": "2022-08-05T08:48:15+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1373",
-      "html_url": "https://github.com/acts-project/acts/pull/1373",
-      "diff_url": "https://github.com/acts-project/acts/pull/1373.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1373.patch",
-      "merged_at": "2022-08-05T08:48:15Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-05T08:05:38+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Automatically remove automerge label when PRs are closed",
@@ -785,18 +1133,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1372",
     "number": 1372,
     "assignee": null,
+    "body": "This should clean up our closed PRs a bit and make it easier to search for to-be-auto-merged PRs.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1372",
     "updated_at": "2022-08-16T09:17:50+00:00",
     "created_at": "2022-08-03T14:31:57+00:00",
     "closed_at": "2022-08-03T19:53:26+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1372",
-      "html_url": "https://github.com/acts-project/acts/pull/1372",
-      "diff_url": "https://github.com/acts-project/acts/pull/1372.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1372.patch",
-      "merged_at": "2022-08-03T19:53:26Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-03T14:34:04+00:00"
+      }
+    ]
   },
   {
     "title": "fix: initialising world in GdmlDetectorConstruction",
@@ -818,18 +1173,34 @@
     "html_url": "https://github.com/acts-project/acts/pull/1371",
     "number": 1371,
     "assignee": null,
+    "body": "This PR is a one-liner (a few characters actually), which fixes the initialised world value to `nullptr` hence the detector construction runs now after checking\r\n```c++\r\nif (m_world == nullptr){\r\nconstruct()\r\n}\r\n```",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1371",
     "updated_at": "2022-08-16T09:18:15+00:00",
     "created_at": "2022-08-03T14:17:40+00:00",
     "closed_at": "2022-08-03T18:09:55+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1371",
-      "html_url": "https://github.com/acts-project/acts/pull/1371",
-      "diff_url": "https://github.com/acts-project/acts/pull/1371.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1371.patch",
-      "merged_at": "2022-08-03T18:09:55Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "good old uninitialized primitives\r\n\r\n@paulgessinger can we catch those with clang-tidy somehow for the whole project?",
+        "submitted_at": "2022-08-03T14:32:50+00:00"
+      },
+      {
+        "user": {
+          "login": "plariono",
+          "html_url": "https://github.com/plariono"
+        },
+        "state": "APPROVED",
+        "body": "All good for me.",
+        "submitted_at": "2022-08-03T14:51:28+00:00"
+      }
+    ]
   },
   {
     "title": "docs: Fix documentation build in v9.1.x",
@@ -841,18 +1212,15 @@
     "html_url": "https://github.com/acts-project/acts/pull/1369",
     "number": 1369,
     "assignee": null,
+    "body": "Updates the documentation infra to work on `v9.1.x` series.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1369",
     "updated_at": "2022-08-16T11:22:09+00:00",
     "created_at": "2022-08-03T14:01:50+00:00",
     "closed_at": "2022-08-03T14:32:56+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1369",
-      "html_url": "https://github.com/acts-project/acts/pull/1369",
-      "diff_url": "https://github.com/acts-project/acts/pull/1369.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1369.patch",
-      "merged_at": "2022-08-03T14:32:56Z"
-    }
+    "requested_reviewers": [],
+    "reviews": []
   },
   {
     "title": "fix: Warning in navigation when targeting perigee [backport #1101 to develop/v9.1.x]",
@@ -868,18 +1236,34 @@
     "html_url": "https://github.com/acts-project/acts/pull/1368",
     "number": 1368,
     "assignee": null,
+    "body": "Backport 98597a7191e142015964c6dba5a3f535b6ace905 from #1101.\n---\nThis warning popped up in a number of places, but mostly when targeting\r\nparigee surfaces, e.g. in the vertexing or in the KF when the backward\r\nsmoothing propagation is enabled. It's possible this only occurs with a\r\nbeampipe layer.\r\n\r\nI **think** what's happening is two things:\r\n- The on-surface tolerance wasn't applied correctly in one location (I think we do this in other spots, like when we're looking for compatible layers in volumes, and compatible surfaces in layers.)\r\n- If we actually have a target surface (and it's still reachable), this\r\n  navigation state is probably still valid. We are on the final layer,\r\n  the navigator realizes it won't find the perigee surfaces through the\r\n  tracking geometry. It looks up the volume from the target surface\r\n  position, and determines that we are in fact in the target volume\r\n  already, so it only needs to *proceed to target* to be done.\r\n\r\nAs a tentative solution I've included the `s_onSurfaceTolerance` in the\r\ncheck in `SteppingHelper` (@asalzburger can you advise if that seems\r\ncorrect here?), and split the output into a warning in case there is no\r\ntarget surface (which I still think is a bug/edge case we should warn on), and a verbose messagge in case we do have it.\r\n\r\nOne could supplement the last change by checking if at this point the\r\ntarget surface is still reachable, but I'm not sure this should be done\r\nonly for reason of providing output.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1368",
     "updated_at": "2022-08-16T11:22:09+00:00",
     "created_at": "2022-08-03T13:16:48+00:00",
     "closed_at": "2022-08-04T07:16:09+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1368",
-      "html_url": "https://github.com/acts-project/acts/pull/1368",
-      "diff_url": "https://github.com/acts-project/acts/pull/1368.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1368.patch",
-      "merged_at": "2022-08-04T07:16:09Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "Can I approve my own backport?",
+        "submitted_at": "2022-08-03T14:39:23+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "after it went in once it can go in again :smile: ",
+        "submitted_at": "2022-08-03T15:05:19+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Trigger CI also on PRs to develop/* branches",
@@ -898,18 +1282,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1367",
     "number": 1367,
     "assignee": null,
+    "body": "This is needed for backporting.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1367",
     "updated_at": "2022-08-16T09:18:15+00:00",
     "created_at": "2022-08-03T12:39:44+00:00",
     "closed_at": "2022-08-03T19:12:01+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1367",
-      "html_url": "https://github.com/acts-project/acts/pull/1367",
-      "diff_url": "https://github.com/acts-project/acts/pull/1367.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1367.patch",
-      "merged_at": "2022-08-03T19:12:01Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-03T12:44:24+00:00"
+      }
+    ]
   },
   {
     "title": "feat: CI checks for ITk seeding example [backport #1352 to develop/v19.x]",
@@ -925,18 +1316,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1366",
     "number": 1366,
     "assignee": null,
+    "body": "Backport 1ae80fb9b0b7dcc44b761613534d233a6d056e41 from #1352.\n---\nThis PR includes a CI test that runs the seeding using the ITk pixel configuration.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1366",
     "updated_at": "2022-08-16T09:19:03+00:00",
     "created_at": "2022-08-03T12:11:10+00:00",
     "closed_at": "2022-08-03T12:40:07+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1366",
-      "html_url": "https://github.com/acts-project/acts/pull/1366",
-      "diff_url": "https://github.com/acts-project/acts/pull/1366.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1366.patch",
-      "merged_at": "2022-08-03T12:40:07Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-03T12:23:50+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Set up backport action that reacts to labels",
@@ -952,18 +1350,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1365",
     "number": 1365,
     "assignee": null,
+    "body": "This PR should configure a backport action that can be triggered via\r\nlabels. The action will create a backport PR targetting the branch\r\nspecified in the label. Kodiak's config has been updated to deal with\r\nthis nicely (hopefully).",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1365",
     "updated_at": "2022-08-16T09:18:14+00:00",
     "created_at": "2022-08-03T11:55:05+00:00",
     "closed_at": "2022-08-03T11:58:23+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1365",
-      "html_url": "https://github.com/acts-project/acts/pull/1365",
-      "diff_url": "https://github.com/acts-project/acts/pull/1365.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1365.patch",
-      "merged_at": "2022-08-03T11:58:23Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-03T11:57:32+00:00"
+      }
+    ]
   },
   {
     "title": "fix: any direction for helical track linearizer",
@@ -974,23 +1379,54 @@
     "labels": [
       {
         "name": "backport develop/v19.x"
+      },
+      {
+        "name": "backport develop/v9.1.x"
+      },
+      {
+        "name": "backport develop/v19.0.x"
       }
     ],
     "html_url": "https://github.com/acts-project/acts/pull/1363",
     "number": 1363,
     "assignee": null,
-    "updated_at": "2022-08-04T11:07:03+00:00",
+    "body": "Previously the `HelicalTrackLinearizer` assumed that the vertex we are fitting has to be reachable by back propagation. This is not always the case. In this PR we try to estimate the direction in which we will find the vertex and use it for the propagation.\r\n\r\n@asalzburger mentioned that it would be good to back propagate from the first measurement of the particle on the track as this will always be \"ahead\" of the vertex\r\n\r\ncc @paulgessinger ",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1363",
+    "updated_at": "2022-10-03T08:03:32+00:00",
     "created_at": "2022-08-03T08:54:56+00:00",
     "closed_at": "2022-08-04T11:02:04+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1363",
-      "html_url": "https://github.com/acts-project/acts/pull/1363",
-      "diff_url": "https://github.com/acts-project/acts/pull/1363.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1363.patch",
-      "merged_at": "2022-08-04T11:02:04Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-03T15:48:34+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-03T15:55:27+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "lgtm",
+        "submitted_at": "2022-08-04T07:09:29+00:00"
+      }
+    ]
   },
   {
     "title": "chore: clang-tidy performance-move-const-arg",
@@ -1012,18 +1448,34 @@
     "html_url": "https://github.com/acts-project/acts/pull/1359",
     "number": 1359,
     "assignee": null,
+    "body": "This enables the `performance-move-const-arg` check in clang-tidy.\r\nIt suggests replacing/removing `std::move` where it won't actually do anything, e.g. because the called function takes a const reference anyway, or the underlying type is trivially copyable. This PR removes the `std::move` calls in these cases.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1359",
     "updated_at": "2022-08-03T12:11:27+00:00",
     "created_at": "2022-08-02T09:45:02+00:00",
     "closed_at": "2022-08-02T15:08:38+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1359",
-      "html_url": "https://github.com/acts-project/acts/pull/1359",
-      "diff_url": "https://github.com/acts-project/acts/pull/1359.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1359.patch",
-      "merged_at": "2022-08-02T15:08:38Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "COMMENTED",
+        "body": "Looks good to me in general.\r\n\r\nMaybe you could add in the description, that you also changed all relevant `move()`-cases in this PR.\r\n\r\nAs far as I can remember, the `CylinderSurface.*` are very similar to the `ConeSurface.*`, and the `cbounds` are there static too. But it seems you haven't touched them in this PR.",
+        "submitted_at": "2022-08-02T13:01:35+00:00"
+      },
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-02T13:17:51+00:00"
+      }
+    ]
   },
   {
     "title": "chore: clang-tidy modernize-use-nullptr",
@@ -1045,18 +1497,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1358",
     "number": 1358,
     "assignee": null,
+    "body": "This enables the `modernize-use-nullptr` check in clang-tidy. This prevents using `0` for a null pointer.\r\nThis PR also changes `0` to `nullptr` wherever already used as a null pointer.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1358",
     "updated_at": "2022-08-16T09:18:14+00:00",
     "created_at": "2022-08-02T09:41:19+00:00",
     "closed_at": "2022-08-03T16:54:26+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1358",
-      "html_url": "https://github.com/acts-project/acts/pull/1358",
-      "diff_url": "https://github.com/acts-project/acts/pull/1358.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1358.patch",
-      "merged_at": "2022-08-03T16:54:26Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "APPROVED",
+        "body": "lgtm.\r\n\r\nMaybe you could add in the description:\r\n\"This PR also changes `0` to `nullptr` wherever already used as a null pointer.\"",
+        "submitted_at": "2022-08-03T09:46:32+00:00"
+      }
+    ]
   },
   {
     "title": "fix: improve Python full-chain ITk example",
@@ -1072,18 +1531,57 @@
     "html_url": "https://github.com/acts-project/acts/pull/1356",
     "number": 1356,
     "assignee": null,
+    "body": "For ttbar + PU200 example code (commented out in `full_chain_itk.py`), change particle selector pT > 1 GeV to pT > 0.15 GeV.\r\n\r\nThis change allows lower momentum particles to be included in the simulation. They may not be reconstructed and certainly won't be included in the efficiency calculation, but do provide more realistic hits in the detector to test the pattern recognition. @asalzburger suggested Fatras should still be able to cope with 150 MeV.\r\n\r\nNote, that this is in code that is commented out in the example script. The PR merely provides a better example for anyone wanting to test ITk with ttbar and pile-up.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1356",
     "updated_at": "2022-08-03T12:11:26+00:00",
     "created_at": "2022-07-29T17:52:35+00:00",
     "closed_at": "2022-08-02T10:07:59+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1356",
-      "html_url": "https://github.com/acts-project/acts/pull/1356",
-      "diff_url": "https://github.com/acts-project/acts/pull/1356.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1356.patch",
-      "merged_at": "2022-08-02T10:07:59Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "tboldagh",
+        "html_url": "https://github.com/tboldagh"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "COMMENTED",
+        "body": "Seems OK to me. What is the reason for this change? (Maybe you could also add it to the intro-comment)",
+        "submitted_at": "2022-08-01T09:19:26+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T09:52:41+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T09:56:48+00:00"
+      },
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-01T22:03:03+00:00"
+      }
+    ]
   },
   {
     "title": "fix: accumulating residual plots in boundParamResolution if only `predicted==true`",
@@ -1102,18 +1600,30 @@
     "html_url": "https://github.com/acts-project/acts/pull/1355",
     "number": 1355,
     "assignee": null,
+    "body": "In the rare case of `(smoothed or filtered) == false` the residual plots accumulated with each layer, instead of only using the current layer.\r\nAfter changing the hardcoded `\"same\"` to `drawOptions.c_str()`, as in all other places, this bug is fixed.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1355",
     "updated_at": "2022-08-04T09:38:29+00:00",
     "created_at": "2022-07-29T11:27:56+00:00",
     "closed_at": "2022-08-01T09:57:45+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1355",
-      "html_url": "https://github.com/acts-project/acts/pull/1355",
-      "diff_url": "https://github.com/acts-project/acts/pull/1355.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1355.patch",
-      "merged_at": "2022-08-01T09:57:45Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "asalzburger",
+        "html_url": "https://github.com/asalzburger"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-01T09:57:12+00:00"
+      }
+    ]
   },
   {
     "title": "docs: spelling, delete unused figures, beautify",
@@ -1132,18 +1642,48 @@
     "html_url": "https://github.com/acts-project/acts/pull/1353",
     "number": 1353,
     "assignee": null,
+    "body": "- Fix: spelling, grammar, typos, ...\r\n- Del: doubled words like in in here\r\n- Del: the figures used in file `docs/integration/fcc.md`, that got deleted in [PR #1338](https://github.com/acts-project/acts/pull/1338)\r\n- beautify some code examples",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1353",
     "updated_at": "2022-08-16T09:18:13+00:00",
     "created_at": "2022-07-29T07:48:38+00:00",
     "closed_at": "2022-08-04T12:12:33+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1353",
-      "html_url": "https://github.com/acts-project/acts/pull/1353",
-      "diff_url": "https://github.com/acts-project/acts/pull/1353.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1353.patch",
-      "merged_at": "2022-08-04T12:12:33Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "robertlangenberg",
+        "html_url": "https://github.com/robertlangenberg"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-03T15:53:49+00:00"
+      },
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-04T09:03:39+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "lgtm",
+        "submitted_at": "2022-08-04T10:54:19+00:00"
+      }
+    ]
   },
   {
     "title": "feat: CI checks for ITk seeding example",
@@ -1171,18 +1711,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1352",
     "number": 1352,
     "assignee": null,
+    "body": "This PR includes a CI test that runs the seeding using the ITk pixel configuration.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1352",
     "updated_at": "2022-08-16T09:18:13+00:00",
     "created_at": "2022-07-29T07:48:10+00:00",
     "closed_at": "2022-08-03T09:01:43+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1352",
-      "html_url": "https://github.com/acts-project/acts/pull/1352",
-      "diff_url": "https://github.com/acts-project/acts/pull/1352.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1352.patch",
-      "merged_at": "2022-08-03T09:01:43Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "robertlangenberg",
+          "html_url": "https://github.com/robertlangenberg"
+        },
+        "state": "APPROVED",
+        "body": "looks good to me!",
+        "submitted_at": "2022-08-02T14:45:24+00:00"
+      }
+    ]
   },
   {
     "title": "ci: Switch gitlab test job to needs instead of dependencies",
@@ -1201,18 +1748,25 @@
     "html_url": "https://github.com/acts-project/acts/pull/1349",
     "number": 1349,
     "assignee": null,
+    "body": "This should speed up CI execution a bit.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1349",
     "updated_at": "2022-08-03T12:11:23+00:00",
     "created_at": "2022-07-27T14:04:41+00:00",
     "closed_at": "2022-08-01T15:18:51+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1349",
-      "html_url": "https://github.com/acts-project/acts/pull/1349",
-      "diff_url": "https://github.com/acts-project/acts/pull/1349.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1349.patch",
-      "merged_at": "2022-08-01T15:18:51Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:20:21+00:00"
+      }
+    ]
   },
   {
     "title": "refactor: Change ConstrainedStep to be explicit",
@@ -1223,23 +1777,150 @@
     "labels": [
       {
         "name": "automerge"
+      },
+      {
+        "name": "backport develop/v19.0.x"
       }
     ],
     "html_url": "https://github.com/acts-project/acts/pull/1347",
     "number": 1347,
     "assignee": null,
-    "updated_at": "2022-08-03T12:11:23+00:00",
+    "body": "while working on https://github.com/acts-project/acts/issues/1345 I stumbled across `ConstrainedStep` and the way how it converts to a Scalar. I believe there are cases where it will return `+/- max` which will break the propagation\r\n\r\nsimilar to #1346 but more intrusive and meant to fix the underlying bug\r\n\r\nin this PR I rearranged the code and added a few short hands for common code in `ConstrainedStep`",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1347",
+    "updated_at": "2022-09-07T10:51:25+00:00",
     "created_at": "2022-07-27T09:36:43+00:00",
     "closed_at": "2022-08-02T12:53:39+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1347",
-      "html_url": "https://github.com/acts-project/acts/pull/1347",
-      "diff_url": "https://github.com/acts-project/acts/pull/1347.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1347.patch",
-      "merged_at": "2022-08-02T12:53:39Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-27T12:32:32+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-27T14:27:29+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-27T14:29:04+00:00"
+      },
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-29T07:44:23+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-29T07:46:35+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "This looks like a good idea to me. I think it be great to have @asalzburger at least have a cursory look at this, too.",
+        "submitted_at": "2022-08-01T14:04:52+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:12:33+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:14:37+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:15:58+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:16:28+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:37:42+00:00"
+      },
+      {
+        "user": {
+          "login": "asalzburger",
+          "html_url": "https://github.com/asalzburger"
+        },
+        "state": "APPROVED",
+        "body": "I think that's good - it makes it clearer what is happening, indeed.",
+        "submitted_at": "2022-08-02T11:44:59+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-02T11:46:07+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-02T11:49:55+00:00"
+      }
+    ]
   },
   {
     "title": "fix: Multi-Stepper stepping error in multiple components + refactoring",
@@ -1264,18 +1945,84 @@
     "html_url": "https://github.com/acts-project/acts/pull/1339",
     "number": 1339,
     "assignee": null,
-    "updated_at": "2022-08-16T09:18:12+00:00",
+    "body": "This PR does refactor the `MultiEigenStepperLoop` and fixes a situation, where a few stepping-erros could break the whole propagation.\r\n- **Fix:** If some components had stepping errors and all other components where on a surface, the propagation terminated\r\n- **Refactor:**\r\n  - remove internal logger from `MultiEigenStepperLoop` since it is not really configurable from outside\r\n  - improve `MultiEigenStepperLoop::step` (only construct summary-string in `VERBOSE` mode or on error, remove unnecessary loops and vectors, move things to lambdas, ...)\r\n\r\n**NOTE:** This does not fix the reason why stepping errors occur in some situations, this (hopefully) will be done in a subsequent PR)",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1339",
+    "updated_at": "2022-09-13T14:39:38+00:00",
     "created_at": "2022-07-25T12:52:03+00:00",
     "closed_at": "2022-08-04T14:29:29+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1339",
-      "html_url": "https://github.com/acts-project/acts/pull/1339",
-      "diff_url": "https://github.com/acts-project/acts/pull/1339.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1339.patch",
-      "merged_at": "2022-08-04T14:29:29Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "asalzburger",
+        "html_url": "https://github.com/asalzburger"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T13:51:08+00:00"
+      },
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-02T07:30:31+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-02T07:37:26+00:00"
+      },
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-02T15:23:52+00:00"
+      },
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-02T15:24:21+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-02T15:42:11+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "ok let's go.",
+        "submitted_at": "2022-08-04T13:44:34+00:00"
+      }
+    ]
   },
   {
     "title": "test: geant4 python example",
@@ -1291,18 +2038,129 @@
     "html_url": "https://github.com/acts-project/acts/pull/1334",
     "number": 1334,
     "assignee": null,
+    "body": "similar to [fatras.py](https://github.com/acts-project/acts/blob/main/Examples/Scripts/Python/fatras.py) I tried to add a Geant4 utility function to add it to the chain instead of fatras",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1334",
     "updated_at": "2022-08-03T12:11:19+00:00",
     "created_at": "2022-07-21T17:29:27+00:00",
     "closed_at": "2022-08-02T10:57:09+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1334",
-      "html_url": "https://github.com/acts-project/acts/pull/1334",
-      "diff_url": "https://github.com/acts-project/acts/pull/1334.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1334.patch",
-      "merged_at": "2022-08-02T10:57:09Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "asalzburger",
+        "html_url": "https://github.com/asalzburger"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:39:10+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:40:52+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:46:47+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-28T12:57:58+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-28T13:03:21+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "Sorry for more comments. \ud83d\ude05 ",
+        "submitted_at": "2022-08-01T13:54:05+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T13:58:33+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:17:00+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:34:33+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-01T14:45:13+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-02T08:14:03+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-02T09:46:12+00:00"
+      }
+    ]
   },
   {
     "title": "fix: full chain vertexing",
@@ -1321,18 +2179,160 @@
     "html_url": "https://github.com/acts-project/acts/pull/1299",
     "number": 1299,
     "assignee": null,
+    "body": "fix full chain odd vertexing added here https://github.com/acts-project/acts/pull/1286\r\n\r\nsome early discussion here https://mattermost.web.cern.ch/acts/pl/m6psyge3apgcucesrgojeaajny\r\n\r\n- output track parameters from `TrackFindingAlgorithm`\r\n- refactor error handling in `*VertexFinderAlgorithm`\r\n- rewire default whiteboard names in python examples\r\n- use IVF in `full_chain_odd.py` with 2 muons (which should give us an actual vertex)",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1299",
     "updated_at": "2022-08-16T09:21:37+00:00",
-    "created_at": "2022-06-29T14:40:51+00:00",
+    "created_at": "2022-06-29T14:40:49+00:00",
     "closed_at": "2022-08-09T12:36:41+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1299",
-      "html_url": "https://github.com/acts-project/acts/pull/1299",
-      "diff_url": "https://github.com/acts-project/acts/pull/1299.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1299.patch",
-      "merged_at": "2022-08-09T12:36:41Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "APPROVED",
+        "body": "Looks good to me.",
+        "submitted_at": "2022-07-07T09:59:15+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T07:58:56+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T08:00:18+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T08:01:55+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T08:02:07+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "We just need to figure out what to do with the new ERRORs.\r\n\r\n@asalzburger do you have any thoughts on this?",
+        "submitted_at": "2022-07-08T08:02:35+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T11:55:23+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T11:55:40+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T11:56:15+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T11:58:19+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-08T12:01:31+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-11T07:08:49+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-11T09:12:06+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-11T09:18:24+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-08-05T08:32:51+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-09T08:22:22+00:00"
+      }
+    ]
   },
   {
     "title": "feat!: MultiTrajectory backends",
@@ -1348,18 +2348,291 @@
     "html_url": "https://github.com/acts-project/acts/pull/1262",
     "number": 1262,
     "assignee": null,
+    "body": "This PR decouples the interface of `MultiTrajectory` from the storage backend. The default storage backend is practically identical to the previous implementation, but it's now behind the interface. This change is intended to allow seamless integration with experiment specific EDM backends, like ATLAS' xAOD.\r\n\r\nSee [these slides](https://indico.cern.ch/event/1145372/contributions/4892312/attachments/2450169/4198806/2022-05-24_tracking-edm-update_v2.pdf) for some more information.\r\n\r\nBREAKING CHANGE: The template parameters of `CombinatorialKalmanFilter`, `KalmanFitter` and `GaussianSumFitter` changes to \r\n```cpp\r\ntemplate <typename propagator_t, typename traj_t>\r\nclass CombinatorialKalmanFilter;\r\ntemplate <typename propagator_t, typename traj_t>\r\nclass KalmanFitter;\r\ntemplate <typename propagator_t, typename traj_t,\r\n          typename bethe_heitler_approx_t = detail::BetheHeitlerApprox<6, 5>>\r\nstruct GaussianSumFitter;\r\n```\r\n\r\nRelated classes (options, extensions, result) also change, gaining a `traj_t` template parameter. This parameter is the type of the memory backend.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1262",
     "updated_at": "2022-08-16T09:18:11+00:00",
     "created_at": "2022-05-20T13:22:38+00:00",
     "closed_at": "2022-08-03T15:45:55+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1262",
-      "html_url": "https://github.com/acts-project/acts/pull/1262",
-      "diff_url": "https://github.com/acts-project/acts/pull/1262.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1262.patch",
-      "merged_at": "2022-08-03T15:45:54Z"
-    }
+    "requested_reviewers": [
+      {
+        "login": "Corentin-Allaire",
+        "html_url": "https://github.com/Corentin-Allaire"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "tboldagh",
+          "html_url": "https://github.com/tboldagh"
+        },
+        "state": "COMMENTED",
+        "body": "Just a few comments (more questions realy).\r\nOne thing that I missed to spot, and was curious was creation of new track states\r\nin CKF, KF or GSF and how this changes with backend?",
+        "submitted_at": "2022-05-22T12:58:35+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-22T19:48:50+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-22T19:49:05+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-22T19:51:38+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-22T19:51:54+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-22T19:52:41+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-22T19:53:23+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-22T19:53:54+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-22T19:54:35+00:00"
+      },
+      {
+        "user": {
+          "login": "tboldagh",
+          "html_url": "https://github.com/tboldagh"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-23T06:27:09+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-23T10:48:22+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-05-23T10:56:00+00:00"
+      },
+      {
+        "user": {
+          "login": "tboldagh",
+          "html_url": "https://github.com/tboldagh"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-03T07:54:06+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-14T13:28:53+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:05:27+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:05:44+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:05:54+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:06:33+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:06:51+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:08:09+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:08:36+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:08:56+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:10:26+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-27T11:10:51+00:00"
+      },
+      {
+        "user": {
+          "login": "tboldagh",
+          "html_url": "https://github.com/tboldagh"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-30T13:05:41+00:00"
+      },
+      {
+        "user": {
+          "login": "tboldagh",
+          "html_url": "https://github.com/tboldagh"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-30T13:06:38+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-30T15:22:46+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-06-30T15:23:14+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-04T07:54:47+00:00"
+      },
+      {
+        "user": {
+          "login": "tboldagh",
+          "html_url": "https://github.com/tboldagh"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-04T08:36:37+00:00"
+      }
+    ]
   },
   {
     "title": "refactor!: Build DD4hep geometry from hierarchy, use VariantParameters",
@@ -1375,17 +2648,105 @@
     "html_url": "https://github.com/acts-project/acts/pull/1257",
     "number": 1257,
     "assignee": null,
+    "body": "This PR changes the DD4hep integration model. Instead of the DD4hep factory code having to depend on ACTS or the ActsDD4hep glue lib, they now use a mechanism we merged into DD4hep (as of `1.21`): [`MapStringVariantStruct`](https://dd4hep.web.cern.ch/dd4hep/reference/structdd4hep_1_1rec_1_1MapStringVariantStruct.html), which is wrapped into a detector element *extension* as `VariantParameters`.\r\n\r\nThis extension is independent of ACTS and encodes key value pairs, with the keys being strings and the values being any of string, int, float or bool. ACTS will use information attached to detector elements via this mechanism to identify layers, surface axes and material properties (layer and boundary).\r\n\r\nThis PR also removes the need to active subdetectors to be marked up using a specific extension: using the DD4hep `DetType` enum, ACTS will look for detector elements flagged `TRACKER` and `BARREL`, `ENDCAP` or `BEAMPIPE` and handle them accordingly. Passive structures that cannot be flagged with the above use a *variant* parameter `passive_layer` to tell ACTS to translate them.\r\n\r\n## Possible parameters ACTS will interpret\r\n\r\nACTS geometry translation uses parameters attached to DD4hep detector elements via the `VariantParameters` extension. You can set this extension from your factory code, or use DD4hep's plugin mechanism to set parameters on detector elements via name. Here's an excerpt from the Open Data Detector on how to use this to mark a passive structure as a *passive layer*:\r\n\r\n```xml\r\n<lccdd>\r\n  <detectors>\r\n    <detector id=\"ODD_Solenoid_ID\" name=\"Solenoid\" type=\"ODDCylinder\" beampipe=\"false\" vis=\"Aluminum\">\r\n      <type_flags type=\"DetType_TRACKER\" />\r\n      <boundary_material surface=\"inner\" binning=\"binPhi,binZ\" bins0=\"mat_sol_bPhi\" bins1=\"mat_sol_bZ\"/>\r\n      <tubs name=\"Solenoid\" rmin=\"sol_rmin\" rmax=\"sol_rmax\" dz=\"sol_hlength\" material=\"Aluminum\">\r\n        <layer_material surface=\"representing\" binning=\"binPhi,binZ\" bins0=\"mat_sol_bPhi\" bins1=\"mat_sol_bZ\"/>\r\n      </tubs>\r\n    </detector>\r\n  </detectors>\r\n\r\n  <plugins>\r\n    <plugin name=\"DD4hep_ParametersPlugin\">\r\n      <argument value=\"Solenoid\"/>\r\n      <argument value=\"passive_layer: bool = true\"/>\r\n    </plugin>\t\r\n  </plugins>\r\n</lccdd>\r\n```\r\n\r\n* Layer\r\n\r\n  * `envelope_{r,z}_{min,max}`: explicit envelope for a layer\r\n  * `layer_material`: mark a layer as passive (use this if you want to add a passive layer that is not a beampipe)\r\n  * Surface binning:\r\n\r\n    * `surface_binning`: set to true to indicate that explicit surface binning is set.\r\n    * `surface_binning_n_{phi,r}`: surface binning for a layer\r\n\r\n  * Layer material:\r\n\r\n    * `layer_material`: set to true to indicate that the layer has layer material configuration\r\n\r\n      * `layer_material_representing`: set to true to indicate representing layer material\r\n      * `layer_material_inner`: set to true to indicate inner layer material\r\n      * `layer_material_outer`: set to true to indicate outer layer material\r\n      * `layer_material_{representing,inner,outer}_bin{X,Y,Z,R,Phi,RPhi,H,Eta,Mag}` to give the number of bins in a direction\r\n\r\n* Sensor\r\n\r\n  * `axis_definitions`: local axis definitions for a sensor. Default: `XYZ`. See {class}`Acts::DD4hepDetectorElement` for details\r\n\r\n* Volume / subdetector\r\n\r\n  * `boundary_material`: set to true to indicate boundary material is set\r\n  * `boundary_material_{negative,positive,inner,outer}` to indicate which boundary material surfaces should be set\r\n  * `boundary_material_{negative,positive,inner,outer}_bin{X,Y,Z,R,Phi,RPhi,H,Eta,Mag}` to give the number of bins in a direction",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1257",
     "updated_at": "2022-08-16T09:18:11+00:00",
     "created_at": "2022-05-17T11:00:17+00:00",
     "closed_at": "2022-08-03T14:05:46+00:00",
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1257",
-      "html_url": "https://github.com/acts-project/acts/pull/1257",
-      "diff_url": "https://github.com/acts-project/acts/pull/1257.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1257.patch",
-      "merged_at": "2022-08-03T14:05:46Z"
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "7k lines gone - that's what I call a proper refactor :smile: \r\n\r\nsorry I browsed through the code but could not come up with any meaningful comments",
+        "submitted_at": "2022-07-25T08:08:44+00:00"
+      },
+      {
+        "user": {
+          "login": "asalzburger",
+          "html_url": "https://github.com/asalzburger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:09:07+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:16:18+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:16:36+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:16:54+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:17:14+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:19:21+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:21:12+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-25T09:21:24+00:00"
+      },
+      {
+        "user": {
+          "login": "asalzburger",
+          "html_url": "https://github.com/asalzburger"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2022-08-03T13:06:24+00:00"
+      }
+    ]
   }
 ]

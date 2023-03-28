@@ -1,126 +1,567 @@
 [
   {
-    "title": "feat: update to version v0.4.20 of ActSVG",
+    "title": "refactor: Ambiguity solvers now use Track containers",
     "user": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
+      "login": "Corentin-Allaire",
+      "html_url": "https://github.com/Corentin-Allaire"
     },
     "labels": [
       {
-        "name": "Component - Plugins"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1443",
-    "number": 1443,
-    "assignee": null,
-    "updated_at": "2022-08-17T15:22:26+00:00",
-    "created_at": "2022-08-17T14:32:49+00:00",
-    "closed_at": null,
-    "is_wip": false,
-    "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1443",
-      "html_url": "https://github.com/acts-project/acts/pull/1443",
-      "diff_url": "https://github.com/acts-project/acts/pull/1443.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1443.patch",
-      "merged_at": null
-    }
-  },
-  {
-    "title": "refactor: debug print particle id value [backport #1435 to develop/v19.x]",
-    "user": {
-      "login": "acts-project-service",
-      "html_url": "https://github.com/acts-project-service"
-    },
-    "labels": [
-      {
-        "name": "automerge"
+        "name": "Improvement"
       },
       {
-        "name": "backport"
+        "name": "Impact - Minor"
+      },
+      {
+        "name": "Component - Examples"
       }
     ],
-    "html_url": "https://github.com/acts-project/acts/pull/1442",
-    "number": 1442,
+    "html_url": "https://github.com/acts-project/acts/pull/1996",
+    "number": 1996,
     "assignee": null,
-    "updated_at": "2022-08-17T09:11:24+00:00",
-    "created_at": "2022-08-16T16:09:10+00:00",
+    "body": "This PR change both Ambiguity solvers to use the Track container instead of the Trajectory ones.\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1996",
+    "updated_at": "2023-03-28T10:38:08+00:00",
+    "created_at": "2023-03-27T15:41:24+00:00",
     "closed_at": null,
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1442",
-      "html_url": "https://github.com/acts-project/acts/pull/1442",
-      "diff_url": "https://github.com/acts-project/acts/pull/1442.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1442.patch",
-      "merged_at": null
-    }
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "APPROVED",
+        "body": "lgtm! :+1: ",
+        "submitted_at": "2023-03-27T16:39:58+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-28T07:46:40+00:00"
+      },
+      {
+        "user": {
+          "login": "Corentin-Allaire",
+          "html_url": "https://github.com/Corentin-Allaire"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-28T08:52:40+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-28T08:57:00+00:00"
+      }
+    ]
   },
   {
-    "title": "docs: Tracking in a nutshell",
+    "title": "fix: Track state range is invalid if tip index is",
     "user": {
       "login": "paulgessinger",
       "html_url": "https://github.com/paulgessinger"
     },
-    "labels": [
-      {
-        "name": "Component - Documentation"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1399",
-    "number": 1399,
-    "assignee": {
-      "login": "paulgessinger",
-      "html_url": "https://github.com/paulgessinger"
-    },
-    "updated_at": "2022-08-16T11:08:18+00:00",
-    "created_at": "2022-08-08T13:35:17+00:00",
+    "labels": [],
+    "html_url": "https://github.com/acts-project/acts/pull/1995",
+    "number": 1995,
+    "assignee": null,
+    "body": "This changes the track state ranges to return zero-length ranges in case the tip index is kInvalid. The VectorTrackContainer backend initializes the `tipIndex` to kInvalid, and so does the `addTrack`, so in principle this should always be consistent by default.\r\n\r\nFixes #1994",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1995",
+    "updated_at": "2023-03-27T16:23:48+00:00",
+    "created_at": "2023-03-27T14:24:51+00:00",
     "closed_at": null,
     "is_wip": false,
     "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1399",
-      "html_url": "https://github.com/acts-project/acts/pull/1399",
-      "diff_url": "https://github.com/acts-project/acts/pull/1399.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1399.patch",
-      "merged_at": null
-    }
+    "requested_reviewers": [],
+    "reviews": []
   },
   {
-    "title": "docs: first brush over the geometry pages",
+    "title": "perf: Space Point Formation requires functions that accepts const reference to source links",
+    "user": {
+      "login": "CarloVarni",
+      "html_url": "https://github.com/CarloVarni"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1991",
+    "number": 1991,
+    "assignee": null,
+    "body": null,
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1991",
+    "updated_at": "2023-03-27T11:19:15+00:00",
+    "created_at": "2023-03-25T14:17:29+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": []
+  },
+  {
+    "title": "Enable interaction in `truth_tracking_kalman.py`",
+    "user": {
+      "login": "beomki-yeo",
+      "html_url": "https://github.com/beomki-yeo"
+    },
+    "labels": [],
+    "html_url": "https://github.com/acts-project/acts/pull/1990",
+    "number": 1990,
+    "assignee": null,
+    "body": "This PR enables the material interaction in `truth_tracking_kalman`.\r\nI did some case studies and I will let others judge which configuration (eta, momentum) is the best.\r\n\r\nCase 1 (main)\r\nDefault momentum config\r\nEta: -2:2\r\nNo interaction\r\n\r\n<img src=\"https://user-images.githubusercontent.com/63090140/227718453-f007b7a4-9560-4c7c-9973-ffa33f3173b1.png\" width=\"400\">)\r\n\r\nCase2 (This PR)\r\nDefault momentum config\r\nEta: -2:2\r\nYes interaction\r\n\r\n<img src=\"https://user-images.githubusercontent.com/63090140/227718464-f8896bf6-8cf0-4e03-9e7a-f5d74e69ed73.png\" width=\"400\">)\r\n\r\n\r\nCase3 \r\n10 GeV\r\nEta: -2:2\r\nYes interaction\r\n\r\n<img src=\"https://user-images.githubusercontent.com/63090140/227718483-c61087cf-e1b4-4a05-b29c-0c72d931882d.png\" width=\"400\">))\r\n\r\n\r\nCase4 \r\n10 GeV\r\nEta: 0:0\r\nYes interaction\r\n\r\n<img src=\"https://user-images.githubusercontent.com/63090140/227718491-c27e3f07-4836-41d8-b690-5088de2cc9e9.png\" width=\"400\">)))\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1990",
+    "updated_at": "2023-03-27T11:41:37+00:00",
+    "created_at": "2023-03-25T11:16:49+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": []
+  },
+  {
+    "title": "refactor: remove/rearrange includes in propagator",
+    "user": {
+      "login": "andiwand",
+      "html_url": "https://github.com/andiwand"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1988",
+    "number": 1988,
+    "assignee": null,
+    "body": "in hope of reducing compilation time",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1988",
+    "updated_at": "2023-03-25T09:09:42+00:00",
+    "created_at": "2023-03-24T16:36:39+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-24T16:37:46+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-24T16:41:49+00:00"
+      }
+    ]
+  },
+  {
+    "title": "refactor: add propagator stage",
+    "user": {
+      "login": "andiwand",
+      "html_url": "https://github.com/andiwand"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1987",
+    "number": 1987,
+    "assignee": null,
+    "body": "templated propagator stage for actors and aborters to disambiguate the callers state e.g. start of propagation, pre step, post step, end of propagation",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1987",
+    "updated_at": "2023-03-27T11:09:34+00:00",
+    "created_at": "2023-03-24T13:36:35+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-27T11:06:26+00:00"
+      }
+    ]
+  },
+  {
+    "title": "feat: cylindrical detector",
     "user": {
       "login": "asalzburger",
       "html_url": "https://github.com/asalzburger"
     },
     "labels": [
       {
-        "name": "Component - Documentation"
+        "name": "Component - Core"
+      },
+      {
+        "name": "Feature"
       }
     ],
-    "html_url": "https://github.com/acts-project/acts/pull/1395",
-    "number": 1395,
+    "html_url": "https://github.com/acts-project/acts/pull/1983",
+    "number": 1983,
+    "assignee": null,
+    "body": "This PR adds the infrastructure to create cylindrical detectors with the new `Detector` structure. It adds the helper for cylindrical detector that can do the connection/glueing of portals in R, z, phi and an associated wrapping (with bevelled bounds). These will be needed to build the first `OpenDataDetector` implementation. \r\n\r\nIt does also add unit tests for these cases.\r\n\r\n@andiwand this is for your information @noemina has agreed to review it.\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1983",
+    "updated_at": "2023-03-28T09:47:36+00:00",
+    "created_at": "2023-03-23T12:25:44+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [
+      {
+        "login": "noemina",
+        "html_url": "https://github.com/noemina"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "round 1",
+        "submitted_at": "2023-03-27T12:46:50+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "round 2/2",
+        "submitted_at": "2023-03-27T13:56:53+00:00"
+      }
+    ]
+  },
+  {
+    "title": "feat: Make layer envelope dimensions configurable",
+    "user": {
+      "login": "plariono",
+      "html_url": "https://github.com/plariono"
+    },
+    "labels": [],
+    "html_url": "https://github.com/acts-project/acts/pull/1982",
+    "number": 1982,
+    "assignee": null,
+    "body": "The idea of this PR is to make the radial envelope parameters of the layer/volume builder configurable. This is important for the geometries with closely located layers: the standard (and hardcoded) dimensions of the envelopes result in volume overlapping.\r\nI also realized that there are two envelopes built around each layer and I'm not sure I understand the idea behind it. \r\n@asalzburger, @paulgessinger could you comment on that?\r\nI introduced two parameters, `beampipeEnvelopeR` and `layerEnvelopeR` that configure the radial envelope dimensions.\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1982",
+    "updated_at": "2023-03-23T09:41:39+00:00",
+    "created_at": "2023-03-23T08:54:16+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": []
+  },
+  {
+    "title": "build: Take CMAKE_CXX_STANDARD into account",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [],
+    "html_url": "https://github.com/acts-project/acts/pull/1981",
+    "number": 1981,
+    "assignee": null,
+    "body": "We're currently setting cxx_std_17 target by target.\r\nThis PR changes this to 17 or higher, and it only sets it on ActsCore\r\nand lets CMake propagate this to dependent targets.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1981",
+    "updated_at": "2023-03-24T15:00:31+00:00",
+    "created_at": "2023-03-22T16:11:46+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-22T16:13:58+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-22T16:17:57+00:00"
+      },
+      {
+        "user": {
+          "login": "benjaminhuth",
+          "html_url": "https://github.com/benjaminhuth"
+        },
+        "state": "APPROVED",
+        "body": "",
+        "submitted_at": "2023-03-22T16:18:38+00:00"
+      }
+    ]
+  },
+  {
+    "title": "fix: Skipping un-physical steps in material mapping (#1882)",
+    "user": {
+      "login": "noemina",
+      "html_url": "https://github.com/noemina"
+    },
+    "labels": [
+      {
+        "name": "Bug"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1968",
+    "number": 1968,
+    "assignee": {
+      "login": "noemina",
+      "html_url": "https://github.com/noemina"
+    },
+    "body": "This PR fixes #1882.\r\n\r\nThe reason why the outer boundary was not seen is due to the accumulation of invalid material on it. Skipping un-physical steps (step length = 0) restores a sane behaviour of the mapping procedure.\r\n\r\nI have also added a check on existence of the `event_id` branch in the `TChain`. If the branch doesn't exist, the batch size is evaluated to be 1.\r\n\r\n@Corentin-Allaire @goetzgaycken \r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1968",
+    "updated_at": "2023-03-28T08:01:21+00:00",
+    "created_at": "2023-03-20T09:55:31+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "Corentin-Allaire",
+          "html_url": "https://github.com/Corentin-Allaire"
+        },
+        "state": "APPROVED",
+        "body": "Looks great, thanks a lot for solving this issue ! ",
+        "submitted_at": "2023-03-20T10:18:23+00:00"
+      }
+    ]
+  },
+  {
+    "title": "feat: Adding ITk scripts for material mapping and validation ",
+    "user": {
+      "login": "noemina",
+      "html_url": "https://github.com/noemina"
+    },
+    "labels": [
+      {
+        "name": "Component - Examples"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1967",
+    "number": 1967,
+    "assignee": {
+      "login": "noemina",
+      "html_url": "https://github.com/noemina"
+    },
+    "body": "A few scripts are added to allow material mapping and validation for ITk in the ACTS standalone configuration.\r\n\r\n@timadye @Corentin-Allaire @paulgessinger ",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1967",
+    "updated_at": "2023-03-28T08:01:53+00:00",
+    "created_at": "2023-03-20T09:44:32+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "Corentin-Allaire",
+          "html_url": "https://github.com/Corentin-Allaire"
+        },
+        "state": "APPROVED",
+        "body": "Looks good to me !",
+        "submitted_at": "2023-03-20T10:15:38+00:00"
+      },
+      {
+        "user": {
+          "login": "timadye",
+          "html_url": "https://github.com/timadye"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-20T11:07:28+00:00"
+      },
+      {
+        "user": {
+          "login": "noemina",
+          "html_url": "https://github.com/noemina"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-21T16:43:39+00:00"
+      }
+    ]
+  },
+  {
+    "title": "feat: Add logger to multi stepper",
+    "user": {
+      "login": "benjaminhuth",
+      "html_url": "https://github.com/benjaminhuth"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
+      },
+      {
+        "name": "Component - Examples"
+      },
+      {
+        "name": "Feature"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1964",
+    "number": 1964,
+    "assignee": null,
+    "body": "Adds a logger to the `Acts::MultiEigenStepperLoop` in order to see again the log messages from the `step(...)` function.",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1964",
+    "updated_at": "2023-03-20T08:07:11+00:00",
+    "created_at": "2023-03-19T14:52:19+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-20T08:07:10+00:00"
+      }
+    ]
+  },
+  {
+    "title": "feat: Example of integrating HoughTransform example algorithm with python ",
+    "user": {
+      "login": "tboldagh",
+      "html_url": "https://github.com/tboldagh"
+    },
+    "labels": [],
+    "html_url": "https://github.com/acts-project/acts/pull/1795",
+    "number": 1795,
+    "assignee": null,
+    "body": "This PR adds python example of configuring the HT as alternative seeder. It is off by default.\r\nSide fixes/improvements: \r\n- the HT seeder exceptions start with the name of it so one knows where to look.\r\n- whiteboard prints a bit more info when the types that are read from the whiteboard are mismatching.\r\n\r\nFI @jahreda \r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1795",
+    "updated_at": "2023-03-27T07:30:45+00:00",
+    "created_at": "2023-01-24T11:07:18+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": false,
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "AJPfleger",
+          "html_url": "https://github.com/AJPfleger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-09T13:09:58+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2023-03-20T13:16:51+00:00"
+      },
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "Looks alright to me. I think I already updated this component to the DataHandles, right?",
+        "submitted_at": "2023-03-20T13:17:31+00:00"
+      }
+    ]
+  },
+  {
+    "title": "fix: Energy loss function",
+    "user": {
+      "login": "beomki-yeo",
+      "html_url": "https://github.com/beomki-yeo"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/1323",
+    "number": 1323,
     "assignee": {
       "login": "asalzburger",
       "html_url": "https://github.com/asalzburger"
     },
-    "updated_at": "2022-08-16T09:29:02+00:00",
-    "created_at": "2022-08-08T12:38:14+00:00",
+    "body": "This PR fixes the Bethe energy loss function in `Interactions.cpp`\r\n\r\n`Acts::computeEnergyLossBethe` and `Acts::computeEnergyLossLandau` is implemented from equation 33.5 and 33.11 of [Review in Particle Physics](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.98.030001)\r\n\r\nAnd their first term is computed with `computeEpsilon` function, following the notation of equation 33.11:\r\n\r\n```c++\r\n/// Compute epsilon energy pre-factor for RPP2018 eq. 33.11.\r\n///\r\n/// Defined as\r\n///\r\n///     (K/2) * (Z/A)*rho * x * (q\u00b2/beta\u00b2)\r\n///\r\n/// where (Z/A)*rho is the electron density in the material and x is the\r\n/// traversed length (thickness) of the material.\r\ninline float computeEpsilon(float molarElectronDensity, float thickness,\r\n                            const RelativisticQuantities& rq) {\r\n  return 0.5f * K * molarElectronDensity * thickness * rq.q2OverBeta2;\r\n}\r\n```\r\n\r\nProblem is that the epsilon term of equation 33.5 for Bethe function doesnt have the `0.5f` term\r\n\r\nEq. 33.5\r\n![image](https://user-images.githubusercontent.com/63090140/178590990-e4982315-42e2-4033-9bc7-84c6500b0b71.png)\r\n\r\nEq. 33.11\r\n![image](https://user-images.githubusercontent.com/63090140/178591191-37bb33ba-93b9-424e-bb8b-9755c931d675.png)\r\n\r\nIf we are going to use the same epsilon term, we need to multiply 2 in the next term of Bethe energy loss function\r\n\r\nAfter the change, the output of `Acts::computeEnergyLossBethe` gets consistent with Figure 33.2 of the reference.\r\n\r\n### Update July 18th\r\n\r\nLooks like there is a _literature_ error in Landau energy loss function (eq. 33.11).\r\nIt used the mass term of the incident particle (`m`), but I guess it should be the mass of electron (`m_e`) as equation 33.5.\r\n**I need a cross-check from someone who can access [Straggling in thin silicon detectors](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.60.663), which I cannot** (Update: It is confirmed that it should be the rest mass of electron)\r\n\r\nFinally, to get a consistent result of energy loss function, we need to fix the `computeDeltaHalf` term as well.\r\nBut this is already mentioned in the comment which says: \"Should we use RPP2018 eq. 33.7 instead w/ tabulated constants?\"\r\n\r\n```c++\r\n/// Compute the density correction factor delta/2.\r\n///\r\n/// Uses RPP2018 eq. 33.6 which is only valid for high energies.\r\n///\r\n/// @todo Should we use RPP2018 eq. 33.7 instead w/ tabulated constants?\r\ninline float computeDeltaHalf(float meanExitationPotential,\r\n                              float molarElectronDensity,\r\n                              const RelativisticQuantities& rq) {\r\n```\r\n\r\nYeah it does make big difference between 33.6 (valid for very high energy particles) and 33.7.\r\n**I am not going to include delatHalf term correction in this PR**, but it is included in acts-project/detray#282\r\n\r\n\r\nAfter fixing codes (including the deltaHalf term), the Bethe energy loss function matches to the value in ([PDG](https://pdg.lbl.gov/2022/AtomicNuclearProperties/index.html))\r\n\r\nIn the following figure, Bethe energy loss (dE/dx) in Silicon is compared for Acts main, this PR, acts-project/detray#282, and PDG value. The value from this PR is not accurate yet due to the incorrect deltaHalf term\r\n\r\n<img src=\"https://user-images.githubusercontent.com/63090140/179622322-6c7170c9-7773-4eb4-a621-63e7429e3425.png\" width=\"700\">\r\n\r\nFor the most probable energy loss from Landau equation under the same condition of Figure 33.7 of [Review in Particle Physics](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.98.030001)\r\n, detray#282 got 0.526 MeV, which is very close to the value in the figure.\r\nThis PR got 0.739 MeV due to the incorrect delatHalf term\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1323",
+    "updated_at": "2023-03-18T05:27:55+00:00",
+    "created_at": "2022-07-12T20:43:52+00:00",
     "closed_at": null,
     "is_wip": false,
-    "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1395",
-      "html_url": "https://github.com/acts-project/acts/pull/1395",
-      "diff_url": "https://github.com/acts-project/acts/pull/1395.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1395.patch",
-      "merged_at": null
-    }
+    "is_stale": true,
+    "requested_reviewers": [
+      {
+        "login": "asalzburger",
+        "html_url": "https://github.com/asalzburger"
+      }
+    ],
+    "reviews": [
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-15T11:32:00+00:00"
+      },
+      {
+        "user": {
+          "login": "beomki-yeo",
+          "html_url": "https://github.com/beomki-yeo"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-07-15T23:16:19+00:00"
+      }
+    ]
   },
   {
-    "title": "feat: Checks for configuration of delta R values in seed finder",
+    "title": "perf: Tile 8\u00d78 covariance matrix multiplication",
     "user": {
-      "login": "LuisFelipeCoelho",
-      "html_url": "https://github.com/LuisFelipeCoelho"
+      "login": "stephenswat",
+      "html_url": "https://github.com/stephenswat"
     },
     "labels": [
       {
@@ -130,76 +571,51 @@
         "name": "Improvement"
       },
       {
-        "name": "Component - Examples"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1378",
-    "number": 1378,
-    "assignee": null,
-    "updated_at": "2022-08-16T09:37:06+00:00",
-    "created_at": "2022-08-04T12:10:28+00:00",
-    "closed_at": null,
-    "is_wip": false,
-    "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1378",
-      "html_url": "https://github.com/acts-project/acts/pull/1378",
-      "diff_url": "https://github.com/acts-project/acts/pull/1378.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1378.patch",
-      "merged_at": null
-    }
-  },
-  {
-    "title": "fix: Refactor and fix component merging for GSF",
-    "user": {
-      "login": "benjaminhuth",
-      "html_url": "https://github.com/benjaminhuth"
-    },
-    "labels": [
-      {
-        "name": "Bug"
+        "name": "Impact - Minor"
       },
       {
-        "name": "Component - Core"
+        "name": "Stale"
       }
     ],
-    "html_url": "https://github.com/acts-project/acts/pull/1364",
-    "number": 1364,
+    "html_url": "https://github.com/acts-project/acts/pull/1181",
+    "number": 1181,
     "assignee": null,
-    "updated_at": "2022-08-12T15:05:37+00:00",
-    "created_at": "2022-08-03T10:21:25+00:00",
+    "body": "Currently, we are multiplying an 8x8 covariance matrix with an 8x8 transport matrix, and we see that Eigen is failing to optimize this properly, because it is calling a generalized GEMM method rather than an optimized small matrix method. In order to resolve this, we change the code to use a tiled multiplication method which splits the matrices into 4x4 sub-matrices which can be multiplied and added to achieve the desired effect. This has two advantages:\r\n\r\n  1. It allows Eigen to use its hand-rolled optimized 4x4 matrix multiplication methods.\r\n  2. It allows us to perform some trickery with matrix identities to reduce the number of floating point operations.\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/pulls/1181",
+    "updated_at": "2023-03-18T05:27:49+00:00",
+    "created_at": "2022-03-03T10:11:11+00:00",
     "closed_at": null,
     "is_wip": false,
-    "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1364",
-      "html_url": "https://github.com/acts-project/acts/pull/1364",
-      "diff_url": "https://github.com/acts-project/acts/pull/1364.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1364.patch",
-      "merged_at": null
-    }
-  },
-  {
-    "title": "feat: Hough Transform first implementation",
-    "user": {
-      "login": "jahreda",
-      "html_url": "https://github.com/jahreda"
-    },
-    "labels": [],
-    "html_url": "https://github.com/acts-project/acts/pull/1305",
-    "number": 1305,
-    "assignee": null,
-    "updated_at": "2022-08-02T14:59:44+00:00",
-    "created_at": "2022-07-07T20:51:25+00:00",
-    "closed_at": null,
-    "is_wip": false,
-    "is_stale": false,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1305",
-      "html_url": "https://github.com/acts-project/acts/pull/1305",
-      "diff_url": "https://github.com/acts-project/acts/pull/1305.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1305.patch",
-      "merged_at": null
-    }
+    "is_stale": true,
+    "requested_reviewers": [],
+    "reviews": [
+      {
+        "user": {
+          "login": "paulgessinger",
+          "html_url": "https://github.com/paulgessinger"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-03-03T16:16:53+00:00"
+      },
+      {
+        "user": {
+          "login": "stephenswat",
+          "html_url": "https://github.com/stephenswat"
+        },
+        "state": "COMMENTED",
+        "body": "",
+        "submitted_at": "2022-03-03T16:19:52+00:00"
+      },
+      {
+        "user": {
+          "login": "andiwand",
+          "html_url": "https://github.com/andiwand"
+        },
+        "state": "COMMENTED",
+        "body": "just checked the physmon output and it looks like only some random vertexing comparisons fail",
+        "submitted_at": "2023-02-15T13:58:31+00:00"
+      }
+    ]
   }
 ]

@@ -39,7 +39,6 @@ env.globals["include_raw"] = lambda q: env.loader.get_source(env, q)[0]
 def generate_latex(
     spec: Spec, data, since: datetime, now: datetime, contributions, full_tex: bool
 ) -> str:
-
     tpl = env.get_template("main.tex")
 
     return tpl.render(
