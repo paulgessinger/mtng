@@ -38,15 +38,15 @@
     {%- endif -%}
     {%- if spec.do_reviewers and item.is_pr -%}
         {%- if item.reviews is defined and item.reviews|length > 0 -%}
-            {%- set review = item.reviews[-1] -%}
-            {%- if review.state == "APPROVED" -%}
-                \emojispace{check-mark-button}
-            {%- elif review.state == "COMMENTED" -%}
-                \emojispace{speech-balloon}
+            {%- set approvals = item.reviews|selectattr("state", "==", "APPROVED")|list -%}
+            {%- set comments = item.reviews|selectattr("state", "==", "COMMENTED")|list -%}
+            {%- if approvals|length -%}
+                {} \cusemoji{check-mark-button} reviewed by {{ user((approvals|last).user) }}
+            {%- elif comments|length -%}
+                {} \cusemoji{check-mark-button} comment by {{ user((comments|last).user) }}
             {%- else -%}
-                \emojispace{cross-mark}
+                {} \cusemoji{cross-mark} changes requested by {{ user(item.reviews[-1].user) }}
             {%- endif -%}
-            reviewed by {{ user(review.user) }}
         {%- else -%}
             {%- if item.requested_reviewers is defined and item.requested_reviewers|length > 0 -%}
                 {%- for req in item.requested_reviewers -%}

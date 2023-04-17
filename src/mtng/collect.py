@@ -260,9 +260,13 @@ async def collect_repositories(
                 pr.is_wip = repo.wip_label in [l.name for l in pr.labels]
                 pr.is_stale = repo.stale_label in [l.name for l in pr.labels]
 
-        for key in "open_prs", "stale", "recent_issues":
-            for item in data[repo.name][key]:
-                if repo.needs_discussion_label in [l.name for l in item.labels]:
-                    data[repo.name]["needs_discussion"].append(item)
+        if repo.needs_discussion_label is not None:
+            needs_discussion = await get_open_issues(
+                gh,
+                repo.name,
+                with_labels=[repo.needs_discussion_label],
+                without_labels=repo.filter_labels,
+            )
+            data[repo.name]["needs_discussion"] = needs_discussion
 
     return data
