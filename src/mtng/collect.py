@@ -26,7 +26,7 @@ class User(pydantic.BaseModel):
 
 class Review(pydantic.BaseModel):
     user: User
-    state: Literal["APPROVED", "COMMENTED", "CHANGES_REQUESTED"]
+    state: Literal["APPROVED", "COMMENTED", "CHANGES_REQUESTED", "DISMISSED"]
     body: str
 
     submitted_at: datetime
