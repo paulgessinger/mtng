@@ -66,6 +66,7 @@ class Issue(IssueBase):
 class PullRequest(IssueBase):
     requested_reviewers: List[User] = pydantic.Field(default_factory=list)
     reviews: List[Review] = pydantic.Field(default_factory=list)
+    draft: bool
 
     @property
     def is_pr(self) -> bool:
@@ -270,6 +271,8 @@ async def collect_repositories(
         for prk in "open_prs", "merged_prs", "stale", "recent_issues":
             for pr in data[repo.name][prk]:
                 pr.is_wip = repo.wip_label in [l.name for l in pr.labels]
+                if pr.is_pr:
+                    pr.is_wip = pr.is_wip or pr.draft
                 pr.is_stale = repo.stale_label in [l.name for l in pr.labels]
 
         if repo.needs_discussion_label is not None:

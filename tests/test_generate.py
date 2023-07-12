@@ -290,6 +290,7 @@ def test_item_render(try_render):
         closed_at=None,
         is_wip=False,
         is_stale=False,
+        draft=False,
         pull_request=[],
     )
     spec = Repository(name="acts-project/acts")
@@ -383,6 +384,7 @@ def test_sanitization(try_render, prob):
         closed_at=None,
         is_wip=False,
         is_stale=False,
+        draft=False,
         pull_request=[],
     )
     spec = Repository(name="acts-project/acts")

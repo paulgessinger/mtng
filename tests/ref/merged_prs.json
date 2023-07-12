@@ -39,7 +39,8 @@
         "body": "",
         "submitted_at": "2022-08-10T15:27:28+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "feat: Enable Delegates to conveniently use stateful lambdas [backport #1410 to develop/v19.x]",
@@ -76,7 +77,8 @@
         "body": "",
         "submitted_at": "2022-08-10T15:30:36+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: change typeid check to dynamic_cast [backport #1409 to develop/v19.x]",
@@ -113,7 +115,8 @@
         "body": "",
         "submitted_at": "2022-08-10T15:32:00+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Move Analysis job from required pattern to explicit name",
@@ -133,7 +136,8 @@
     "is_wip": false,
     "is_stale": false,
     "requested_reviewers": [],
-    "reviews": []
+    "reviews": [],
+    "draft": false
   },
   {
     "title": "feat: Enable Delegates to conveniently use stateful lambdas",
@@ -173,7 +177,8 @@
         "body": "So this just explicitly tries to grab the `operator()` function pointer for a lambda? Should be ok I think!",
         "submitted_at": "2022-08-09T15:24:19+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: change typeid check to dynamic_cast",
@@ -210,7 +215,8 @@
         "body": "",
         "submitted_at": "2022-08-09T15:55:04+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Fix path-ignore for docs",
@@ -240,7 +246,8 @@
         "body": "thank you!",
         "submitted_at": "2022-08-09T10:22:09+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "docs: minor corrections. followup to PR #1405",
@@ -283,7 +290,8 @@
         "body": "",
         "submitted_at": "2022-08-09T10:29:39+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "docs: minor corrections",
@@ -326,7 +334,8 @@
         "body": "",
         "submitted_at": "2022-08-09T06:58:36+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Do not run analysis jobs on docs-only changes",
@@ -356,7 +365,8 @@
         "body": "",
         "submitted_at": "2022-08-08T14:29:29+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "docs: Propagation",
@@ -399,7 +409,8 @@
         "body": "",
         "submitted_at": "2022-08-08T14:57:47+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "docs: Add docs clean target to cmake",
@@ -433,7 +444,8 @@
         "body": "lgtm. thanks",
         "submitted_at": "2022-08-08T11:59:46+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "docs: adding acts project page",
@@ -494,7 +506,8 @@
         "body": "",
         "submitted_at": "2022-08-10T08:10:45+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Docs job always runs",
@@ -514,7 +527,8 @@
     "is_wip": false,
     "is_stale": false,
     "requested_reviewers": [],
-    "reviews": []
+    "reviews": [],
+    "draft": false
   },
   {
     "title": "docs: correct affiliation in CITATION.cff",
@@ -544,7 +558,8 @@
         "body": "Whoops.",
         "submitted_at": "2022-08-08T11:21:33+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Fix sentinel yml",
@@ -564,7 +579,8 @@
     "is_wip": false,
     "is_stale": false,
     "requested_reviewers": [],
-    "reviews": []
+    "reviews": [],
+    "draft": false
   },
   {
     "title": "ci: Do not run build jobs on docs-only changes",
@@ -584,7 +600,8 @@
     "is_wip": false,
     "is_stale": false,
     "requested_reviewers": [],
-    "reviews": []
+    "reviews": [],
+    "draft": false
   },
   {
     "title": "docs: restructure docs tree",
@@ -632,7 +649,8 @@
         "body": "",
         "submitted_at": "2022-08-08T10:08:26+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Cleaned up the workflow files a little.",
@@ -689,7 +707,8 @@
         "body": "",
         "submitted_at": "2022-08-06T10:35:12+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: TrackingVolume intersection check didn't copy sign [backport #1115 to develop/v9.1.x]",
@@ -713,7 +732,8 @@
     "is_wip": false,
     "is_stale": false,
     "requested_reviewers": [],
-    "reviews": []
+    "reviews": [],
+    "draft": false
   },
   {
     "title": "fix: Multi-Stepper stepping error in multiple components + refactoring [backport #1339 to develop/v19.x]",
@@ -747,7 +767,8 @@
         "body": "",
         "submitted_at": "2022-08-05T08:06:14+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: RootBFieldWriter incorrect output",
@@ -867,7 +888,8 @@
         "body": "",
         "submitted_at": "2022-08-10T17:22:07+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: Comparison bug in updateSingleSurfaceStatus [backport #1107 to develop/v9.1.x]",
@@ -904,7 +926,8 @@
         "body": "",
         "submitted_at": "2022-08-04T16:27:42+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "docs: spelling, delete unused figures, beautify [backport #1353 to develop/v19.x]",
@@ -941,7 +964,8 @@
         "body": "",
         "submitted_at": "2022-08-04T13:43:39+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: any direction for helical track linearizer [backport #1363 to develop/v19.x]",
@@ -978,7 +1002,8 @@
         "body": "",
         "submitted_at": "2022-08-04T13:36:09+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "chore: clang-tidy modernize-use-nullptr [backport #1358 to develop/v19.x]",
@@ -1015,7 +1040,8 @@
         "body": "",
         "submitted_at": "2022-08-04T10:54:49+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: initialising world in GdmlDetectorConstruction [backport #1371 to develop/v19.x]",
@@ -1052,7 +1078,8 @@
         "body": "",
         "submitted_at": "2022-08-03T19:25:07+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Disable macOS job in v9.1.x",
@@ -1091,7 +1118,8 @@
         "body": "fair enough!\r\n\r\nlets take out the trash :grin: ",
         "submitted_at": "2022-08-03T20:05:48+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "chore: clang tidy check uninitialized members",
@@ -1121,7 +1149,8 @@
         "body": "",
         "submitted_at": "2022-08-05T08:05:38+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Automatically remove automerge label when PRs are closed",
@@ -1151,7 +1180,8 @@
         "body": "",
         "submitted_at": "2022-08-03T14:34:04+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: initialising world in GdmlDetectorConstruction",
@@ -1200,7 +1230,8 @@
         "body": "All good for me.",
         "submitted_at": "2022-08-03T14:51:28+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "docs: Fix documentation build in v9.1.x",
@@ -1220,7 +1251,8 @@
     "is_wip": false,
     "is_stale": false,
     "requested_reviewers": [],
-    "reviews": []
+    "reviews": [],
+    "draft": false
   },
   {
     "title": "fix: Warning in navigation when targeting perigee [backport #1101 to develop/v9.1.x]",
@@ -1263,7 +1295,8 @@
         "body": "after it went in once it can go in again :smile: ",
         "submitted_at": "2022-08-03T15:05:19+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Trigger CI also on PRs to develop/* branches",
@@ -1300,7 +1333,8 @@
         "body": "",
         "submitted_at": "2022-08-03T12:44:24+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "feat: CI checks for ITk seeding example [backport #1352 to develop/v19.x]",
@@ -1334,7 +1368,8 @@
         "body": "",
         "submitted_at": "2022-08-03T12:23:50+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Set up backport action that reacts to labels",
@@ -1368,7 +1403,8 @@
         "body": "",
         "submitted_at": "2022-08-03T11:57:32+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: any direction for helical track linearizer",
@@ -1426,7 +1462,8 @@
         "body": "lgtm",
         "submitted_at": "2022-08-04T07:09:29+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "chore: clang-tidy performance-move-const-arg",
@@ -1475,7 +1512,8 @@
         "body": "",
         "submitted_at": "2022-08-02T13:17:51+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "chore: clang-tidy modernize-use-nullptr",
@@ -1515,7 +1553,8 @@
         "body": "lgtm.\r\n\r\nMaybe you could add in the description:\r\n\"This PR also changes `0` to `nullptr` wherever already used as a null pointer.\"",
         "submitted_at": "2022-08-03T09:46:32+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: improve Python full-chain ITk example",
@@ -1581,7 +1620,8 @@
         "body": "",
         "submitted_at": "2022-08-01T22:03:03+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: accumulating residual plots in boundParamResolution if only `predicted==true`",
@@ -1623,7 +1663,8 @@
         "body": "",
         "submitted_at": "2022-08-01T09:57:12+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "docs: spelling, delete unused figures, beautify",
@@ -1683,7 +1724,8 @@
         "body": "lgtm",
         "submitted_at": "2022-08-04T10:54:19+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "feat: CI checks for ITk seeding example",
@@ -1729,7 +1771,8 @@
         "body": "looks good to me!",
         "submitted_at": "2022-08-02T14:45:24+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "ci: Switch gitlab test job to needs instead of dependencies",
@@ -1766,7 +1809,8 @@
         "body": "",
         "submitted_at": "2022-08-01T14:20:21+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "refactor: Change ConstrainedStep to be explicit",
@@ -1920,7 +1964,8 @@
         "body": "",
         "submitted_at": "2022-08-02T11:49:55+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: Multi-Stepper stepping error in multiple components + refactoring",
@@ -2022,7 +2067,8 @@
         "body": "ok let's go.",
         "submitted_at": "2022-08-04T13:44:34+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "test: geant4 python example",
@@ -2160,7 +2206,8 @@
         "body": "",
         "submitted_at": "2022-08-02T09:46:12+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "fix: full chain vertexing",
@@ -2332,7 +2379,8 @@
         "body": "",
         "submitted_at": "2022-08-09T08:22:22+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "feat!: MultiTrajectory backends",
@@ -2632,7 +2680,8 @@
         "body": "",
         "submitted_at": "2022-07-04T08:36:37+00:00"
       }
-    ]
+    ],
+    "draft": false
   },
   {
     "title": "refactor!: Build DD4hep geometry from hierarchy, use VariantParameters",
@@ -2747,6 +2796,7 @@
         "body": "",
         "submitted_at": "2022-08-03T13:06:24+00:00"
       }
-    ]
+    ],
+    "draft": false
   }
 ]

@@ -1,5 +1,355 @@
 [
   {
+    "title": "TrackAtVertex trackWeight is not being written in IVF",
+    "user": {
+      "login": "andiwand",
+      "html_url": "https://github.com/andiwand"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/2149",
+    "number": 2149,
+    "assignee": null,
+    "body": "During my work on the vertexing I noticed that the `trackWeight` of `TrackAtVertex` https://github.com/acts-project/acts/blob/main/Core/include/Acts/Vertexing/TrackAtVertex.hpp#L69 default of `1` is never being overwritten in the IVF. Not sure if this is intended but it seems very odd.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/2149",
+    "updated_at": "2023-06-23T17:37:46+00:00",
+    "created_at": "2023-05-24T16:54:30+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "refactor: add geohook for fast digitization range selection to itk example",
+    "user": {
+      "login": "niermann999",
+      "html_url": "https://github.com/niermann999"
+    },
+    "labels": [
+      {
+        "name": ":construction: WIP"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/2089",
+    "number": 2089,
+    "assignee": null,
+    "body": "Adds a geoidhook to the ```itk.py``` example that performs the matching of geometric digitization configurations to detector regions. The json config file was adjusted accordingly and will be pushed to the acts itk repository once validated again.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/2089",
+    "updated_at": "2023-06-04T10:28:19+00:00",
+    "created_at": "2023-05-05T09:28:54+00:00",
+    "closed_at": null,
+    "is_wip": true,
+    "is_stale": true,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/2089",
+      "html_url": "https://github.com/acts-project/acts/pull/2089",
+      "diff_url": "https://github.com/acts-project/acts/pull/2089.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/2089.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "Track nDoF only returns the sum of calibrated size and not the actual DoFs.",
+    "user": {
+      "login": "pbutti",
+      "html_url": "https://github.com/pbutti"
+    },
+    "labels": [
+      {
+        "name": "Improvement"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/2076",
+    "number": 2076,
+    "assignee": null,
+    "body": "I think that the computation of the DoF of a track is wrong.\r\nAt the moment it is returning just the sum of the calibrated size. \r\nhttps://github.com/acts-project/acts/blob/main/Core/include/Acts/EventData/TrackHelpers.hpp#L46\r\nI think shouldbe NDoF=(sum of calibrated size) - fit parameters. \r\nI have a doubt about time. Do we count the time in the DoF or not if there are no time measurements? \r\nI think it should be -5 for a 3D track and -6 for a 4D track (i.e. if there is at least one time measurement). If there are only 3D measurements than time is a function on the other 5 TPs, hence not a DoF. Can the TrackHelpers tool be improved to reflect this or is the idea to leave it to the clients?\r\n@paulgessinger @andiwand \r\n\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/2076",
+    "updated_at": "2023-06-22T14:29:27+00:00",
+    "created_at": "2023-05-01T13:21:33+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "refactor: remove direction from constrained step",
+    "user": {
+      "login": "andiwand",
+      "html_url": "https://github.com/andiwand"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
+      },
+      {
+        "name": ":construction: WIP"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/pull/2073",
+    "number": 2073,
+    "assignee": null,
+    "body": "WIP\r\n\r\nWith this PR I want to remove the propagation direction sign inside the `ConstrainedStep` and put it into the stepper as it feels like additional burden and logic that should not be handled by the `ConstrainedStep`. This will not change anything about the overstepping mechanics.",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/2073",
+    "updated_at": "2023-06-10T11:25:23+00:00",
+    "created_at": "2023-04-28T08:51:49+00:00",
+    "closed_at": null,
+    "is_wip": true,
+    "is_stale": true,
+    "pull_request": {
+      "url": "https://api.github.com/repos/acts-project/acts/pulls/2073",
+      "html_url": "https://github.com/acts-project/acts/pull/2073",
+      "diff_url": "https://github.com/acts-project/acts/pull/2073.diff",
+      "patch_url": "https://github.com/acts-project/acts/pull/2073.patch",
+      "merged_at": null
+    }
+  },
+  {
+    "title": "Proposal: MultiWire SurfaceCandidateUpdator",
+    "user": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/2063",
+    "number": 2063,
+    "assignee": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "body": "Based on some fantastic work from @dimitra97 - I suggest the following implementation of a first multi-wire layer\r\n\r\n![Screenshot 2023-04-26 at 13 09 57](https://user-images.githubusercontent.com/26623879/234558213-afa5fabe-d20c-436f-818f-c56ea4c51533.png)\r\n\r\n```c++\r\ntemplate <typename IndexedSurfacesGridType>\r\nclass MultiWireLayer : public INavigationDelegate {\r\n\r\n  std::vector<std::shared_ptr<Surface>> m_gridSurfaces = {};\r\n  IndexedSurfacesGridType m_indexedSurfaces;\r\n\r\n};\r\n```\r\n\r\nWhere, when entering a chamber and we call the navigation delegate, it does first:\r\n\r\n```c++\r\nstd::vector<SurfaceIntersection> sIntersections;\r\nsIntersections.reserve(m_gridSurfaces.size());\r\nstd::for_each(m_gridSurfaces.begin(), m_gridSurfaces.end(), [&] (const auto&s){... do intersection });\r\n```\r\n\r\nAnd then we use the intersection with the grid surfaces to provide the straws, when filling the grid, we can expand the surfaces into the neighbour bins so we have an artificial path through the multi chamber.\r\n\r\nDoes this make sense?\r\n\r\n@noemina @andiwand \r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/2063",
+    "updated_at": "2023-06-21T12:46:47+00:00",
+    "created_at": "2023-04-26T11:17:42+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "LCG compatibility",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/2054",
+    "number": 2054,
+    "assignee": null,
+    "body": "Our LCG compatibility doesn't look all that great right now.\r\nWe currently fail all of our clang builds with [compiler crashes](https://gitlab.cern.ch/acts/ci-bridge/-/jobs/29044714) and gcc12 seems to [throw some diagnostic](https://gitlab.cern.ch/acts/ci-bridge/-/jobs/29044722) against memory issues on some boost code that we use:\r\n\r\n| LCG ver. | CentOS 7                                                  | CentOS 8 | ALMA9                   |\r\n| -------- | --------------------------------------------------------- | -------- | ----------------------- |\r\n| 101      | \u2705 gcc10 <br/> \u2705 gcc11 <br/> \ud83d\udd34 clang12                  | \u2705 gcc11 |                         | \r\n| 102b     | \ud83d\udd34 gcc8 <br/> \u2705 gcc11 <br/> \ud83d\udd34 clang12                   | \u2705 gcc11 | \u2705 gcc11                |\r\n| 103      | \u2705 gcc11 <br/> \ud83d\udd34 gcc12 <br/> \ud83d\udd34 clang12 <br/> \ud83d\udd34 clang15 |          | \u2705 gcc11 <br/> \ud83d\udd34 gcc12 |",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/2054",
+    "updated_at": "2023-06-24T18:32:24+00:00",
+    "created_at": "2023-04-22T08:09:04+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Track parameter estimation algorithm return parameter on the first seed SP surface ",
+    "user": {
+      "login": "Corentin-Allaire",
+      "html_url": "https://github.com/Corentin-Allaire"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/2037",
+    "number": 2037,
+    "assignee": null,
+    "body": "To use our seed as an input of the CKF, we use `TrackParamsEstimationAlgorithm` to convert them into track parameters. This algorithm computes track parameters on the first seed space point surface. \r\n\r\nThis could be an issue if the seed is too far away from the perigee, as this would mean we could miss some of the track hits in the CKF.\r\n\r\nShould we instead extrapolate those parameters to the perigee (the change would be pretty trivial but will break our testing infrastructure), or should we keep it as is?\r\n\r\nIn any case, I think we should be more explicit about this in the doc/code.\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/2037",
+    "updated_at": "2023-05-25T15:01:53+00:00",
+    "created_at": "2023-04-17T15:40:31+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Feature: Measurement removal to get unbiased residual  during smoothing",
+    "user": {
+      "login": "XiaocongAi",
+      "html_url": "https://github.com/XiaocongAi"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/2031",
+    "number": 2031,
+    "assignee": {
+      "login": "XiaocongAi",
+      "html_url": "https://github.com/XiaocongAi"
+    },
+    "body": "Currently, if we want to get the unbiased residual for a  measurement, we have to manually remove this measurement in the KF. According to NIM A262 (1987) 444-450 (eq 12a-c and 12d-e), this can more readily obtained in one go in the smoother using some formalism. Implementation of such functionality in ACTS will be very helpful for experiments.\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/2031",
+    "updated_at": "2023-05-20T15:23:34+00:00",
+    "created_at": "2023-04-14T04:46:58+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Expose individual steps of track reconstruction in full_chain python scripts",
+    "user": {
+      "login": "tboldagh",
+      "html_url": "https://github.com/tboldagh"
+    },
+    "labels": [
+      {
+        "name": "Improvement"
+      },
+      {
+        "name": "Needs Decision"
+      },
+      {
+        "name": "Impact - Minor"
+      },
+      {
+        "name": "Long Term"
+      },
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1997",
+    "number": 1997,
+    "assignee": null,
+    "body": "Discussing the easier way for EF Tracking people to play with ACTS it turned out that it would be beneficial to expose reconstruction pipeline in mode details in the top level scripts (at least for the ITK).\r\nHaving a script where all the steps are clearly visible would encourage people to play with it (e.g. replace one module). \r\nThe configuration as is (especially seeding) is quite convoluted and general. Presumably we talk here about one workflow with:\r\ndata prep. -> clusterisation -> sp making -> seeding -> CKF and the candidate to play with is seeding.\r\n\r\n\r\nThis issue is realy to hear opinions about it. \r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1997",
+    "updated_at": "2023-05-20T15:23:32+00:00",
+    "created_at": "2023-03-27T19:33:45+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Improvements to Track EDM",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Component - Core"
+      },
+      {
+        "name": "Stale"
+      },
+      {
+        "name": "Event Data Model"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1993",
+    "number": 1993,
+    "assignee": null,
+    "body": "- [ ] Add documentation and clarify `tipIndex`\r\n- [ ] Add a concrete example (maybe in the docs?) how to create a track with track states from scratch\r\n- #1994\r\n- #2035 \r\n- [x] Add functionality to \"append\" a Track State",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1993",
+    "updated_at": "2023-05-20T15:23:31+00:00",
+    "created_at": "2023-03-27T09:51:13+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "vertex fitting and duplicate tracks",
+    "user": {
+      "login": "rubihason",
+      "html_url": "https://github.com/rubihason"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1992",
+    "number": 1992,
+    "assignee": null,
+    "body": "Hello, while i running vertex fitting, i got error on each event.\r\n\r\n'''\r\nNumber of fitted tracks and associated truth particles do not match. (48 != 14) Not able to match fitted tracks at reconstructed vertex to truth vertex. Switch to hit based truth matching. \r\n'''\r\nI believe it came due to a large number of duplicate tracks. \r\n\r\n'''\r\n12:52:16    SeedingPerfo   INFO      Efficiency (nMatchedParticles / nAllParticles) = 0.681481\r\n12:52:16    SeedingPerfo   INFO      Fake rate (nUnMatchedSeeds / nAllSeeds) = 0.0011274\r\n12:52:16    SeedingPerfo   INFO      Duplication rate (nDuplicatedMatchedParticles / nMatchedParticles) = 0.956522\r\n12:52:16    SeedingPerfo   INFO      Average number of duplicated seeds ((nMatchedSeeds - nMatchedParticles) / nMatchedParticles) = 3.81522\r\n'''\r\nI simulated the event of PP to Z to Mu+ Mu-.\r\nWhat can I do to fix this problem?\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1992",
+    "updated_at": "2023-05-09T02:48:11+00:00",
+    "created_at": "2023-03-26T09:59:52+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "SpacePoint EDM design",
+    "user": {
+      "login": "CarloVarni",
+      "html_url": "https://github.com/CarloVarni"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1971",
+    "number": 1971,
+    "assignee": null,
+    "body": "A quick overview of the design I'm envision is the following:\r\n\r\n![SchemaEDM](https://user-images.githubusercontent.com/75478407/226541858-05ffc040-57aa-4ad0-8311-f1bbf1ab007c.png)\r\n\r\nFew points:\r\n- The index of the `Acts::SpacePointProxy` will never be exposed to the user. It is a quantity that acts as a unique identifier for that proxy and that will let the code navigate and retrieve the correct quantities from the `Acts::SpacePointData`. The proxy will have a `component` class, trough which the user will require the value of a specific variable. The code will internally retrieve it using this index\r\n- The `Acts::SpacePointData` acts the same way an auxiliary container works in Athena. The implementation may differ, but the idea is the same. This will be internally stored in the `Acts::SpacePointContainer` and properly initialized during the Container constructor. As of now (as a temporary solution while we are still missing the space point container in ACTS), the `Acts::SpacePointData` object is part of the seed finder state and manually passed to the functions within the seeding code\r\n- We want to keep the `Acts::SpacePointProxy` object as small as possible (as of now just pointer + unsigned long int)\r\n- Not clear what the best strategy is for the `Acts::SpacePointContainer`: storing a pointer to the experiment interface (as done for tracks) or going for a CRTP (as done for MTJ)\r\n\r\n\r\n/cc @paulgessinger @tboldagh ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1971",
+    "updated_at": "2023-05-09T02:48:12+00:00",
+    "created_at": "2023-03-21T07:38:17+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Estimate Track Parameters from Seeds use only one surface. What about strips?",
+    "user": {
+      "login": "CarloVarni",
+      "html_url": "https://github.com/CarloVarni"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1895",
+    "number": 1895,
+    "assignee": null,
+    "body": "The estimation of track parameters from seed uses space point information, but also uses a surface to perform a global-to-local transformation of the bottom space point coordinate. It also checks that the bottom space point lies on the provided surface: \r\nhttps://github.com/acts-project/acts/blob/main/Core/include/Acts/Seeding/EstimateTrackParamsFromSeed.hpp#L156 \r\n\r\nThis may be appropriate for pixels, since there is only one surface. But does it apply also to strips and overlap strips? We are only using one surface in that function, but the space point is constructed from multiple 1D measurements. In the strip overlap case these measurements are not even back-to-back.\r\n\r\nOr in general, what would be the appropriate procedure in cases in which we have 3D space point positions starting from multiple measurements? \r\n\r\n/cc @noemina @paulgessinger ",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1895",
+    "updated_at": "2023-05-09T02:48:10+00:00",
+    "created_at": "2023-02-24T10:58:04+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
     "title": "Bug: Unpredicatable navigation in layer with overlapping surface",
     "user": {
       "login": "Corentin-Allaire",
@@ -32,36 +382,53 @@
     "pull_request": null
   },
   {
-    "title": "feat!: new cubic volume building",
+    "title": "Different results for full_chain_itk when running locally vs lxplus",
     "user": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
+      "login": "CarloVarni",
+      "html_url": "https://github.com/CarloVarni"
     },
     "labels": [
-      {
-        "name": ":construction: WIP"
-      },
       {
         "name": "Stale"
       }
     ],
-    "html_url": "https://github.com/acts-project/acts/pull/1821",
-    "number": 1821,
+    "html_url": "https://github.com/acts-project/acts/issues/1819",
+    "number": 1819,
     "assignee": null,
-    "body": "This PR introduces a new `CubicVolumeHelper` and aligns the interface of `ITrackingVolumeHelper` to use `Extent` rather than specified `locZ, locR`, which does not make sense in an interface.\r\n\r\nIt also allows the KDTreeGeometryBuilder to build telescope like detectors if configured to do so.\r\n\r\n![Screenshot 2023-02-02 at 15 19 22](https://user-images.githubusercontent.com/26623879/216368001-42f2c4c8-cb3c-46b9-bff3-a8a0094c55c8.png)\r\n",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1821",
-    "updated_at": "2023-03-18T05:27:53+00:00",
-    "created_at": "2023-02-02T15:30:23+00:00",
+    "body": "Running `full_chain_itk.py` both locally on my computer and on lxplus I've noticed different results. \r\nFor instance the number of seeds (default seeding strategy) changed from 2219 to 2281 on  100 events.\r\n\r\nOn lxplus:\r\n```console\r\n12:23:00    TrackFinding   INFO      TrackFindingAlgorithm statistics:\r\n12:23:00    TrackFinding   INFO      - total seeds: 2281\r\n12:23:00    TrackFinding   INFO      - failed seeds: 0\r\n12:23:00    TrackFinding   INFO      - failure ratio: 0\r\n12:23:00    RootParticle   INFO      Wrote particles to tree 'particles' in '/afs/cern.ch/work/c/cvarni/public/ACTS/RunningLxplus/itk_output/fatras_particles_final.root'\r\n12:23:00    RootParticle   INFO      Wrote particles to tree 'particles' in '/afs/cern.ch/work/c/cvarni/public/ACTS/RunningLxplus/itk_output/fatras_particles_initial.root'\r\n12:23:00    SeedingPerfo   INFO      Efficiency (nMatchedParticles / nAllParticles) = 0.995\r\n12:23:00    SeedingPerfo   INFO      Fake rate (nUnMatchedSeeds / nAllSeeds) = 0\r\n12:23:00    SeedingPerfo   INFO      Duplication rate (nDuplicatedMatchedParticles / nMatchedParticles) = 1\r\n12:23:00    SeedingPerfo   INFO      Average number of duplicated seeds ((nMatchedSeeds - nMatchedParticles) / nMatchedParticles) = 10.4623\r\n12:23:00    SeedingPerfo   INFO      Wrote performance plots to '/afs/cern.ch/work/c/cvarni/public/ACTS/RunningLxplus/itk_output/performance_seeding_hists.root:/'\r\n12:23:00    RootTrackPar   INFO      Wrote estimated parameters from seed to tree 'estimatedparams' in '/afs/cern.ch/work/c/cvarni/public/ACTS/RunningLxplus/itk_output/estimatedparams.root'\r\n12:23:01    RootTrajecto   INFO      Wrote states of trajectories to tree 'trackstates' in 'trackstates'\r\n12:23:01    RootTrajecto   INFO      Wrote parameters of trajectories to tree 'tracksummary' in '/afs/cern.ch/work/c/cvarni/public/ACTS/RunningLxplus/itk_output/tracksummary_ckf.root'\r\n12:23:01    CKFPerforman   INFO      Efficiency with tracks (nMatchedTracks/ nAllTracks) = 1\r\n12:23:01    CKFPerforman   INFO      Fake rate with tracks (nFakeTracks/nAllTracks) = 0\r\n12:23:01    CKFPerforman   INFO      Duplicate rate with tracks (nDuplicateTracks/nAllTracks) = 0.912257\r\n12:23:01    CKFPerforman   INFO      Efficiency with particles (nMatchedParticles/nTrueParticles) = 0.995\r\n12:23:01    CKFPerforman   INFO      Fake rate with particles (nFakeParticles/nTrueParticles) = 0\r\n12:23:01    CKFPerforman   INFO      Duplicate rate with particles (nDuplicateParticles/nTrueParticles) = 0.99\r\n12:23:01    CKFPerforman   INFO      Wrote performance plots to '/afs/cern.ch/work/c/cvarni/public/ACTS/RunningLxplus/itk_output/performance_ckf.root:/'\r\n12:23:01    RootTrajecto   INFO      Wrote states of trajectories to tree 'trackstates' in 'trackstates'\r\n12:23:01    RootTrajecto   INFO      Wrote parameters of trajectories to tree 'tracksummary' in '/afs/cern.ch/work/c/cvarni/public/ACTS/RunningLxplus/itk_output/tracksummary_ambi.root'\r\n12:23:01    CKFPerforman   INFO      Efficiency with tracks (nMatchedTracks/ nAllTracks) = 1\r\n12:23:01    CKFPerforman   INFO      Fake rate with tracks (nFakeTracks/nAllTracks) = 0\r\n12:23:01    CKFPerforman   INFO      Duplicate rate with tracks (nDuplicateTracks/nAllTracks) = 0\r\n12:23:01    CKFPerforman   INFO      Efficiency with particles (nMatchedParticles/nTrueParticles) = 0.995\r\n12:23:01    CKFPerforman   INFO      Fake rate with particles (nFakeParticles/nTrueParticles) = 0\r\n12:23:01    CKFPerforman   INFO      Duplicate rate with particles (nDuplicateParticles/nTrueParticles) = 0\r\n12:23:01    CKFPerforman   INFO      Wrote performance plots to '/afs/cern.ch/work/c/cvarni/public/ACTS/RunningLxplus/itk_output/performance_ambi.root:/'\r\n12:23:01    Sequencer      INFO      Processed 100 events in 1.761359 s (wall clock)\r\n12:23:01    Sequencer      INFO      Average time per event: 317.973619 ms/event\r\n```\r\n\r\nLocally:\r\n```console\r\n12:50:55    TrackFinding   INFO      TrackFindingAlgorithm statistics:\r\n12:50:55    TrackFinding   INFO      - total seeds: 2219\r\n12:50:55    TrackFinding   INFO      - failed seeds: 0\r\n12:50:55    TrackFinding   INFO      - failure ratio: 0\r\n12:50:55    RootParticle   INFO      Wrote particles to tree 'particles' in '/Users/carlovarni/Desktop/RunningSeedLocally/itk_output/fatras_particles_final.root'\r\n12:50:55    RootParticle   INFO      Wrote particles to tree 'particles' in '/Users/carlovarni/Desktop/RunningSeedLocally/itk_output/fatras_particles_initial.root'\r\n12:50:55    SeedingPerfo   INFO      Efficiency (nMatchedParticles / nAllParticles) = 0.995\r\n12:50:55    SeedingPerfo   INFO      Fake rate (nUnMatchedSeeds / nAllSeeds) = 0\r\n12:50:55    SeedingPerfo   INFO      Duplication rate (nDuplicatedMatchedParticles / nMatchedParticles) = 1\r\n12:50:55    SeedingPerfo   INFO      Average number of duplicated seeds ((nMatchedSeeds - nMatchedParticles) / nMatchedParticles) = 10.1508\r\n12:50:55    SeedingPerfo   INFO      Wrote performance plots to '/Users/carlovarni/Desktop/RunningSeedLocally/itk_output/performance_seeding_hists.root:/'\r\n12:50:55    RootTrackPar   INFO      Wrote estimated parameters from seed to tree 'estimatedparams' in '/Users/carlovarni/Desktop/RunningSeedLocally/itk_output/estimatedparams.root'\r\n12:50:55    RootTrajecto   INFO      Wrote states of trajectories to tree 'trackstates' in 'trackstates'\r\n12:50:55    RootTrajecto   INFO      Wrote parameters of trajectories to tree 'tracksummary' in '/Users/carlovarni/Desktop/RunningSeedLocally/itk_output/tracksummary_ckf.root'\r\n12:50:55    CKFPerforman   INFO      Efficiency with tracks (nMatchedTracks/ nAllTracks) = 1\r\n12:50:55    CKFPerforman   INFO      Fake rate with tracks (nFakeTracks/nAllTracks) = 0\r\n12:50:55    CKFPerforman   INFO      Duplicate rate with tracks (nDuplicateTracks/nAllTracks) = 0.90971\r\n12:50:55    CKFPerforman   INFO      Efficiency with particles (nMatchedParticles/nTrueParticles) = 0.995\r\n12:50:55    CKFPerforman   INFO      Fake rate with particles (nFakeParticles/nTrueParticles) = 0\r\n12:50:55    CKFPerforman   INFO      Duplicate rate with particles (nDuplicateParticles/nTrueParticles) = 0.99\r\n12:50:55    CKFPerforman   INFO      Wrote performance plots to '/Users/carlovarni/Desktop/RunningSeedLocally/itk_output/performance_ckf.root:/'\r\n12:50:55    RootTrajecto   INFO      Wrote states of trajectories to tree 'trackstates' in 'trackstates'\r\n12:50:55    RootTrajecto   INFO      Wrote parameters of trajectories to tree 'tracksummary' in '/Users/carlovarni/Desktop/RunningSeedLocally/itk_output/tracksummary_ambi.root'\r\n12:50:55    CKFPerforman   INFO      Efficiency with tracks (nMatchedTracks/ nAllTracks) = 1\r\n12:50:55    CKFPerforman   INFO      Fake rate with tracks (nFakeTracks/nAllTracks) = 0\r\n12:50:55    CKFPerforman   INFO      Duplicate rate with tracks (nDuplicateTracks/nAllTracks) = 0\r\n12:50:55    CKFPerforman   INFO      Efficiency with particles (nMatchedParticles/nTrueParticles) = 0.995\r\n12:50:55    CKFPerforman   INFO      Fake rate with particles (nFakeParticles/nTrueParticles) = 0\r\n12:50:55    CKFPerforman   INFO      Duplicate rate with particles (nDuplicateParticles/nTrueParticles) = 0\r\n12:50:55    CKFPerforman   INFO      Wrote performance plots to '/Users/carlovarni/Desktop/RunningSeedLocally/itk_output/performance_ambi.root:/'\r\n12:50:55    Sequencer      INFO      Processed 100 events in 1.008129 s (wall clock)\r\n12:50:55    Sequencer      INFO      Average time per event: 59.768961 ms/event\r\n```\r\n\r\nhtml files with physmon plots on the produced files can be found on:\r\n- performance_seeding_hists.root -> https://cvarni.web.cern.ch/ActsArtTest/acts_local_lxplus/seed_hist.html\r\n- performance_ckf.root -> https://cvarni.web.cern.ch/ActsArtTest/acts_local_lxplus/ckf.html\r\n- performance_ambi.root -> https://cvarni.web.cern.ch/ActsArtTest/acts_local_lxplus/ambi.html \r\n\r\nFor running on lxplus I'm sourcing https://github.com/acts-project/acts/blob/main/CI/setup_cvmfs_lcg.sh \r\n\r\nWhat can cause these differences in the outputs?\r\n\r\n/cc @paulgessinger \r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1819",
+    "updated_at": "2023-05-09T02:48:18+00:00",
+    "created_at": "2023-02-02T11:52:10+00:00",
     "closed_at": null,
-    "is_wip": true,
+    "is_wip": false,
     "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1821",
-      "html_url": "https://github.com/acts-project/acts/pull/1821",
-      "diff_url": "https://github.com/acts-project/acts/pull/1821.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1821.patch",
-      "merged_at": null
-    }
+    "pull_request": null
+  },
+  {
+    "title": "Cmake error if ACTS_BUILD_PLUGIN_ACTSVG=ON",
+    "user": {
+      "login": "DraTeots",
+      "html_url": "https://github.com/DraTeots"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1818",
+    "number": 1818,
+    "assignee": {
+      "login": "asalzburger",
+      "html_url": "https://github.com/asalzburger"
+    },
+    "body": "## Bug prerequisites\r\n\r\n1. When ACTS v21.1.1 is built with flags: \r\n\r\n   ```bash\r\n     cmake -Wno-dev -DCMAKE_INSTALL_PREFIX=/home/user/acts/acts-v21.1.1 \r\n     -DCMAKE_CXX_STANDARD=17 \r\n     -DACTS_BUILD_PLUGIN_TGEO=ON \r\n     -DACTS_BUILD_PLUGIN_DD4HEP=ON \r\n     -DACTS_BUILD_PLUGIN_JSON=ON \r\n     -DACTS_BUILD_PLUGIN_ACTSVG=ON  \r\n     /home/user/acts/src/v21.1.1&& cmake --build . -- -j 4&& cmake --build . --target install\r\n   ```\r\n   \r\n2. Cmake message confirms installation of Actsvg plugin: \r\n\r\n    ```\r\n    ...\r\n    -- Enable component 'Core' in 'Core'\r\n    -- Ignore component 'PluginAutodiff' in 'Plugins/Autodiff'\r\n    -- Enable component 'PluginActSVG' in 'Plugins/ActSVG'\r\n    -- Ignore component 'PluginCuda' in 'Plugins/Cuda'\r\n    -- Enable component 'PluginIdentification' in 'Plugins/Identification'\r\n    -- Enable component 'PluginJson' in 'Plugins/Json'\r\n    -- Ignore component 'PluginLegacy' in 'Plugins/Legacy'\r\n    -- Ignore component 'PluginOnnx' in 'Plugins/Onnx'\r\n    -- Ignore component 'PluginSycl' in 'Plugins/Sycl'\r\n    -- Ignore component 'PluginExaTrkX' in 'Plugins/ExaTrkX'\r\n    -- Enable component 'PluginTGeo' in 'Plugins/TGeo'\r\n    -- Enable component 'PluginDD4hep' in 'Plugins/DD4hep'\r\n    -- Ignore component 'Fatras' in 'Fatras'\r\n    -- Ignore component 'Alignment' in 'Alignment'\r\n    -- Ignore subdirectory 'Examples'\r\n    -- Ignore subdirectory 'docs'\r\n    -- Configuring done\r\n    ```\r\n    \r\n3. Full log is here: [2023-02-01_acts-cmake-build-log.txt](https://github.com/acts-project/acts/files/10559406/2023-02-01_acts-cmake-build-log.txt)\r\n\r\n4. Acts successfully compiled and installed\r\n\r\n## What goes wrong\r\n\r\nOur reconstruction framework using Acts have this in cmake:\r\n\r\n```cmake\r\nfind_package(Acts REQUIRED COMPONENTS Core PluginIdentification PluginTGeo PluginDD4hep)\r\n```\r\n\r\nit gives an error: \r\n\r\n```\r\n-- loading components:\r\n--   Core\r\n--   PluginActSVG\r\n--   PluginIdentification\r\n--   PluginJson\r\n--   PluginTGeo\r\n--   PluginDD4hep\r\nCMake Error at CMakeLists.txt:77 (find_package):\r\n  Found package configuration file:\r\n\r\n    /home/romanov/eic/soft/acts/acts-v21.1.1/lib/cmake/Acts/ActsConfig.cmake\r\n\r\n  but it set Acts_FOUND to FALSE so package \"Acts\" is considered to be NOT\r\n  FOUND.  Reason given by package:\r\n\r\n  The following imported targets are referenced, but are missing:\r\n  actsvg::core actsvg::meta\r\n```\r\n\r\n(A bit confusing that it prints loading PluginActSVG when not asked but OK probably, right?)\r\n\r\n## What I have tried\r\n\r\n1. Build actsvg on my system, add it to cmake and LD paths\r\n2. Used `-DACTS_USE_SYSTEM_ACTSVG=ON` and played with ACTSVG related flag combinations\r\n\r\n\r\n## What goes as expected\r\n\r\nBuilding with `-DACTS_BUILD_PLUGIN_ACTSVG=OFF` makes everything work\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1818",
+    "updated_at": "2023-05-09T02:48:15+00:00",
+    "created_at": "2023-02-01T17:05:53+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
   },
   {
     "title": "Make central minimum track momentum threshold",
@@ -81,6 +448,32 @@
     "url": "https://api.github.com/repos/acts-project/acts/issues/1761",
     "updated_at": "2023-01-21T02:16:56+00:00",
     "created_at": "2022-12-19T12:57:05+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Physmon throws many WARNINGs on Bethe-Heitler approximation",
+    "user": {
+      "login": "paulgessinger",
+      "html_url": "https://github.com/paulgessinger"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1748",
+    "number": 1748,
+    "assignee": {
+      "login": "benjaminhuth",
+      "html_url": "https://github.com/benjaminhuth"
+    },
+    "body": "```\r\n16:37:06    TrackFitting   WARNING   Bethe-Heitler approximation encountered invalid value for x/x0=0.54459 at surface vol=30|bnd=4\r\n```",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1748",
+    "updated_at": "2023-05-09T02:48:14+00:00",
+    "created_at": "2022-12-14T15:38:56+00:00",
     "closed_at": null,
     "is_wip": false,
     "is_stale": true,
@@ -162,6 +555,29 @@
     "pull_request": null
   },
   {
+    "title": "error while i running full_chain_odd.py",
+    "user": {
+      "login": "rubihason",
+      "html_url": "https://github.com/rubihason"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1661",
+    "number": 1661,
+    "assignee": null,
+    "body": "Hello,\r\nI was trying to run the script full_chain_odd in python, and I got this error:\r\n```\r\nroot@Rubi:~/Thesis/acts/Examples/Scripts/Python# python3 full_chain_odd.py\r\nError in <TFile::ReadBuffer>: error reading all requested bytes from file /root/Thesis/acts/thirdparty/OpenDataDetector/data/odd-material-maps.root, got 133 of 300\r\nError in <TFile::Init>: /root/Thesis/acts/thirdparty/OpenDataDetector/data/odd-material-maps.root failed to read the file type data.\r\nTraceback (most recent call last):\r\n  File \"full_chain_odd.py\", line 18, in <module>\r\n    oddMaterialDeco = acts.IMaterialDecorator.fromFile(oddMaterialMap)\r\n  File \"/root/Thesis/acts/acts.build/python/acts/__init__.py\", line 60, in _decoratorFromFile\r\n    return ActsPythonBindings._examples.RootMaterialDecorator(\r\n  File \"/root/Thesis/acts/acts.build/python/acts/_adapter.py\", line 30, in wrapped\r\n    fn(self, cfg, *args, **_kwargs)\r\nRuntimeError: Could not open '/root/Thesis/acts/thirdparty/OpenDataDetector/data/odd-material-maps.root: iostream errorroot@Rubi:~/Thesis/acts/Examples/Scripts/Python#",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1661",
+    "updated_at": "2023-05-09T02:48:09+00:00",
+    "created_at": "2022-11-08T17:42:39+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
     "title": "Create volume restricted BFieldMap ",
     "user": {
       "login": "asalzburger",
@@ -179,6 +595,29 @@
     "url": "https://api.github.com/repos/acts-project/acts/issues/1659",
     "updated_at": "2022-12-21T04:10:09+00:00",
     "created_at": "2022-11-07T16:24:06+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
+    "title": "Bad physmon results if interactions enabled in Fatras",
+    "user": {
+      "login": "benjaminhuth",
+      "html_url": "https://github.com/benjaminhuth"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1643",
+    "number": 1643,
+    "assignee": null,
+    "body": "Until now, all interactions are disabled by default in Fatras. Enabling them causes quite some bad results in the physmon for some setups (see plots in #1631).\r\nWhat should be the next steps to investigate this?",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1643",
+    "updated_at": "2023-05-09T02:48:19+00:00",
+    "created_at": "2022-11-01T14:09:50+00:00",
     "closed_at": null,
     "is_wip": false,
     "is_stale": true,
@@ -240,52 +679,6 @@
     "pull_request": null
   },
   {
-    "title": "EDM Memory usage",
-    "user": {
-      "login": "paulgessinger",
-      "html_url": "https://github.com/paulgessinger"
-    },
-    "labels": [
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/issues/1516",
-    "number": 1516,
-    "assignee": null,
-    "body": "The peak memory consumption of the track state EDM strongly increases when pileup and even complexity is increased. For ttbar events at $\\mu=200$ from Pythia8, it can go up to a few gigabytes per event, which is suboptimal.\r\n\r\nThis issue tracks progress to improve and optimize the memory consumption.\r\n\r\n## Associated PRs:\r\n\r\n- #1507\r\n  This helps centralize the `MultiTrajectory` usage: a single instance is used by the examples algorithms to accumulate tracks from all seeds\r\n- #1512\r\n  Switches from overallocating vectors and matrices for the measurements to using a jagged vector structure that looks like this:\r\n  ```\r\n   | x x x | x | x x |  ...\r\n     ^       ^     ^\r\n   M1,D=3 M2,D=1 M3,D=2\r\n  ```\r\n- #1511\r\n  Implements statistics on the memory usage of `Acts::VectorMultiTrajectory` to give us an idea of what's going on.\r\n\r\n## Status quo\r\nThe tooling from #1511 gives the following measurements from `MultiTrajectory`:\r\n### ODD full chain example with Pythia8 ttbar @ mu200\r\n```\r\nother:\r\n               count: 1877425.000000\r\n               index:   128.91M\r\n             parPred:    85.94M\r\n             covPred:   515.65M\r\n             parFilt:     0.00M\r\n             covFilt:     0.00M\r\n             parSmth:    85.94M\r\n             covSmth:   515.65M\r\n                meas:    25.08M\r\n             measCov:   150.46M\r\n                 jac:   515.65M\r\n         sourceLinks:    18.50M\r\n          projectors:     4.18M\r\n               total:  2045.97M\r\nmeas:\r\n               count: 653022.00\r\n               index:    44.84M\r\n             parPred:    27.47M\r\n             covPred:   164.82M\r\n             parFilt:    29.89M\r\n             covFilt:   179.36M\r\n             parSmth:    29.89M\r\n             covSmth:   179.36M\r\n                meas:    29.89M\r\n             measCov:   179.36M\r\n                 jac:   164.82M\r\n         sourceLinks:     9.96M\r\n          projectors:     4.98M\r\n               total:  1044.66M\r\n```\r\n### ODD truth tracking with Pythia8 ttbar @ mu200\r\n```\r\n               count: 40146.000000\r\n               index:     2.76M\r\n             parPred:     1.84M\r\n             covPred:    11.03M\r\n             parFilt:     0.00M\r\n             covFilt:     0.00M\r\n             parSmth:     1.84M\r\n             covSmth:    11.03M\r\n                meas:     0.00M\r\n             measCov:     0.00M\r\n                 jac:    11.03M\r\n         sourceLinks:     0.31M\r\n          projectors:     0.00M\r\n               total:    39.82M\r\nmeas:\r\n               count: 37159.00\r\n               index:     2.55M\r\n             parPred:     1.70M\r\n             covPred:    10.21M\r\n             parFilt:     1.70M\r\n             covFilt:    10.21M\r\n             parSmth:     1.70M\r\n             covSmth:    10.21M\r\n                meas:     1.70M\r\n             measCov:    10.21M\r\n                 jac:    10.21M\r\n         sourceLinks:     0.57M\r\n          projectors:     0.28M\r\n               total:    61.24M\r\n```\r\n\r\n\r\n## Other ideas\r\n- [ ] Switch to float for storage of parameters and covariances to float\r\n- [ ] Only store lower left triangle of covariance matrices. @tboldagh points out there is actually a triangular view [directly in Eigen](https://github.com/acts-project/acts/issues/1516#issue-1372460714)",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1516",
-    "updated_at": "2022-10-22T18:34:46+00:00",
-    "created_at": "2022-09-14T06:57:30+00:00",
-    "closed_at": null,
-    "is_wip": false,
-    "is_stale": true,
-    "pull_request": null
-  },
-  {
-    "title": "bug: interpolation out of bounds with ATLAS B-field map",
-    "user": {
-      "login": "timadye",
-      "html_url": "https://github.com/timadye"
-    },
-    "labels": [
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/issues/1484",
-    "number": 1484,
-    "assignee": null,
-    "body": "Using the propagator with the ATLAS B-field map can give error messages:\r\n```\r\nTrackFinding ERROR Step failed with MagneticFieldError:1: Interpolation out of bounds was requested\r\n```\r\nThis can give a *lot* of messages: ~259 `MagneticFieldError`s per ttbar+\u03bc=200 event, each of which produces 2 errors, and 4 warnings (1.6 GB logfile for 1000 events)!\r\n\r\nThis error is due to `InterpolatedBFieldMap::getField()` called for a position outside the mapped ATLAS B-field\r\n* The ATLAS B-field is mapped in (-10000,-10000,-15000) to (10000,10000,15000)\r\n* but I see, calls for e.g. `getField({-2849, -2486, 54450})`\r\n  * These are presumably for extension of seeds that will eventually be cut or rejected\r\n\r\n#1467 removes these error messages by trying to return the edge-bin values instead of giving an error. That is still WiP because I couldn't yet get it to pass the unit tests: seems to work with B=(0,0,0) at the edges (as for ATLAS), but not otherwise.\r\n\r\nEven if that can be resolved, the question remains: why is `getField()` called for points so far outside the detector? @Corentin-Allaire suggested (ACTS-ITk meeting) that the world volume is too large. If so, it may be an ATLAS-specific error, but I hope it's OK to discuss here.",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1484",
-    "updated_at": "2022-11-12T05:29:35+00:00",
-    "created_at": "2022-09-01T16:29:36+00:00",
-    "closed_at": null,
-    "is_wip": false,
-    "is_stale": true,
-    "pull_request": null
-  },
-  {
     "title": "Optionally have the vertex finding recalculate perigee parameters relative to consistent reference",
     "user": {
       "login": "paulgessinger",
@@ -307,61 +700,6 @@
     "is_wip": false,
     "is_stale": true,
     "pull_request": null
-  },
-  {
-    "title": "Monitor Floating Point Exceptions in CI",
-    "user": {
-      "login": "paulgessinger",
-      "html_url": "https://github.com/paulgessinger"
-    },
-    "labels": [
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/issues/1481",
-    "number": 1481,
-    "assignee": null,
-    "body": "Currently, we don't systematically monitor FPEs in our CI runs. ATLAS does this, and it would be beneficial to have this in our CI.\r\n\r\n@stephenswat is this something that you could look into potentially?",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1481",
-    "updated_at": "2022-10-01T15:29:18+00:00",
-    "created_at": "2022-09-01T14:44:46+00:00",
-    "closed_at": null,
-    "is_wip": false,
-    "is_stale": true,
-    "pull_request": null
-  },
-  {
-    "title": "fix: B-field interpolation errors",
-    "user": {
-      "login": "timadye",
-      "html_url": "https://github.com/timadye"
-    },
-    "labels": [
-      {
-        "name": ":construction: WIP"
-      },
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1467",
-    "number": 1467,
-    "assignee": null,
-    "body": "* Remove `InterpolatedBFieldMap` boundary check. Instead, use the under/overflow bins to return the B-field outside the grid.\r\n  * Was generating ~259 errors per event (`full_chain_itk.py` ttbar+PU200), with each error generating 2 error messages (one quite verbose) and 4 warnings.\r\n  * We don't need to propagate these track candidates further, but we should leave that decision up to the caller and not flood the logfile.\r\n* Remove unneeded/misleading partial initialisation.\r\n  * Note `std::array<Vector3, 8> neighbors{Vector3{0.0, 0.0, 0.0}};` only initialises the first element of the `std::array`.",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1467",
-    "updated_at": "2022-10-12T12:52:14+00:00",
-    "created_at": "2022-08-25T11:12:44+00:00",
-    "closed_at": null,
-    "is_wip": true,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1467",
-      "html_url": "https://github.com/acts-project/acts/pull/1467",
-      "diff_url": "https://github.com/acts-project/acts/pull/1467.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1467.patch",
-      "merged_at": null
-    }
   },
   {
     "title": "Documentation: hints for debugging",
@@ -610,114 +948,6 @@
     "pull_request": null
   },
   {
-    "title": "docs: adding Fatras description",
-    "user": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
-    },
-    "labels": [
-      {
-        "name": ":construction: WIP"
-      },
-      {
-        "name": "Component - Documentation"
-      },
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1402",
-    "number": 1402,
-    "assignee": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
-    },
-    "body": "This PR adds the Fatras documentation consisting of\r\n* Fatras simulation\r\n* Digitisation\r\n* Configuration",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1402",
-    "updated_at": "2023-02-18T06:29:17+00:00",
-    "created_at": "2022-08-08T14:45:50+00:00",
-    "closed_at": null,
-    "is_wip": true,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1402",
-      "html_url": "https://github.com/acts-project/acts/pull/1402",
-      "diff_url": "https://github.com/acts-project/acts/pull/1402.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1402.patch",
-      "merged_at": null
-    }
-  },
-  {
-    "title": "docs: first brush over the geometry pages",
-    "user": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
-    },
-    "labels": [
-      {
-        "name": ":construction: WIP"
-      },
-      {
-        "name": "Component - Documentation"
-      },
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1395",
-    "number": 1395,
-    "assignee": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
-    },
-    "body": "This PR combines the two geometry pages into one and adds some additional info and highlights.",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1395",
-    "updated_at": "2023-02-18T06:28:58+00:00",
-    "created_at": "2022-08-08T12:38:14+00:00",
-    "closed_at": null,
-    "is_wip": true,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1395",
-      "html_url": "https://github.com/acts-project/acts/pull/1395",
-      "diff_url": "https://github.com/acts-project/acts/pull/1395.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1395.patch",
-      "merged_at": null
-    }
-  },
-  {
-    "title": "refactor: Create and use Acts::SpacePoint as input for public interface of Seedfinder!",
-    "user": {
-      "login": "robertlangenberg",
-      "html_url": "https://github.com/robertlangenberg"
-    },
-    "labels": [
-      {
-        "name": ":construction: WIP"
-      },
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1394",
-    "number": 1394,
-    "assignee": null,
-    "body": "BREAKING CHANGE: Seedfinder requires use of Acts::SpacePoint as input.\r\nSeedfinder does not create InternalSpacePoints anymore. Instead, it requires the Acts::SpacePoint to be non-const, as it stores intermediate information in them. \r\n\r\nSince Seedfinder shares the SeedFilters with SeedfinderOrthogonal, I hacked the conversion from InternalSpacePoint to SpacePoint into the SeedfinderOrthogonal at the point the SeedFilters are called. To be changed before un-WIP-ing\r\n\r\nSo far, Acts::SpacePoint have to be created from SimSpacePoint in the SeedingAlgorithm, as SimSpacePoint come from the eventStore. Change to Acts::SpacePoint and retrieve info directly from measurements?\r\n\r\nShould Seed output contain a vector of SourceLinks, which point to the SimSpacePoints, or the full Acts::SpacePoint? If the former, destructor should garbage collect SourceLinks as well. If the latter, eventStore should contain Acts::SpacePoint. ",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1394",
-    "updated_at": "2022-11-12T05:24:54+00:00",
-    "created_at": "2022-08-08T12:22:34+00:00",
-    "closed_at": null,
-    "is_wip": true,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1394",
-      "html_url": "https://github.com/acts-project/acts/pull/1394",
-      "diff_url": "https://github.com/acts-project/acts/pull/1394.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1394.patch",
-      "merged_at": null
-    }
-  },
-  {
     "title": "Ambiguous perigees with low momentum",
     "user": {
       "login": "andiwand",
@@ -793,41 +1023,6 @@
     "pull_request": null
   },
   {
-    "title": "feat: Adding unit tests for perigee propagation outside beam pipe",
-    "user": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
-    },
-    "labels": [
-      {
-        "name": "Component - Core"
-      },
-      {
-        "name": ":construction: WIP"
-      },
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1354",
-    "number": 1354,
-    "assignee": null,
-    "body": "This adds a (currently failing) unit test when starting from a perigee that is not within the beam pipe but within the pixel barrel volume.\r\n\r\nSeveral issues can be studies here:\r\n- path length estimates for low momentum tracks\r\n- wrong destimation volume checks\r\n\r\n@andiwand @paulgessinger ",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1354",
-    "updated_at": "2022-09-09T00:19:46+00:00",
-    "created_at": "2022-07-29T10:54:32+00:00",
-    "closed_at": null,
-    "is_wip": true,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1354",
-      "html_url": "https://github.com/acts-project/acts/pull/1354",
-      "diff_url": "https://github.com/acts-project/acts/pull/1354.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1354.patch",
-      "merged_at": null
-    }
-  },
-  {
     "title": "Vertexing produces propagation errors",
     "user": {
       "login": "paulgessinger",
@@ -855,38 +1050,6 @@
     "is_wip": false,
     "is_stale": true,
     "pull_request": null
-  },
-  {
-    "title": "fix: Energy loss function",
-    "user": {
-      "login": "beomki-yeo",
-      "html_url": "https://github.com/beomki-yeo"
-    },
-    "labels": [
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1323",
-    "number": 1323,
-    "assignee": {
-      "login": "asalzburger",
-      "html_url": "https://github.com/asalzburger"
-    },
-    "body": "This PR fixes the Bethe energy loss function in `Interactions.cpp`\r\n\r\n`Acts::computeEnergyLossBethe` and `Acts::computeEnergyLossLandau` is implemented from equation 33.5 and 33.11 of [Review in Particle Physics](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.98.030001)\r\n\r\nAnd their first term is computed with `computeEpsilon` function, following the notation of equation 33.11:\r\n\r\n```c++\r\n/// Compute epsilon energy pre-factor for RPP2018 eq. 33.11.\r\n///\r\n/// Defined as\r\n///\r\n///     (K/2) * (Z/A)*rho * x * (q\u00b2/beta\u00b2)\r\n///\r\n/// where (Z/A)*rho is the electron density in the material and x is the\r\n/// traversed length (thickness) of the material.\r\ninline float computeEpsilon(float molarElectronDensity, float thickness,\r\n                            const RelativisticQuantities& rq) {\r\n  return 0.5f * K * molarElectronDensity * thickness * rq.q2OverBeta2;\r\n}\r\n```\r\n\r\nProblem is that the epsilon term of equation 33.5 for Bethe function doesnt have the `0.5f` term\r\n\r\nEq. 33.5\r\n![image](https://user-images.githubusercontent.com/63090140/178590990-e4982315-42e2-4033-9bc7-84c6500b0b71.png)\r\n\r\nEq. 33.11\r\n![image](https://user-images.githubusercontent.com/63090140/178591191-37bb33ba-93b9-424e-bb8b-9755c931d675.png)\r\n\r\nIf we are going to use the same epsilon term, we need to multiply 2 in the next term of Bethe energy loss function\r\n\r\nAfter the change, the output of `Acts::computeEnergyLossBethe` gets consistent with Figure 33.2 of the reference.\r\n\r\n### Update July 18th\r\n\r\nLooks like there is a _literature_ error in Landau energy loss function (eq. 33.11).\r\nIt used the mass term of the incident particle (`m`), but I guess it should be the mass of electron (`m_e`) as equation 33.5.\r\n**I need a cross-check from someone who can access [Straggling in thin silicon detectors](https://journals.aps.org/rmp/abstract/10.1103/RevModPhys.60.663), which I cannot** (Update: It is confirmed that it should be the rest mass of electron)\r\n\r\nFinally, to get a consistent result of energy loss function, we need to fix the `computeDeltaHalf` term as well.\r\nBut this is already mentioned in the comment which says: \"Should we use RPP2018 eq. 33.7 instead w/ tabulated constants?\"\r\n\r\n```c++\r\n/// Compute the density correction factor delta/2.\r\n///\r\n/// Uses RPP2018 eq. 33.6 which is only valid for high energies.\r\n///\r\n/// @todo Should we use RPP2018 eq. 33.7 instead w/ tabulated constants?\r\ninline float computeDeltaHalf(float meanExitationPotential,\r\n                              float molarElectronDensity,\r\n                              const RelativisticQuantities& rq) {\r\n```\r\n\r\nYeah it does make big difference between 33.6 (valid for very high energy particles) and 33.7.\r\n**I am not going to include delatHalf term correction in this PR**, but it is included in acts-project/detray#282\r\n\r\n\r\nAfter fixing codes (including the deltaHalf term), the Bethe energy loss function matches to the value in ([PDG](https://pdg.lbl.gov/2022/AtomicNuclearProperties/index.html))\r\n\r\nIn the following figure, Bethe energy loss (dE/dx) in Silicon is compared for Acts main, this PR, acts-project/detray#282, and PDG value. The value from this PR is not accurate yet due to the incorrect deltaHalf term\r\n\r\n<img src=\"https://user-images.githubusercontent.com/63090140/179622322-6c7170c9-7773-4eb4-a621-63e7429e3425.png\" width=\"700\">\r\n\r\nFor the most probable energy loss from Landau equation under the same condition of Figure 33.7 of [Review in Particle Physics](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.98.030001)\r\n, detray#282 got 0.526 MeV, which is very close to the value in the figure.\r\nThis PR got 0.739 MeV due to the incorrect delatHalf term\r\n",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1323",
-    "updated_at": "2023-03-18T05:27:55+00:00",
-    "created_at": "2022-07-12T20:43:52+00:00",
-    "closed_at": null,
-    "is_wip": false,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1323",
-      "html_url": "https://github.com/acts-project/acts/pull/1323",
-      "diff_url": "https://github.com/acts-project/acts/pull/1323.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1323.patch",
-      "merged_at": null
-    }
   },
   {
     "title": "add monitoring for vertexing in physmon",
@@ -976,6 +1139,29 @@
     "pull_request": null
   },
   {
+    "title": "Bug: Probable Issues in Bevelled Cylinder Implementation",
+    "user": {
+      "login": "rahmans1",
+      "html_url": "https://github.com/rahmans1"
+    },
+    "labels": [
+      {
+        "name": "Stale"
+      }
+    ],
+    "html_url": "https://github.com/acts-project/acts/issues/1238",
+    "number": 1238,
+    "assignee": null,
+    "body": "Relevant Issue: [1104](https://github.com/acts-project/acts/pull/1104) , [1146](https://github.com/acts-project/acts/issues/1146)\r\n\r\nThe issue is a summary of the probable problems with PR 1104 which implemented the bevelled cylinder surfaces in ACTS. [Slide 8, 9 here.](https://indico.bnl.gov/event/15458/contributions/62426/attachments/40571/67801/ACTS%20integration%20for%20B0%20tracker.pdf) \r\n\r\nIn [Acts::CylinderBounds::inside](https://github.com/acts-project/acts/blob/main/Core/src/Surfaces/CylinderBounds.cpp#L40):\r\n1) The vector lposition seems to represent a location in the (R*phi, z) coordinates. This would make sense as a cylindrical surface would unwrap to be a rectangle with the same height as the cylinder but a width = 2pi*R. The calculation of the [localx](https://github.com/acts-project/acts/blob/main/Core/src/Surfaces/CylinderBounds.cpp#L56)  variable and its use [localx](https://github.com/acts-project/acts/blob/main/Core/src/Surfaces/CylinderBounds.cpp#L62) does not seem to reflect that. The factor of radial location R is missing.\r\n2) The first check in Acts::CylinderBounds::inside is performed on a [shifted lposition variable which normalizes out the radial factor]( https://github.com/acts-project/acts/blob/main/Core/src/Surfaces/CylinderBounds.cpp#L24). This check does not check for any bevels and seems like it would return true even without checking edge cases for a bevelled cylinder. So, the rest of the code block never gets executed. \r\n3) The block of code following [line 62](https://github.com/acts-project/acts/blob/main/Core/src/Surfaces/CylinderBounds.cpp#L62) and line 65, seems to assume that the boundary of a unwrapped bevelled cylinder is a polygon. This wouldn't be the exact case if one takes into account the evolution of the slope along the boundary surfaces. \r\n![BevelledCylinder](https://user-images.githubusercontent.com/7409132/165825648-92629888-f8d8-4d77-b390-0bf524aee049.JPG)\r\n\r\nIn [Acts::CylinderBounds::inside3D](https://github.com/acts-project/acts/blob/main/Core/src/Surfaces/CylinderBounds.cpp#L89):\r\n1) The inside3D function has two checks: a fast check that does bevelled cylinders but with full azimuthal range (closed surface) and a slow check that can handle phi segments but doesn't check for bevels. Does the fast check need to be updated to check for finite azimuthal range or is the check here sufficient?\r\n2) In the fast check, should this be [bevelMaxZ](https://github.com/acts-project/acts/blob/main/Core/src/Surfaces/CylinderBounds.cpp#L109)? Seems like a typo. \r\n3) In the fast check, it seems to again only check a projection on the yz-plane and may not be sufficient for a bevelled cylinder with finite azimuthal range. \r\n\r\n\r\n\r\n\r\n",
+    "url": "https://api.github.com/repos/acts-project/acts/issues/1238",
+    "updated_at": "2023-05-09T02:48:16+00:00",
+    "created_at": "2022-04-28T19:38:00+00:00",
+    "closed_at": null,
+    "is_wip": false,
+    "is_stale": true,
+    "pull_request": null
+  },
+  {
     "title": "Bug: fatras different particle final states between python and executable",
     "user": {
       "login": "CouthuresJeremy",
@@ -1023,44 +1209,6 @@
     "is_wip": false,
     "is_stale": true,
     "pull_request": null
-  },
-  {
-    "title": "perf: Tile 8\u00d78 covariance matrix multiplication",
-    "user": {
-      "login": "stephenswat",
-      "html_url": "https://github.com/stephenswat"
-    },
-    "labels": [
-      {
-        "name": "Component - Core"
-      },
-      {
-        "name": "Improvement"
-      },
-      {
-        "name": "Impact - Minor"
-      },
-      {
-        "name": "Stale"
-      }
-    ],
-    "html_url": "https://github.com/acts-project/acts/pull/1181",
-    "number": 1181,
-    "assignee": null,
-    "body": "Currently, we are multiplying an 8x8 covariance matrix with an 8x8 transport matrix, and we see that Eigen is failing to optimize this properly, because it is calling a generalized GEMM method rather than an optimized small matrix method. In order to resolve this, we change the code to use a tiled multiplication method which splits the matrices into 4x4 sub-matrices which can be multiplied and added to achieve the desired effect. This has two advantages:\r\n\r\n  1. It allows Eigen to use its hand-rolled optimized 4x4 matrix multiplication methods.\r\n  2. It allows us to perform some trickery with matrix identities to reduce the number of floating point operations.\r\n",
-    "url": "https://api.github.com/repos/acts-project/acts/issues/1181",
-    "updated_at": "2023-03-18T05:27:49+00:00",
-    "created_at": "2022-03-03T10:11:11+00:00",
-    "closed_at": null,
-    "is_wip": false,
-    "is_stale": true,
-    "pull_request": {
-      "url": "https://api.github.com/repos/acts-project/acts/pulls/1181",
-      "html_url": "https://github.com/acts-project/acts/pull/1181",
-      "diff_url": "https://github.com/acts-project/acts/pull/1181.diff",
-      "patch_url": "https://github.com/acts-project/acts/pull/1181.patch",
-      "merged_at": null
-    }
   },
   {
     "title": "Cut tube segment dd4hep conversion tests ",
