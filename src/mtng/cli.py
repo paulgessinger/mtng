@@ -20,6 +20,10 @@ import dateutil.parser
 import yaml
 import pydantic.schema
 from dateutil.tz import tzlocal
+from rich.status import Status
+from rich import print
+from rich.panel import Panel
+import rich.rule
 
 from mtng.generate import generate_latex
 from mtng.spec import Spec
@@ -159,6 +163,9 @@ async def generate(
         dir_okay=False,
         help="Compile the report as a PDF file. This requires a LaTeX installation.",
     ),
+    tex: Optional[Path] = typer.Option(
+        None, dir_okay=False, help="Write LaTex output to this file"
+    ),
 ):
     now = now.replace(tzinfo=tzlocal())
     since = since.replace(tzinfo=tzlocal())
@@ -177,21 +184,25 @@ async def generate(
 
         gh = GitHubAPI(session, __name__, oauth_token=token)
 
+        print(Panel("Collection data from GitHub"))
         data = await collect_repositories(spec.repos, gh=gh, since=since, now=now)
 
         contributions = await contributions if event is not None else []
 
-    latex = generate_latex(
-        spec,
-        data,
-        since=since,
-        now=now,
-        contributions=contributions,
-        full_tex=full_tex,
-    )
+    with Status("Generating LaTeX"):
+        latex = generate_latex(
+            spec,
+            data,
+            since=since,
+            now=now,
+            contributions=contributions,
+            full_tex=full_tex,
+        )
 
     if pdf is None:
-        print(latex)
+        if tex is not None:
+            tex.write_text(latex)
+        print(Panel(latex, title="LaTeX Output"))
     else:
         with TemporaryDirectory() as d:
             d = Path(d)
@@ -207,7 +218,8 @@ async def generate(
             if have_lualatex():
                 args.append("-pdflatex=lualatex")
             args.append(source)
-            subprocess.check_call(args)
+            with Status("Compiling LaTeX"):
+                subprocess.check_call(args)
             shutil.copy(d / "source.pdf", pdf)
 
 

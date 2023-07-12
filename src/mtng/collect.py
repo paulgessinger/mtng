@@ -11,6 +11,10 @@ from gidgethub.abc import GitHubAPI
 import pydantic
 import diskcache
 import appdirs
+from rich import print
+from rich.rule import Rule
+from rich.status import Status
+from rich.progress import Progress, track
 
 from mtng.spec import Repository
 
@@ -125,14 +129,15 @@ async def get_merged_pulls(
     for label in with_labels:
         url += f'+label:"{urllib.parse.quote(label)}"'
 
-    items = [Issue.parse_obj(issue) async for issue in gh.getiter(url)]
+    with Status("Getting merged PR list"):
+        items = [Issue.parse_obj(issue) async for issue in gh.getiter(url)]
 
     prs = [
         PullRequest.parse_obj(await getitem(gh, item.pull_request["url"]))
-        for item in items
+        for item in track(items, description="Getting PR details")
     ]
 
-    for pr in prs:
+    for pr in track(prs, description="Getting PR reviews"):
         pr.reviews = [
             Review.parse_obj(r) for r in await getitem(gh, f"{pr.url}/reviews")
         ]
@@ -177,14 +182,15 @@ async def get_open_pulls(
     *args: Any,
     **kwargs: Any,
 ) -> List[PullRequest]:
-    items = await get_open_issues(gh, *args, type="pr", **kwargs)
+    with Status("Getting open PR list"):
+        items = await get_open_issues(gh, *args, type="pr", **kwargs)
 
     prs = [
         PullRequest.parse_obj(await getitem(gh, item.pull_request["url"]))
-        for item in items
+        for item in track(items, description="Getting PR details")
     ]
 
-    for pr in prs:
+    for pr in track(prs, description="Getting PR reviews"):
         pr.reviews = [
             Review.parse_obj(r) for r in await getitem(gh, f"{pr.url}/reviews")
         ]
@@ -196,7 +202,9 @@ async def collect_repositories(
     repos: List[Repository], since: datetime, now: datetime, gh: GitHubAPI
 ):
     data = {}
+
     for repo in repos:
+        print(Rule(f"Collecting data for {repo.name}"))
         data[repo.name] = {}
         data[repo.name]["merged_prs"] = []
         data[repo.name]["open_prs"] = []
@@ -206,6 +214,7 @@ async def collect_repositories(
         data[repo.name]["spec"] = repo
 
         if repo.do_merged_prs:
+            print(Rule("Fetching merged PRs", align="left"))
             merged_prs = await get_merged_pulls(
                 gh,
                 repo.name,
@@ -216,6 +225,7 @@ async def collect_repositories(
             data[repo.name]["merged_prs"] = merged_prs
 
         if repo.do_open_prs:
+            print(Rule("Fetching open PRs", align="left"))
             open_prs = await get_open_pulls(
                 gh,
                 repo.name,
@@ -234,26 +244,28 @@ async def collect_repositories(
         if repo.do_stale:
             if repo.stale_label is None:
                 raise ValueError("Provide stale label if do_stale=True")
-            stale = await get_open_issues(
-                gh,
-                repo.name,
-                with_labels=[repo.stale_label],
-                without_labels=repo.filter_labels,
-                type="any",
-            )
+            with Status("Getting stale issues"):
+                stale = await get_open_issues(
+                    gh,
+                    repo.name,
+                    with_labels=[repo.stale_label],
+                    without_labels=repo.filter_labels,
+                    type="any",
+                )
 
-            data[repo.name]["stale"] = stale
+                data[repo.name]["stale"] = stale
 
         if repo.do_recent_issues:
-            recent_issues = await get_open_issues(
-                gh,
-                repo.name,
-                start=since,
-                end=now,
-                without_labels=repo.filter_labels,
-            )
+            with Status("Getting recent issues"):
+                recent_issues = await get_open_issues(
+                    gh,
+                    repo.name,
+                    start=since,
+                    end=now,
+                    without_labels=repo.filter_labels,
+                )
 
-            data[repo.name]["recent_issues"] = recent_issues
+                data[repo.name]["recent_issues"] = recent_issues
 
         for prk in "open_prs", "merged_prs", "stale", "recent_issues":
             for pr in data[repo.name][prk]:
@@ -261,12 +273,13 @@ async def collect_repositories(
                 pr.is_stale = repo.stale_label in [l.name for l in pr.labels]
 
         if repo.needs_discussion_label is not None:
-            needs_discussion = await get_open_issues(
-                gh,
-                repo.name,
-                with_labels=[repo.needs_discussion_label],
-                without_labels=repo.filter_labels,
-            )
-            data[repo.name]["needs_discussion"] = needs_discussion
+            with Status("Getting items that need discussion"):
+                needs_discussion = await get_open_issues(
+                    gh,
+                    repo.name,
+                    with_labels=[repo.needs_discussion_label],
+                    without_labels=repo.filter_labels,
+                )
+                data[repo.name]["needs_discussion"] = needs_discussion
 
-    return data
+        return data
