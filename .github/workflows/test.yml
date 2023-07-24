@@ -43,8 +43,8 @@ jobs:
         run: pip install .
       - name: Generate tex output
         run: >
-          mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 > fragment.tex
-          && mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 --full > full.tex
+          mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 --tex fragment.tex
+          && mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 --full --tex full.tex
       - uses: actions/upload-artifact@v3
         with:
           name: latex-src
