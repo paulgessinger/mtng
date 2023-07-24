@@ -273,7 +273,9 @@ async def collect_repositories(
             for pr in data[repo.name][prk]:
                 pr.is_wip = repo.wip_label in [l.name for l in pr.labels]
                 if pr.is_pr:
-                    pr.is_wip = pr.is_wip or (pr.draft if pr.draft is not None else False)
+                    pr.is_wip = pr.is_wip or (
+                        pr.draft if pr.draft is not None else False
+                    )
                 pr.is_stale = repo.stale_label in [l.name for l in pr.labels]
 
         if repo.needs_discussion_label is not None:
