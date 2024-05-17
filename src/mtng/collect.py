@@ -288,4 +288,4 @@ async def collect_repositories(
                 )
                 data[repo.name]["needs_discussion"] = needs_discussion
 
-        return data
+    return data
