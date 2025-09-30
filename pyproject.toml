@@ -1,41 +1,45 @@
-[tool.poetry]
+[project]
 name = "mtng"
 version = "0.7.4"
 description = ""
-authors = ["Paul Gessinger <hello@paulgessinger.com>"]
-packages = [
-{ include = "mtng", from = "src" },
+authors = [
+    { name = "Paul Gessinger", email = "hello@paulgessinger.com" }
 ]
 readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "python-dotenv>=0.17.1",
+    "Jinja2>=3.1.1",
+    "requests>=2.25.1",
+    "typer>=0.6.1",
+    "python-dateutil>=2.8.1",
+    "aiohttp>=3.7.4",
+    "gidgethub>=5.0.1",
+    "pydantic>=1.8.2",
+    "PyYAML>=6.0.1",
+    "pytest-asyncio>=0.19.0",
+    "pytest-dotenv>=0.5.2",
+    "appdirs>=1.4.4",
+    "diskcache>=5.4.0",
+    "rich>=13.4.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.1.2",
+    "black>=23.1.0",
+    "nox>=2022.8.7",
+]
+
+[project.scripts]
+mtng = "mtng.cli:cli"
 
 [project.urls]
 homepage = "https://github.com/paulgessinger/mtng"
 
-[tool.poetry.dependencies]
-python = "^3.8"
-python-dotenv = "^0.17.1"
-Jinja2 = "^3.1.1"
-requests = "^2.25.1"
-typer = "^0.6.1"
-python-dateutil = "^2.8.1"
-aiohttp = "^3.7.4"
-gidgethub = "^5.0.1"
-pydantic = "^1.8.2"
-PyYAML = "^6.0.1"
-pytest-asyncio = "^0.19.0"
-pytest-dotenv = "^0.5.2"
-appdirs = "^1.4.4"
-diskcache = "^5.4.0"
-rich = "^13.4.2"
-
-[tool.poetry.scripts]
-mtng = 'mtng.cli:cli'
-
-[tool.poetry.dev-dependencies]
-pytest = "^7.1.2"
-black = "^23.1.0"
-nox = "^2022.8.7"
-
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mtng"]
