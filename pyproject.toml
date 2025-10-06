@@ -1,6 +1,6 @@
 [project]
 name = "mtng"
-version = "0.8.1"
+dynamic = ["version"]
 description = ""
 authors = [
     { name = "Paul Gessinger", email = "hello@paulgessinger.com" }
@@ -38,8 +38,11 @@ mtng = "mtng.cli:cli"
 homepage = "https://github.com/paulgessinger/mtng"
 
 [build-system]
-requires = ["uv_build>=0.8.22,<0.9.0"]
-build-backend = "uv_build"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mtng"]
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
