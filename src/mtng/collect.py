@@ -54,7 +54,7 @@ class IssueBase(pydantic.BaseModel):
     is_wip: bool = False
     is_stale: bool = False
 
-    draft: Optional[bool]
+    draft: Optional[bool] = None
 
 
 class Issue(IssueBase):
