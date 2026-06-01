@@ -222,7 +222,8 @@ async def collect_repositories(
                 repo.name,
                 since,
                 now,
-                without_labels=repo.filter_labels,
+                with_labels=repo.with_labels,
+                without_labels=repo.without_labels,
             )
             data[repo.name]["merged_prs"] = merged_prs
 
@@ -231,7 +232,8 @@ async def collect_repositories(
             open_prs = await get_open_pulls(
                 gh,
                 repo.name,
-                without_labels=repo.filter_labels,
+                with_labels=repo.with_labels,
+                without_labels=repo.without_labels,
             )
 
             if not repo.show_wip:
@@ -250,8 +252,8 @@ async def collect_repositories(
                 stale = await get_open_issues(
                     gh,
                     repo.name,
-                    with_labels=[repo.stale_label],
-                    without_labels=repo.filter_labels,
+                    with_labels=[repo.stale_label] + repo.with_labels,
+                    without_labels=repo.without_labels,
                     type="any",
                 )
 
@@ -264,7 +266,8 @@ async def collect_repositories(
                     repo.name,
                     start=since,
                     end=now,
-                    without_labels=repo.filter_labels,
+                    with_labels=repo.with_labels,
+                    without_labels=repo.without_labels,
                 )
 
                 data[repo.name]["recent_issues"] = recent_issues
@@ -283,8 +286,8 @@ async def collect_repositories(
                 needs_discussion = await get_open_issues(
                     gh,
                     repo.name,
-                    with_labels=[repo.needs_discussion_label],
-                    without_labels=repo.filter_labels,
+                    with_labels=[repo.needs_discussion_label] + repo.with_labels,
+                    without_labels=repo.without_labels,
                 )
                 data[repo.name]["needs_discussion"] = needs_discussion
 
