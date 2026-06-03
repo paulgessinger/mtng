@@ -1,62 +1,57 @@
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
 
 jobs:
-  nox:
+  test:
     runs-on: ubuntu-latest
     strategy:
-      matrix: 
+      matrix:
         python:
-          - "3.8"
-          - "3.9"
-          - "3.10"
-          - "3.11"
+          - "3.12"
+          - "3.13"
+          - "3.14"
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "${{ matrix.python }}"
+      - uses: actions/checkout@v4
       - name: Install texlive
         run: >
-          sudo apt-get update 
+          sudo apt-get update
           && sudo apt-get install -y texlive texlive-latex-recommended texlive-latex-extra latexmk
-      - name: Install nox
-        run: pip install nox
-      - uses: actions/checkout@v3
-      - name: Run nox
-        run: nox -p ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "${{ matrix.python }}"
+      - name: Run tests
+        run: uv run --group dev pytest -n auto
 
   generate:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.10"
-      - uses: actions/checkout@v3
-      - name: Install dependencies
-        run: pip install .
+          python-version: "3.12"
       - name: Generate tex output
         run: >
-          mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 --tex fragment.tex
-          && mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 --full --tex full.tex
-      - uses: actions/upload-artifact@v3
+          uv run mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 --tex fragment.tex
+          && uv run mtng generate tests/acts_spec.yml --since 2022-08-01 --now 2022-08-17 --full --tex full.tex
+      - uses: actions/upload-artifact@v4
         with:
           name: latex-src
           path: "*.tex"
-    
+
   compile:
     runs-on: ubuntu-latest
     container: texlive/texlive:latest-small
     needs: generate
     steps:
       - run: tlmgr install latexmk && ln -s /usr/local/texlive/20*/bin/*/latexmk /usr/local/bin/latexmk
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: latex-src
       - name: Compile full latex
@@ -67,25 +62,17 @@ jobs:
           && cat fragment.tex >> combined.tex
           && printf "\\\\end{document}" >> combined.tex
           && latexmk -pdf -output-directory=combined combined.tex
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: latex-pdf
-          path: full/*.pdf
-      - uses: actions/upload-artifact@v3
-        with:
-          name: latex-pdf
-          path: combined/*.pdf
+          path: |
+            full/*.pdf
+            combined/*.pdf
 
   black:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install black
-        run: pip install black==23.1.0
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
       - name: Run black
-        run: black --check .
-
-
+        run: uvx black==23.1.0 --check .

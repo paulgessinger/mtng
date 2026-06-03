@@ -42,14 +42,14 @@ class IssueBase(pydantic.BaseModel):
     labels: List[Label]
     html_url: str
     number: int
-    assignee: Optional[User]
+    assignee: Optional[User] = None
 
-    body: Optional[str]
+    body: Optional[str] = None
     url: str
 
     updated_at: datetime
     created_at: datetime
-    closed_at: Optional[datetime]
+    closed_at: Optional[datetime] = None
 
     is_wip: bool = False
     is_stale: bool = False

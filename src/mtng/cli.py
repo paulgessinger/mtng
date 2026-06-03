@@ -18,7 +18,6 @@ import gidgethub
 import aiohttp
 import dateutil.parser
 import yaml
-import pydantic.schema
 from dateutil.tz import tzlocal
 from rich.status import Status
 from rich import print
@@ -232,7 +231,7 @@ def preamble():
 
 @cli.command(help="Print the configuration schema")
 def schema():
-    print(json.dumps(pydantic.schema.schema([Spec]), indent=2))
+    print(json.dumps(Spec.model_json_schema(), indent=2))
 
 
 @cli.callback()

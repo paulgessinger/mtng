@@ -45,7 +45,7 @@ class Repository(BaseModel):
     do_assignee: bool = pydantic.Field(
         False,
         title="Do assignee",
-        decription="Show assignees",
+        description="Show assignees",
     )
 
     no_assignee_attention: bool = pydantic.Field(
@@ -55,13 +55,13 @@ class Repository(BaseModel):
     do_reviewers: bool = pydantic.Field(
         False,
         title="Do reviewers",
-        decription="Show reviewers, or requested reviewers",
+        description="Show reviewers, or requested reviewers",
     )
 
     needs_discussion_label: Optional[str] = pydantic.Field(
         None,
         title="Label for items to list as 'needs discussion'",
-        decription="Adds the item to a dedicated group of slides",
+        description="Adds the item to a dedicated group of slides",
     )
 
     @property
