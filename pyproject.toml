@@ -24,13 +24,6 @@ dependencies = [
     "rich>=13.4.2",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.1.2",
-    "black>=23.1.0",
-    "nox>=2022.8.7",
-]
-
 [project.scripts]
 mtng = "mtng.cli:cli"
 
@@ -46,3 +39,12 @@ packages = ["src/mtng"]
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
+
+[dependency-groups]
+dev = [
+    "black>=25.9.0",
+    "nox>=2025.5.1",
+    "pytest>=8.4.2",
+    "pytest-sugar>=1.1.1",
+    "pytest-xdist>=3.8.0",
+]

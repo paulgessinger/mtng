@@ -18,7 +18,6 @@ import gidgethub
 import aiohttp
 import dateutil.parser
 import yaml
-import pydantic.schema
 from dateutil.tz import tzlocal
 from rich.status import Status
 from rich import print
@@ -176,7 +175,7 @@ async def generate(
         if latexmk is None:
             raise ValueError("latexmk could not be found, cannot compile using --pdf")
 
-    spec = Spec.parse_obj(yaml.safe_load(config))
+    spec = Spec.model_validate(yaml.safe_load(config))
 
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         if event is not None:
@@ -232,7 +231,7 @@ def preamble():
 
 @cli.command(help="Print the configuration schema")
 def schema():
-    print(json.dumps(pydantic.schema.schema([Spec]), indent=2))
+    print(json.dumps(Spec.model_json_schema(), indent=2))
 
 
 @cli.callback()

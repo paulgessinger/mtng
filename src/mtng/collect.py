@@ -42,14 +42,14 @@ class IssueBase(pydantic.BaseModel):
     labels: List[Label]
     html_url: str
     number: int
-    assignee: Optional[User]
+    assignee: Optional[User] = None
 
-    body: Optional[str]
+    body: Optional[str] = None
     url: str
 
     updated_at: datetime
     created_at: datetime
-    closed_at: Optional[datetime]
+    closed_at: Optional[datetime] = None
 
     is_wip: bool = False
     is_stale: bool = False
@@ -132,16 +132,16 @@ async def get_merged_pulls(
         url += f'+label:"{urllib.parse.quote(label)}"'
 
     with Status("Getting merged PR list"):
-        items = [Issue.parse_obj(issue) async for issue in gh.getiter(url)]
+        items = [Issue.model_validate(issue) async for issue in gh.getiter(url)]
 
     prs = [
-        PullRequest.parse_obj(await getitem(gh, item.pull_request["url"]))
+        PullRequest.model_validate(await getitem(gh, item.pull_request["url"]))
         for item in track(items, description="Getting PR details")
     ]
 
     for pr in track(prs, description="Getting PR reviews"):
         pr.reviews = [
-            Review.parse_obj(r) for r in await getitem(gh, f"{pr.url}/reviews")
+            Review.model_validate(r) for r in await getitem(gh, f"{pr.url}/reviews")
         ]
 
     return prs
@@ -170,7 +170,7 @@ async def get_open_issues(
         url += f'+-label:"{urllib.parse.quote(label)}"'
     for label in with_labels:
         url += f'+label:"{urllib.parse.quote(label)}"'
-    obj = [Issue.parse_obj(issue) async for issue in gh.getiter(url)]
+    obj = [Issue.model_validate(issue) async for issue in gh.getiter(url)]
 
     if type == "pr":
         obj
@@ -188,13 +188,13 @@ async def get_open_pulls(
         items = await get_open_issues(gh, *args, type="pr", **kwargs)
 
     prs = [
-        PullRequest.parse_obj(await getitem(gh, item.pull_request["url"]))
+        PullRequest.model_validate(await getitem(gh, item.pull_request["url"]))
         for item in track(items, description="Getting PR details")
     ]
 
     for pr in track(prs, description="Getting PR reviews"):
         pr.reviews = [
-            Review.parse_obj(r) for r in await getitem(gh, f"{pr.url}/reviews")
+            Review.model_validate(r) for r in await getitem(gh, f"{pr.url}/reviews")
         ]
 
     return prs
