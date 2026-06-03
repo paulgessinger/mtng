@@ -38,7 +38,7 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
     def get_file_content(file: str, cls):
         f = asyncio.Future()
         with (ref / file).open() as fh:
-            f.set_result([cls.parse_obj(o) for o in json.load(fh)])
+            f.set_result([cls.model_validate(o) for o in json.load(fh)])
         return f
 
     monkeypatch.setattr(
@@ -113,7 +113,7 @@ async def test_collect(tmp_path):
         outf = tmp_path / f"{k}.json"
         print(outf)
         with outf.open("w") as fh:
-            json.dump([json.loads(o.json()) for o in repo[k]], fh, indent=2)
+            json.dump([json.loads(o.model_dump_json()) for o in repo[k]], fh, indent=2)
 
 
 @pytest.mark.asyncio
@@ -133,7 +133,7 @@ async def test_get_open_pulls():
         )
 
         for pr in open_prs:
-            print(pr.json(indent=2))
+            print(pr.model_dump_json(indent=2))
 
 
 # check if we have latexmk
@@ -154,14 +154,14 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
     now = datetime(2022, 8, 11, tzinfo=tzlocal())
 
     with (Path(__file__).parent / "acts_spec.yml").open() as fh:
-        spec = Spec.parse_obj(yaml.safe_load(fh))
+        spec = Spec.model_validate(yaml.safe_load(fh))
 
     ref = Path(__file__).parent / "ref"
 
     def get_file_content(file: str, cls):
         f = asyncio.Future()
         with (ref / file).open() as fh:
-            f.set_result([cls.parse_obj(o) for o in json.load(fh)])
+            f.set_result([cls.model_validate(o) for o in json.load(fh)])
         return f
 
     monkeypatch.setattr(

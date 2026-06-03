@@ -175,7 +175,7 @@ async def generate(
         if latexmk is None:
             raise ValueError("latexmk could not be found, cannot compile using --pdf")
 
-    spec = Spec.parse_obj(yaml.safe_load(config))
+    spec = Spec.model_validate(yaml.safe_load(config))
 
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         if event is not None:

@@ -1,11 +1,10 @@
 from typing import List, Optional
 import pydantic
-from pydantic import validator, root_validator
+from pydantic import ConfigDict
 
 
 class BaseModel(pydantic.BaseModel):
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class Repository(BaseModel):
