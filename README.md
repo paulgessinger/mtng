@@ -81,9 +81,14 @@ repos:
 ### Schema 
 - **`Repository`** *(object)*: Cannot contain additional properties.
   - **`name`** *(string)*: Name of the repository, e.g. 'acts-project/acts'.
+  - **`display_name`** *(string)*: Alternative repository name. Useful when fetching one repository multiple times.
   - **`wip_label`** *(string)*: Label to identify WIP PRs.
   - **`show_wip`** *(boolean)*: If true, WIP PRs will be included in the output, else they are ignored. Default: `False`.
-  - **`filter_labels`** *(array)*: If any PR or issue has any label that matches any of these labels, they are excluded.
+  - **`filter_labels`** *(array)*: If any PR or issue has any label that matches any of these labels, they are excluded. Mutually exclusive with `include_labels` and `exclude_labels`.
+    - **Items** *(string)*
+  - **`include_labels`** *(array)*: If set, only PRs or issues that have all of these labels are included. Mutually exclusive with `filter_labels`.
+    - **Items** *(string)*
+  - **`exclude_labels`** *(array)*: If any PR or issue has any label that matches any of these labels, they are excluded. Mutually exclusive with `filter_labels`.
     - **Items** *(string)*
   - **`stale_label`** *(string)*: A label to identify stale PRs/issues. If set, stale PRs and issues will be listed separately and split into newly and other stale items.
   - **`do_open_prs`** *(boolean)*: Show a list of open PRs. Default: `True`.

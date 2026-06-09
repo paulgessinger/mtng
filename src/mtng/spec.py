@@ -12,6 +12,11 @@ class Repository(BaseModel):
         ...,
         description="Name of the repository, e.g. 'acts-project/acts'.",
     )
+    display_name: Optional[str] = pydantic.Field(
+        None,
+        title="Display name",
+        description="Alternative repository name. Useful when fetching one repository multiple times.",
+    )
     wip_label: Optional[str] = pydantic.Field(
         None, title="WIP label", description="Label to identify WIP PRs."
     )
@@ -22,7 +27,15 @@ class Repository(BaseModel):
     )
     filter_labels: List[str] = pydantic.Field(
         default_factory=list,
-        description="If any PR or issue has any label that matches any of these labels, they are excluded.",
+        description="If any PR or issue has any label that matches any of these labels, they are excluded. Mutually exclusive with 'include_labels' and 'exclude_labels'.",
+    )
+    include_labels: List[str] = pydantic.Field(
+        default_factory=list,
+        description="If set, only PRs or issues that have all of these labels are included. Mutually exclusive with 'filter_labels'.",
+    )
+    exclude_labels: List[str] = pydantic.Field(
+        default_factory=list,
+        description="If any PR or issue has any label that matches any of these labels, they are excluded. Mutually exclusive with 'filter_labels'.",
     )
     stale_label: Optional[str] = pydantic.Field(
         None,
@@ -62,6 +75,22 @@ class Repository(BaseModel):
         title="Label for items to list as 'needs discussion'",
         description="Adds the item to a dedicated group of slides",
     )
+
+    @pydantic.model_validator(mode="after")
+    def check_label_filters(self) -> "Repository":
+        if self.filter_labels and (self.include_labels or self.exclude_labels):
+            raise ValueError(
+                "'filter_labels' is mutually exclusive with 'include_labels' and 'exclude_labels'."
+            )
+        return self
+
+    @property
+    def with_labels(self) -> List[str]:
+        return self.include_labels
+
+    @property
+    def without_labels(self) -> List[str]:
+        return self.filter_labels + self.exclude_labels
 
     @property
     def do_stale(self):
