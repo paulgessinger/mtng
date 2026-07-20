@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 import json
 from pathlib import Path
 import os
-import warnings
 import subprocess
 
 import pytest
@@ -83,9 +82,22 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
     act_file.write_text(output)
 
     ref_file = ref / "reference.tex"
-    assert output == ref_file.read_text(), str(act_file)
+
+    if os.environ.get("UPDATE_SNAPSHOTS"):
+        ref_file.write_text(output)
+    else:
+        assert output == ref_file.read_text(), (
+            f"Output differs from snapshot. Run with UPDATE_SNAPSHOTS=1 to regenerate.\n"
+            f"Actual output written to: {act_file}"
+        )
 
 
+needs_gh_token = pytest.mark.skipif(
+    "GH_TOKEN" not in os.environ, reason="GH_TOKEN environment variable not set"
+)
+
+
+@needs_gh_token
 @pytest.mark.asyncio
 async def test_collect(tmp_path):
     repo = Repository(
@@ -93,11 +105,6 @@ async def test_collect(tmp_path):
         stale_label="Stale",
         wip_label=":construction: WIP",
     )
-
-    if "GH_TOKEN" not in os.environ:
-        warnings.warn(
-            "GH_TOKEN environment variable not found. API based tests will likely fail"
-        )
 
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
@@ -116,6 +123,7 @@ async def test_collect(tmp_path):
             json.dump([json.loads(o.model_dump_json()) for o in repo[k]], fh, indent=2)
 
 
+@needs_gh_token
 @pytest.mark.asyncio
 async def test_get_open_pulls():
     repo = Repository(
