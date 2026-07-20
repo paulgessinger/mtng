@@ -76,6 +76,8 @@ class PullRequest(IssueBase):
 
 cache = diskcache.Cache(appdirs.user_cache_dir("mtng"))
 
+_CACHE_MISS = object()
+
 
 def memoize(expire=0, key_func=None):
     def decorator(fn):
@@ -93,7 +95,8 @@ def memoize(expire=0, key_func=None):
                 + pickle.dumps(_kwargs)
             )
 
-            if hit := cache.get(key):
+            hit = cache.get(key, default=_CACHE_MISS)
+            if hit is not _CACHE_MISS:
                 return hit
 
             result = await fn(*args, **kwargs)
@@ -172,9 +175,6 @@ async def get_open_issues(
         url += f'+label:"{urllib.parse.quote(label)}"'
     obj = [Issue.model_validate(issue) async for issue in gh.getiter(url)]
 
-    if type == "pr":
-        obj
-
     return obj
 
 
@@ -207,13 +207,14 @@ async def collect_repositories(
 
     for repo in repos:
         print(Rule(f"Collecting data for {repo.name}"))
-        data[repo.name] = {}
-        data[repo.name]["merged_prs"] = []
-        data[repo.name]["open_prs"] = []
-        data[repo.name]["stale"] = []
-        data[repo.name]["recent_issues"] = []
-        data[repo.name]["needs_discussion"] = []
-        data[repo.name]["spec"] = repo
+        key = repo.display_name or repo.name
+        data[key] = {}
+        data[key]["merged_prs"] = []
+        data[key]["open_prs"] = []
+        data[key]["stale"] = []
+        data[key]["recent_issues"] = []
+        data[key]["needs_discussion"] = []
+        data[key]["spec"] = repo
 
         if repo.do_merged_prs:
             print(Rule("Fetching merged PRs", align="left"))
@@ -225,7 +226,7 @@ async def collect_repositories(
                 with_labels=repo.with_labels,
                 without_labels=repo.without_labels,
             )
-            data[repo.name]["merged_prs"] = merged_prs
+            data[key]["merged_prs"] = merged_prs
 
         if repo.do_open_prs:
             print(Rule("Fetching open PRs", align="left"))
@@ -243,7 +244,7 @@ async def collect_repositories(
                         open_prs,
                     )
                 )
-            data[repo.name]["open_prs"] = open_prs
+            data[key]["open_prs"] = open_prs
 
         if repo.do_stale:
             if repo.stale_label is None:
@@ -257,7 +258,7 @@ async def collect_repositories(
                     type="any",
                 )
 
-                data[repo.name]["stale"] = stale
+                data[key]["stale"] = stale
 
         if repo.do_recent_issues:
             with Status("Getting recent issues"):
@@ -270,10 +271,10 @@ async def collect_repositories(
                     without_labels=repo.without_labels,
                 )
 
-                data[repo.name]["recent_issues"] = recent_issues
+                data[key]["recent_issues"] = recent_issues
 
         for prk in "open_prs", "merged_prs", "stale", "recent_issues":
-            for pr in data[repo.name][prk]:
+            for pr in data[key][prk]:
                 pr.is_wip = repo.wip_label in [l.name for l in pr.labels]
                 if pr.is_pr:
                     pr.is_wip = pr.is_wip or (
@@ -289,6 +290,6 @@ async def collect_repositories(
                     with_labels=[repo.needs_discussion_label] + repo.with_labels,
                     without_labels=repo.without_labels,
                 )
-                data[repo.name]["needs_discussion"] = needs_discussion
+                data[key]["needs_discussion"] = needs_discussion
 
     return data

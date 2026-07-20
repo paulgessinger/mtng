@@ -6,7 +6,7 @@
 \begin{frame}[allowframebreaks,t]{Needs discussion}
 
   \begin{itemize}
-    {%- call show_item(item, repo.spec, mode) -%}
+    {%- call show_item(item, repo["spec"], mode) -%}
     {%- endcall %}
   \end{itemize}
 
@@ -33,7 +33,7 @@
 
   \begin{itemize}
     {% for pr in repo["merged_prs"]|sort(attribute="closed_at") %}
-    {%- call show_item(pr, repo.spec, mode="MERGED") -%}
+    {%- call show_item(pr, repo["spec"], mode="MERGED") -%}
     , merged on {{ pr.closed_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
@@ -61,7 +61,7 @@
   \begin{itemize}
     {% for wip in ["false", "true"] %}
     {% for pr in repo["open_prs"]|selectattr("is_wip", wip)|sort(reverse=True, attribute="updated_at") %}
-    {%- call show_item(pr, repo.spec, mode="OPEN") -%}
+    {%- call show_item(pr, repo["spec"], mode="OPEN") -%}
     , updated on {{ pr.updated_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
@@ -77,7 +77,7 @@
   \begin{frame}[allowframebreaks]{ \reponame{}: Issues opened since {{ since.strftime('%Y-%m-%d') }} }
     \begin{itemize}
       {% for item in repo["recent_issues"]|sort(reverse=True, attribute="updated_at") %}
-      {%- call show_item(item, repo.spec) -%}
+      {%- call show_item(item, repo["spec"]) -%}
           , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
       {%- endcall %}
       {%- endfor %}
@@ -88,14 +88,14 @@
 {% endif %}
 {% endif %}
 
-{% if repo.spec.do_stale %}
-{% set newly_stale = repo["stale"] | selectattr("updated_at", ">", since) | list %}
+{% if repo["spec"].do_stale %}
+{% set newly_stale = repo["stale"] | selectattr("updated_at", "gt", since) | list %}
 {% if newly_stale | length > 0 %}
 \section{ \reponame{} \\ Stale Issues and PRs}
 \begin{frame}[allowframebreaks]{ \reponame{}: New stale Issues / PRs since {{ since.strftime('%Y-%m-%d') }} }
   \begin{itemize}
     {% for item in newly_stale %}
-    {%- call show_item(item, repo.spec, mode="OPEN") -%}
+    {%- call show_item(item, repo["spec"], mode="OPEN") -%}
         , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
@@ -110,7 +110,7 @@
 \begin{frame}[allowframebreaks]{ \reponame{}: All stale Issues / PRs}
   \begin{itemize}
     {% for item in repo["stale"]|sort(reverse=True, attribute="updated_at") %}
-    {%- call show_item(item, repo.spec, mode="OPEN") -%}
+    {%- call show_item(item, repo["spec"], mode="OPEN") -%}
         , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
     {%- endcall %}
     {%- endfor %}
