@@ -321,7 +321,14 @@ def test_item_render(try_render):
     assert "EXTRA" in output
     assert user_a.login in output
     assert user_b.login in output
+    assert "reviewed by" in output
     assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
+
+    spec.show_review_summary = False
+    output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
+    assert "reviewed by" not in output
+    assert "comment by" not in output
+    assert "changes requested by" not in output
 
     item.is_wip = True
     output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")

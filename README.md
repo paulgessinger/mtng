@@ -99,6 +99,8 @@ repos:
   - **`do_merged_prs`** *(boolean)*: Show a list of merged PRs. Default: `True`.
   - **`do_recent_issues`** *(boolean)*: Show a list of issues opened in the time interval. Default: `False`.
   - **`no_assignee_attention`** *(boolean)*: Draw attention to items without an assignee. Default: `True`.
+  - **`do_reviewers`** *(boolean)*: Show reviewer information for PRs. Default: `False`.
+  - **`show_review_summary`** *(boolean)*: Show review outcome text (for example, `reviewed by`). Default: `True`.
 - **`Spec`** *(object)*: Cannot contain additional properties.
   - **`repos`** *(array)*
     - **Items**: Refer to *#/definitions/Repository*.

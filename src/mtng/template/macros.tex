@@ -22,7 +22,7 @@
     {%- endif -%}
     }) \\
     by \href{ {{- item.user.html_url -}} }{@{{- item.user.login|sanitize -}}}
-    {%- if spec.do_assignee or (spec.do_reviewers and item.is_pr) -%}
+    {%- if spec.do_assignee or (spec.do_reviewers and spec.show_review_summary and item.is_pr) -%}
         ,{}
     {%- endif -%}
     {%- if spec.do_assignee -%}
@@ -36,7 +36,7 @@
             {%- endif -%}
         {%- endif -%}
     {%- endif -%}
-    {%- if spec.do_reviewers and item.is_pr -%}
+    {%- if spec.do_reviewers and spec.show_review_summary and item.is_pr -%}
         {%- if item.reviews is defined and item.reviews|length > 0 -%}
             {%- set approvals = item.reviews|selectattr("state", "==", "APPROVED")|list -%}
             {%- set comments = item.reviews|selectattr("state", "==", "COMMENTED")|list -%}

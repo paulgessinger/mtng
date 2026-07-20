@@ -69,6 +69,11 @@ class Repository(BaseModel):
         title="Do reviewers",
         description="Show reviewers, or requested reviewers",
     )
+    show_review_summary: bool = pydantic.Field(
+        True,
+        title="Show review summary",
+        description="Show review outcome text such as 'reviewed by', comments, and requested changes.",
+    )
 
     needs_discussion_label: Optional[str] = pydantic.Field(
         None,
