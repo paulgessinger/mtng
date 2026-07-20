@@ -19,7 +19,17 @@ from dateutil.tz import tzlocal
 import mtng.collect
 from mtng.generate import generate_latex, env
 from mtng.spec import Repository, Spec
-from mtng.collect import Label, PullRequest, Issue, Review, User, get_open_pulls
+from mtng.collect import (
+    Label,
+    PullRequest,
+    Issue,
+    Review,
+    User,
+    get_open_pulls,
+    collect_repositories,
+    extract_release_pull_numbers,
+    parse_release_tag,
+)
 
 
 @pytest.mark.asyncio
@@ -398,3 +408,140 @@ def test_sanitization(try_render, prob):
     spec = Repository(name="acts-project/acts")
 
     assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED"))
+
+
+def test_extract_release_pull_numbers():
+    body = """
+## What's Changed
+* One in https://github.com/acts-project/acts/pull/123
+* Two in https://github.com/acts-project/acts/pull/456
+* Duplicate in https://github.com/acts-project/acts/pull/123
+* Other repo in https://github.com/someone/other/pull/999
+"""
+    assert extract_release_pull_numbers(body, "acts-project/acts") == [123, 456]
+
+
+def test_extract_release_pull_numbers_generated_notes_format():
+    body = """
+## 🚀 Features
+- Re-establish detray navigation on ODD from Gen3 (#5579) by @asalzburger
+- Add portal tagging blueprint node (#5593) by @paulgessinger
+"""
+    assert extract_release_pull_numbers(body, "acts-project/acts") == [5579, 5593]
+
+
+def test_parse_release_tag():
+    assert parse_release_tag("v47.0.0", "acts-project/acts") == "v47.0.0"
+    assert (
+        parse_release_tag(
+            "https://github.com/acts-project/acts/releases/tag/v47.0.0",
+            "acts-project/acts",
+        )
+        == "v47.0.0"
+    )
+
+    with pytest.raises(ValueError):
+        parse_release_tag(
+            "https://github.com/other/repo/releases/tag/v47.0.0",
+            "acts-project/acts",
+        )
+
+
+def test_review_model_accepts_pending_state():
+    review = Review.model_validate(
+        {
+            "user": {"login": "octocat", "html_url": "https://github.com/octocat"},
+            "state": "PENDING",
+            "body": None,
+            "submitted_at": None,
+        }
+    )
+    assert review.state == "PENDING"
+
+
+@pytest.mark.asyncio
+async def test_collect_repositories_release(monkeypatch: pytest.MonkeyPatch):
+    gh = Mock()
+    repo = Repository(
+        name="acts-project/acts",
+        do_open_prs=False,
+        do_recent_issues=False,
+        stale_label=None,
+        do_merged_prs=True,
+    )
+
+    ref = Path(__file__).parent / "ref"
+    with (ref / "merged_prs.json").open() as fh:
+        merged = [PullRequest.model_validate(json.load(fh)[0])]
+
+    async def fake_get_release_pulls(*args, **kwargs):
+        return "v47.0.0", merged
+
+    monkeypatch.setattr("mtng.collect.get_release_pulls", fake_get_release_pulls)
+
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    result = await collect_repositories(
+        [repo], since=since, now=now, gh=gh, release="v47.0.0"
+    )
+
+    repo_data = result["acts-project/acts"]
+    assert repo_data["release_tag"] == "v47.0.0"
+    assert len(repo_data["merged_prs"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_release_mode_only_outputs_release_prs(monkeypatch: pytest.MonkeyPatch):
+    gh = Mock()
+    repo = Repository(
+        name="acts-project/acts",
+        do_open_prs=True,
+        do_recent_issues=True,
+        stale_label="Stale",
+        needs_discussion_label="Needs Discussion",
+        do_merged_prs=True,
+    )
+
+    ref = Path(__file__).parent / "ref"
+    with (ref / "merged_prs.json").open() as fh:
+        merged = [PullRequest.model_validate(json.load(fh)[0])]
+
+    calls = {"open_prs": 0, "open_issues": 0, "release_pulls": 0}
+
+    async def fake_get_release_pulls(*args, **kwargs):
+        calls["release_pulls"] += 1
+        return "v47.0.0", merged
+
+    async def fake_get_open_pulls(*args, **kwargs):
+        calls["open_prs"] += 1
+        return []
+
+    async def fake_get_open_issues(*args, **kwargs):
+        calls["open_issues"] += 1
+        return []
+
+    monkeypatch.setattr("mtng.collect.get_release_pulls", fake_get_release_pulls)
+    monkeypatch.setattr("mtng.collect.get_open_pulls", fake_get_open_pulls)
+    monkeypatch.setattr("mtng.collect.get_open_issues", fake_get_open_issues)
+
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    result = await collect_repositories(
+        [repo], since=since, now=now, gh=gh, release="v47.0.0"
+    )
+    output = generate_latex(
+        Spec(repos=[repo]),
+        result,
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=False,
+    )
+
+    assert calls["release_pulls"] == 1
+    assert calls["open_prs"] == 0
+    assert calls["open_issues"] == 0
+    assert "Release v47.0.0" in output
+    assert "Open PRs" not in output
+    assert "Issues opened since" not in output
+    assert "Stale Issues and PRs" not in output

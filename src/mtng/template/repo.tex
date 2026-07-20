@@ -28,8 +28,8 @@
 
 {% if repo["merged_prs"]|length > 0 %}
 
-\section{ \reponame{} \\ Merged PRs}
-\begin{frame}[allowframebreaks]{ \reponame{}: PRs merged {{ date_range() }}}
+\section{ \reponame{} \\ {% if repo["release_tag"] is not none %}Release {{ repo["release_tag"] }}{% else %}Merged PRs{% endif %}}
+\begin{frame}[allowframebreaks]{ \reponame{}: {% if repo["release_tag"] is not none %}PRs in release {{ repo["release_tag"] }}{% else %}PRs merged {{ date_range() }}{% endif %}}
 
   \begin{itemize}
     {% for pr in repo["merged_prs"]|sort(attribute="closed_at") %}
@@ -47,12 +47,17 @@
     \Large
     \color{shivablue}
     \sffamily
+    {% if repo["release_tag"] is not none %}
+    No PRs found in release \textbf{ {{ repo["release_tag"] }} } for\\
+    {% else %}
     No merged PRs since \textbf{ {{ since.strftime('%Y-%m-%d') }} } in\\
+    {% endif %}
     \textbf{ \reponame{} }
   \end{center}
 \end{frame}
 {% endif %}
 
+{%- if repo["release_tag"] is none %}
 \section{ \reponame{} \\ Open PRs}
 {% if repo["open_prs"]| length > 0 %}
 \begin{frame}[allowframebreaks]{ \reponame{}: Open PRs
@@ -70,8 +75,9 @@
 
 \end{frame}
 {% endif %}
+{%- endif %}
 
-{% if repo["spec"].do_recent_issues %}
+{%- if repo["release_tag"] is none and repo["spec"].do_recent_issues %}
 {% if repo["recent_issues"] | length > 0 %}
   \section{ \reponame{} \\ Issues opened since {{ since.strftime('%Y-%m-%d') }} }
   \begin{frame}[allowframebreaks]{ \reponame{}: Issues opened since {{ since.strftime('%Y-%m-%d') }} }
@@ -86,9 +92,9 @@
 {% else %}
   \section{ \reponame{} \\ No issues opened since {{ since.strftime('%Y-%m-%d') }} }
 {% endif %}
-{% endif %}
+{%- endif %}
 
-{% if repo["spec"].do_stale %}
+{%- if repo["release_tag"] is none and repo["spec"].do_stale %}
 {% set newly_stale = repo["stale"] | selectattr("updated_at", "gt", since) | list %}
 {% if newly_stale | length > 0 %}
 \section{ \reponame{} \\ Stale Issues and PRs}
@@ -117,4 +123,4 @@
   \end{itemize}
 \end{frame}
 {% endif %}
-{% endif %}
+{%- endif %}

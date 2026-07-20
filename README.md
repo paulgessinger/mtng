@@ -27,6 +27,7 @@ Options:
   --help                          Show this message and exit.
 
 Commands:
+  auth      Authentication helpers
   generate  Generate a LaTeX fragment that includes an overview of PRs,...
   preamble  Print a preamble suitable to render fancy output
   schema    Print the configuration schema
@@ -44,16 +45,19 @@ Arguments:
   CONFIG  [required]
 
 Options:
-  --token TEXT                    Github API token to use. Can be supplied
-                                  with environment variable GH_TOKEN
+  --token TEXT                    Github API token. Falls back to GH_TOKEN or
+                                  a token stored via `mtng auth login`.
   --since [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]
-                                  Start window for queries  [required]
+                                  Start window for queries. Required unless
+                                  --release is used.
   --now [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]
                                   End window for queries  [default:
                                   2022-08-17T21:24:07]
   --event TEXT                    Optionally attach an Indico based agenda
                                   overview. This only works with public
                                   events!
+  --release TEXT                  Summarize merged PRs from a GitHub release
+                                  tag or release URL instead of a date window.
   --full                          Write a full LaTeX file that is compileable
                                   on it's own
   --pdf FILE                      Compile the report as a PDF file. This
@@ -108,6 +112,32 @@ This configuration will look up the `acts-project/acts` repository. The output w
 
 
 In addition and independent of this config, a meeting agenda can be attached at the end if the `--event` option is provided and contains a valid Indico URL.
+
+If `--release` is provided, merged PRs are parsed from the release description (for links like `https://github.com/<owner>/<repo>/pull/<number>`) instead of the `--since`/`--now` range, and `--since` is optional.
+
+## Authentication
+
+You can provide a token explicitly with `--token`, via `GH_TOKEN`, or store one in your OS keychain:
+
+```console
+$ mtng auth login
+GitHub API token: ********
+Stored GitHub token for @your-user in your system keychain.
+```
+
+`mtng auth login` validates the token by default. You can also check your current token with:
+
+```console
+$ mtng auth check
+GitHub token is valid for @your-user.
+```
+
+To see where the current token is loaded from:
+
+```console
+$ mtng auth status
+GitHub token is configured (source: system keychain).
+```
 
 ## Making a presentation
 
