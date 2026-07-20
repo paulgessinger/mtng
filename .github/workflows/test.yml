@@ -14,7 +14,9 @@ jobs:
           - "3.13"
           - "3.14"
     env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The live GitHub integration test is intentionally exercised once to avoid
+      # exhausting the shared installation rate limit across the full matrix.
+      GH_TOKEN: ${{ matrix.python == '3.12' && secrets.GITHUB_TOKEN || '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Install texlive

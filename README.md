@@ -68,7 +68,9 @@ Options:
 
 ## Configuration
 
-`mtng` consumes a configuration file to specify which GitHub repositories to ingest. An example configuration could look like this:
+`mtng` consumes a configuration file to specify which GitHub repositories to ingest. YAML (`.yml` / `.yaml`) and TOML (`.toml`) are both supported.
+
+An example YAML configuration could look like this:
 
 ```yml
 repos:
@@ -101,9 +103,21 @@ repos:
   - **`no_assignee_attention`** *(boolean)*: Draw attention to items without an assignee. Default: `True`.
   - **`do_reviewers`** *(boolean)*: Show reviewer information for PRs. Default: `False`.
   - **`show_review_summary`** *(boolean)*: Show review outcome text (for example, `reviewed by`). Default: `True`.
-- **`Spec`** *(object)*: Cannot contain additional properties.
-  - **`repos`** *(array)*
-    - **Items**: Refer to *#/definitions/Repository*.
+  - **`Spec`** *(object)*: Cannot contain additional properties.
+    - **`repos`** *(array)*
+      - **Items**: Refer to *#/definitions/Repository*.
+  The equivalent TOML configuration is:
+
+```toml
+[[repos]]
+name = "acts-project/acts"
+stale_label = "Stale"
+wip_label = ":construction: WIP"
+show_wip = true
+do_recent_issues = true
+no_assignee_attention = true
+filter_labels = ["backport"]
+```
 
 This configuration will look up the `acts-project/acts` repository. The output will contain sections on 
 
@@ -147,6 +161,7 @@ By default, the output of `mtng generate` is a LaTeX fragment. It has to be inco
 
 ```console
 $ mtng generate spec.yml > gen.tex
+$ mtng generate spec.toml > gen.tex
 ```
 
 with a LaTeX file like
