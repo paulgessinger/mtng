@@ -339,7 +339,9 @@ def login(
         print(f"Stored GitHub token for @{login_name} in your system keychain.")
 
 
-@auth_cli.command("check", help="Validate the configured GitHub token against the GitHub API")
+@auth_cli.command(
+    "check", help="Validate the configured GitHub token against the GitHub API"
+)
 def check(
     token: Optional[str] = typer.Option(
         None,
@@ -398,4 +400,6 @@ def main():
 
 main.__doc__ = """
 Meeting generation script, version {version}
-""".format(version=__version__)
+""".format(
+    version=__version__
+)

@@ -42,3 +42,8 @@ dev = [
     "pytest-sugar>=1.1.1",
     "pytest-xdist>=3.8.0",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that call external services",
+]
