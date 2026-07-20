@@ -5,5 +5,5 @@ repos:
     show_wip: true
     do_recent_issues: true
     no_assignee_attention: true
-    filter_labels: 
+    filter_labels:
       - backport

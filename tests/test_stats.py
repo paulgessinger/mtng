@@ -5,7 +5,6 @@ import pytest
 from mtng.collect import Label, PullRequest, Review, User
 from mtng.stats import compute_release_stats
 
-
 BASE = datetime(2024, 3, 1, 12, 0, 0)
 
 

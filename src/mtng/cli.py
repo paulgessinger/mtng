@@ -477,6 +477,4 @@ def main():
 
 main.__doc__ = """
 Meeting generation script, version {version}
-""".format(
-    version=__version__
-)
+""".format(version=__version__)
