@@ -1,6 +1,6 @@
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError, version
 
 try:
-    __version__ = version(__name__)
+    __version__ = version("mtng")
 except PackageNotFoundError:
-    __version__ = "0.0.0"  # Fallback for development
+    __version__ = "0.0.0+unknown"

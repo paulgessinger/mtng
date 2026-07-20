@@ -638,6 +638,7 @@ wheels = [
 
 [[package]]
 name = "mtng"
+version = "0.8.3"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },

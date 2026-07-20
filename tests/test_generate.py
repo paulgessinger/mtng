@@ -108,6 +108,7 @@ needs_gh_token = pytest.mark.skipif(
 
 
 @needs_gh_token
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_collect(tmp_path):
     repo = Repository(
@@ -134,6 +135,7 @@ async def test_collect(tmp_path):
 
 
 @needs_gh_token
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_get_open_pulls():
     repo = Repository(
