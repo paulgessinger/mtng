@@ -126,8 +126,12 @@
         text width=\dimexpr\bentotmpw-1.6em\relax]
     at (\bentotmpx,\bentotmpy)
     {\raggedright
-     {\color{bentoink}\sffamily\bfseries\fontsize{20}{22}\selectfont #6}\\[0.15em]
-     {\color{bentomuted}\sffamily\scriptsize #7}\par};%
+     % Each \par sits inside its own font group: the baselineskip in force at
+     % the end of a paragraph sets the spacing of all its lines, so closing the
+     % group first would space these with the node's default size instead.
+     {\color{bentoink}\sffamily\bfseries\fontsize{20}{22}\selectfont #6\par}%
+     \vspace{0.35em}%
+     {\color{bentomuted}\sffamily\scriptsize #7\par}};%
 }
 
 % Same grid, but for a tile whose body is a short list rather than one numeral.
@@ -138,8 +142,11 @@
         text width=\dimexpr\bentotmpw-1.6em\relax]
     at (\bentotmpx,\bentotmpy)
     {\raggedright
-     {\color{bentoink}\sffamily\small #6}\\[0.2em]
-     {\color{bentomuted}\sffamily\scriptsize #7}\par};%
+     % See \bentotile: \par must close inside the font group. The list body is
+     % multi-line, so this is where wrong baselineskip is most visible.
+     {\color{bentoink}\sffamily\small\linespread{1.15}\selectfont #6\par}%
+     \vspace{0.35em}%
+     {\color{bentomuted}\sffamily\scriptsize #7\par}};%
 }
 
 \providecommand{\bentobox}[1]{%
