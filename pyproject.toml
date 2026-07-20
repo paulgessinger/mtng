@@ -1,6 +1,10 @@
+[build-system]
+requires = ["uv_build>=0.11.29,<0.12"]
+build-backend = "uv_build"
+
 [project]
 name = "mtng"
-dynamic = ["version"]
+version = "0.8.3"
 description = ""
 authors = [
     { name = "Paul Gessinger", email = "hello@paulgessinger.com" }
@@ -8,6 +12,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "python-dotenv>=0.17.1",
     "Jinja2>=3.1.1",
     "requests>=2.25.1",
     "typer>=0.6.1",
@@ -28,16 +33,6 @@ mtng = "mtng.cli:cli"
 
 [project.urls]
 homepage = "https://github.com/paulgessinger/mtng"
-
-[build-system]
-requires = ["hatchling", "uv-dynamic-versioning"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/mtng"]
-
-[tool.hatch.version]
-source = "uv-dynamic-versioning"
 
 [dependency-groups]
 dev = [
