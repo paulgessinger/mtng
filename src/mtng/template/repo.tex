@@ -28,8 +28,36 @@
 
 {% if repo["merged_prs"]|length > 0 %}
 
-\section{ \reponame{} \\ {% if repo["release_tag"] is not none %}Release {{ repo["release_tag"] }}{% else %}Merged PRs{% endif %}}
-\begin{frame}[allowframebreaks]{ \reponame{}: {% if repo["release_tag"] is not none %}PRs in release {{ repo["release_tag"] }}{% else %}PRs merged {{ date_range() }}{% endif %}}
+\section{ \reponame{} \\ {% if repo["release_tag"] is not none %}Release {{ repo["release_tag"]|sanitize }}{% else %}Merged PRs{% endif %}}
+
+{% set stats = repo["release_stats"] %}
+{% if stats is not none and stats.pr_count > 0 %}
+{% set rowb = 1 if stats.has_churn else 0 %}
+\begin{frame}{ \reponame{}: release {{ repo["release_tag"]|sanitize }} at a glance}
+  \bentobox{
+    \bentotile{0}{0}{2}{1}{bentohero}{ {{- repo["release_tag"]|sanitize -}} }{release}
+    \bentotile{2}{0}{1}{1}{bentotile}{ {{- stats.pr_count|human_int -}} }{merged PRs}
+    \bentotile{3}{0}{1}{1}{bentotile}{ {{- stats.contributors|human_int -}} }{contributors}
+    {%- if stats.has_churn %}
+    \bentotile{0}{1}{1}{1}{bentoadd}{ {%- if stats.additions is not none %}$+${% endif %}{{ stats.additions|human_int }} }{lines added}
+    \bentotile{1}{1}{1}{1}{bentodel}{ {%- if stats.deletions is not none %}$-${% endif %}{{ stats.deletions|human_int }} }{lines removed}
+    \bentotile{2}{1}{1}{1}{bentotile}{ {{- stats.changed_files|human_int -}} }{files changed}
+    \bentotile{3}{1}{1}{1}{bentotile}{ {{- stats.commits|human_int -}} }{commits}
+    {%- endif %}
+    {%- if stats.has_span %}
+    \bentotile{0}{ {{- rowb + 1 -}} }{1}{1}{bentotile}{ {{- stats.span_days|human_int -}} }{days, {{ stats.first_merged_at.strftime('%b %d') }}--{{ stats.last_merged_at.strftime('%b %d') }}}
+    {%- endif %}
+    \bentotile{1}{ {{- rowb + 1 -}} }{1}{1}{bentotile}{ {{- stats.reviewers|human_int -}} }{reviewers}
+    {%- if stats.top_labels|length > 0 %}
+    \bentolisttile{2}{ {{- rowb + 1 -}} }{2}{1}{bentotile}{ {%- for l in stats.top_labels[:3] -%}
+      \textbf{ {{- l.count -}} }~{{ l.name|sanitize }}{% if not loop.last %}\\{% endif %}
+    {%- endfor -%} }{top labels}
+    {%- endif %}
+  }
+\end{frame}
+{% endif %}
+
+\begin{frame}[allowframebreaks]{ \reponame{}: {% if repo["release_tag"] is not none %}PRs in release {{ repo["release_tag"]|sanitize }}{% else %}PRs merged {{ date_range() }}{% endif %}}
 
   \begin{itemize}
     {% for pr in repo["merged_prs"]|sort(attribute="closed_at") %}
@@ -48,7 +76,7 @@
     \color{shivablue}
     \sffamily
     {% if repo["release_tag"] is not none %}
-    No PRs found in release \textbf{ {{ repo["release_tag"] }} } for\\
+    No PRs found in release \textbf{ {{ repo["release_tag"]|sanitize }} } for\\
     {% else %}
     No merged PRs since \textbf{ {{ since.strftime('%Y-%m-%d') }} } in\\
     {% endif %}

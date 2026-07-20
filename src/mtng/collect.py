@@ -17,6 +17,7 @@ from rich.rule import Rule
 from rich.status import Status
 
 from mtng.spec import Repository
+from mtng.stats import compute_release_stats
 
 
 class Label(pydantic.BaseModel):
@@ -69,6 +70,14 @@ class PullRequest(IssueBase):
     requested_reviewers: List[User] = pydantic.Field(default_factory=list)
     reviews: List[Review] = pydantic.Field(default_factory=list)
 
+    # Only populated by GET /repos/{repo}/pulls/{n}. The /search/issues endpoint
+    # never returns these, so anything sourced from a search stays None.
+    additions: Optional[int] = None
+    deletions: Optional[int] = None
+    changed_files: Optional[int] = None
+    commits: Optional[int] = None
+    merged_at: Optional[datetime] = None
+
     @property
     def is_pr(self) -> bool:
         return True
@@ -78,6 +87,11 @@ cache = diskcache.Cache(appdirs.user_cache_dir("mtng"))
 
 _CACHE_MISS = object()
 FETCH_CONCURRENCY = 8
+
+# Bump whenever a model stored in the cache gains or loses fields. Entries are
+# pickled pydantic instances, so an old entry restored into a new class is
+# missing the new attributes entirely and raises AttributeError on access.
+CACHE_VERSION = 2
 
 
 def memoize(expire=0, key_func=None):
@@ -90,6 +104,8 @@ def memoize(expire=0, key_func=None):
                 _args, _kwargs = key_func(args, kwargs)
             key = (
                 fn.__name__.encode("utf-8")
+                + b"_v"
+                + str(CACHE_VERSION).encode("utf-8")
                 + b"_"
                 + pickle.dumps(_args)
                 + b"_"
@@ -352,6 +368,7 @@ async def collect_repositories(
         data[key]["recent_issues"] = []
         data[key]["needs_discussion"] = []
         data[key]["release_tag"] = None
+        data[key]["release_stats"] = None
         data[key]["spec"] = repo
 
         if repo.do_merged_prs:
@@ -377,6 +394,12 @@ async def collect_repositories(
             data[key]["merged_prs"] = merged_prs
 
         if release is not None:
+            data[key]["release_stats"] = compute_release_stats(
+                data[key]["merged_prs"],
+                ignore_labels=[
+                    label for label in (repo.wip_label, repo.stale_label) if label
+                ],
+            )
             # In release mode we intentionally only show PRs that landed in the
             # selected release and skip open/stale/recent/discussion lists.
             continue

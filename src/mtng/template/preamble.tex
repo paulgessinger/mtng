@@ -88,6 +88,66 @@
 }
 }
 
+%% ---- bento statistics tiles ----------------------------------------------
+\providecolor{bentotile}{HTML}{F2F2F7}
+\providecolor{bentohero}{HTML}{E7E2F3}
+\providecolor{bentoadd}{HTML}{DDF3E4}
+\providecolor{bentodel}{HTML}{FBE3E4}
+\providecolor{bentoink}{HTML}{1C1C1E}
+\providecolor{bentomuted}{HTML}{6E6E73}
+
+% Grid geometry, overridable by the host deck.
+\providecommand{\bentocolw}{0.225\textwidth}
+\providecommand{\bentorowh}{1.7cm}
+\providecommand{\bentogutter}{0.18cm}
+\providecommand{\bentoradius}{0.22cm}
+
+\tikzset{bento tile/.style={
+    rectangle, draw=none, rounded corners=\bentoradius,
+    anchor=north west, align=left,
+    inner xsep=0.7em, inner ysep=0.6em, outer sep=0pt}}
+
+% Solve the grid geometry for one tile: #1 col #2 row #3 colspan #4 rowspan.
+% pgfmath is required because \bentocolw expands to a factor times a dimension,
+% which cannot be multiplied again directly. Row 0 is at the top, hence the
+% negative y and the north west anchor.
+\providecommand{\bentogeom}[4]{%
+  \pgfmathsetlengthmacro{\bentotmpw}{#3*(\bentocolw)+(#3-1)*(\bentogutter)}%
+  \pgfmathsetlengthmacro{\bentotmph}{#4*(\bentorowh)+(#4-1)*(\bentogutter)}%
+  \pgfmathsetlengthmacro{\bentotmpx}{#1*((\bentocolw)+(\bentogutter))}%
+  \pgfmathsetlengthmacro{\bentotmpy}{-#2*((\bentorowh)+(\bentogutter))}%
+}
+
+% #1 col #2 row #3 colspan #4 rowspan #5 fill #6 value #7 caption
+\providecommand{\bentotile}[7]{%
+  \bentogeom{#1}{#2}{#3}{#4}%
+  \node[bento tile, fill=#5,
+        minimum width=\bentotmpw, minimum height=\bentotmph,
+        text width=\dimexpr\bentotmpw-1.6em\relax]
+    at (\bentotmpx,\bentotmpy)
+    {\raggedright
+     {\color{bentoink}\sffamily\bfseries\fontsize{20}{22}\selectfont #6}\\[0.15em]
+     {\color{bentomuted}\sffamily\scriptsize #7}\par};%
+}
+
+% Same grid, but for a tile whose body is a short list rather than one numeral.
+\providecommand{\bentolisttile}[7]{%
+  \bentogeom{#1}{#2}{#3}{#4}%
+  \node[bento tile, fill=#5,
+        minimum width=\bentotmpw, minimum height=\bentotmph,
+        text width=\dimexpr\bentotmpw-1.6em\relax]
+    at (\bentotmpx,\bentotmpy)
+    {\raggedright
+     {\color{bentoink}\sffamily\small #6}\\[0.2em]
+     {\color{bentomuted}\sffamily\scriptsize #7}\par};%
+}
+
+\providecommand{\bentobox}[1]{%
+  \begin{center}%
+  \begin{tikzpicture}#1\end{tikzpicture}%
+  \end{center}%
+}
+
 \providecommand{\iss}{
   % \tikzset{external/export next=false}
   \tikzsetnextfilename{iss}

@@ -13,6 +13,22 @@
 \providecommand{\prstr}[1]{PR\##1}
 \providecommand{\issstr}[1]{Issue\##1}
 
+% Bento tiles degrade to a flowed run of "value caption" pairs when the fragment
+% is included in a deck that never loaded the preamble (and so has no tikz).
+% Same arity as the real macros, so the emitted body is identical either way.
+\providecolor{bentotile}{HTML}{F2F2F7}
+\providecolor{bentohero}{HTML}{E7E2F3}
+\providecolor{bentoadd}{HTML}{DDF3E4}
+\providecolor{bentodel}{HTML}{FBE3E4}
+\providecolor{bentoink}{HTML}{1C1C1E}
+\providecolor{bentomuted}{HTML}{6E6E73}
+
+\providecommand{\bentobox}[1]{\begin{center}\parbox{\linewidth}{\raggedright #1}\end{center}}
+% NB: this file is rendered through Jinja, so a brace may not be followed
+% directly by a hash or another brace -- hence the spacing and \bfseries below.
+\providecommand{\bentotile}[7]{ {\bfseries #6}~{\footnotesize #7}\hspace{1.5em}}
+\providecommand{\bentolisttile}[7]{ #6~{\footnotesize #7}\hspace{1.5em}}
+
 
 
 
@@ -29,6 +45,10 @@
 
 
 \section{ \reponame{} \\ Merged PRs}
+
+
+
+
 \begin{frame}[allowframebreaks]{ \reponame{}: PRs merged 
 between 2022-08-01 and 2022-08-11
 }

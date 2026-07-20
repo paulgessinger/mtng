@@ -554,3 +554,193 @@ async def test_release_mode_only_outputs_release_prs(monkeypatch: pytest.MonkeyP
     assert "Open PRs" not in output
     assert "Issues opened since" not in output
     assert "Stale Issues and PRs" not in output
+
+    # The bento statistics frame is rendered from release_stats.
+    assert "\\bentobox" in output
+    assert "merged PRs" in output
+    assert "contributors" in output
+    # merged_prs.json predates the churn fields, so the whole churn row must be
+    # dropped rather than rendering tiles full of dashes.
+    assert "lines added" not in output
+    assert "lines removed" not in output
+
+
+@pytest.mark.asyncio
+async def test_release_bento_renders_churn(monkeypatch: pytest.MonkeyPatch):
+    gh = Mock()
+    repo = Repository(name="acts-project/acts", do_merged_prs=True)
+
+    user_a = User(login="alice", html_url="https://example.com")
+    user_b = User(login="bob", html_url="https://example.com")
+
+    def make(number, author, additions, deletions, files, commits, day):
+        return PullRequest(
+            title=f"PR {number}",
+            user=author,
+            labels=[Label(name="Feature")],
+            number=number,
+            html_url="https://example.com",
+            url="https://example.com",
+            reviews=[Review(user=user_b, state="APPROVED")],
+            updated_at=datetime(2022, 8, day, tzinfo=tzlocal()),
+            created_at=datetime(2022, 8, 1, tzinfo=tzlocal()),
+            closed_at=datetime(2022, 8, day, tzinfo=tzlocal()),
+            merged_at=datetime(2022, 8, day, tzinfo=tzlocal()),
+            additions=additions,
+            deletions=deletions,
+            changed_files=files,
+            commits=commits,
+        )
+
+    merged = [
+        make(1, user_a, 1200, 300, 10, 5, 2),
+        make(2, user_b, 34, 12, 2, 1, 6),
+    ]
+
+    async def fake_get_release_pulls(*args, **kwargs):
+        return "v47.0.0", merged
+
+    monkeypatch.setattr("mtng.collect.get_release_pulls", fake_get_release_pulls)
+
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    result = await collect_repositories(
+        [repo], since=since, now=now, gh=gh, release="v47.0.0"
+    )
+    output = generate_latex(
+        Spec(repos=[repo]),
+        result,
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=False,
+    )
+
+    assert "\\bentobox" in output
+    assert "lines added" in output
+    assert "lines removed" in output
+    assert "1\\,234" in output  # 1200 + 34 additions, thin-space separated
+    assert "312" in output  # deletions
+    assert "files changed" in output
+    assert "commits" in output
+    # Two authors, and bob reviewed but is also an author, so he is not counted.
+    assert "contributors" in output
+    assert "reviewers" in output
+    assert "top labels" in output
+    assert "Feature" in output
+    # 2 Aug -> 6 Aug inclusive
+    assert "days, Aug 02--Aug 06" in output
+
+
+def test_bento_absent_outside_release_mode():
+    """release_stats is None in every non-release path, which gates the frame.
+
+    The provides.tex fallback definitions are always emitted, but no tile is
+    ever instantiated outside release mode.
+    """
+    reference = (Path(__file__).parent / "ref" / "reference.tex").read_text()
+    assert "\\bentobox{" not in reference
+    assert "at a glance" not in reference
+
+
+@pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
+@pytest.mark.parametrize("full_tex", [True, False], ids=["full", "fragment"])
+@pytest.mark.asyncio
+async def test_compile_release_bento(monkeypatch, full_tex, tmp_path):
+    """Compile the bento frame for real.
+
+    This is the only thing that catches pgfmath / \\dimexpr mistakes in
+    \\bentogeom. The fragment case additionally exercises the provides.tex
+    fallbacks, which must compile in a deck that never loaded tikz.
+    """
+    gh = Mock()
+    repo = Repository(name="acts-project/acts", do_merged_prs=True)
+
+    user = User(login="alice", html_url="https://example.com")
+    merged = [
+        PullRequest(
+            title="feat: something with a $ and a _ in it",
+            user=user,
+            labels=[Label(name="Feature"), Label(name="bug_report")],
+            number=1234,
+            html_url="https://example.com",
+            url="https://example.com",
+            reviews=[
+                Review(
+                    user=User(login="bob", html_url="https://example.com"),
+                    state="APPROVED",
+                )
+            ],
+            updated_at=datetime(2022, 8, 2, tzinfo=tzlocal()),
+            created_at=datetime(2022, 8, 1, tzinfo=tzlocal()),
+            closed_at=datetime(2022, 8, 2, tzinfo=tzlocal()),
+            merged_at=datetime(2022, 8, 2, tzinfo=tzlocal()),
+            additions=12345,
+            deletions=678,
+            changed_files=42,
+            commits=9,
+        )
+    ]
+
+    async def fake_get_release_pulls(*args, **kwargs):
+        # A tag with LaTeX-hostile characters, to pin the sanitize fix.
+        return "v47.0.0_rc1", merged
+
+    monkeypatch.setattr("mtng.collect.get_release_pulls", fake_get_release_pulls)
+
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    result = await collect_repositories(
+        [repo], since=since, now=now, gh=gh, release="v47.0.0_rc1"
+    )
+    tex = generate_latex(
+        Spec(repos=[repo]),
+        result,
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=full_tex,
+    )
+
+    source = tmp_path / "source.tex"
+    with source.open("w") as fh:
+        if not full_tex:
+            fh.write("\\documentclass{beamer}\n\\begin{document}\n")
+        fh.write(tex)
+        if not full_tex:
+            fh.write("\n\\end{document}")
+
+    try:
+        subprocess.check_output(
+            [
+                latexmk_path,
+                f"-output-directory={tmp_path/'build'}",
+                "-halt-on-error",
+                "-pdf",
+                str(source),
+            ],
+            stderr=subprocess.STDOUT,
+        )
+    except subprocess.CalledProcessError as e:
+        print(e.output.decode())
+        print(source)
+        raise
+
+    assert (tmp_path / "build" / "source.pdf").exists()
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (None, "--"),
+        (0, "0"),
+        (999, "999"),
+        (1234, "1\\,234"),
+        (12345, "12.3k"),
+        (1234567, "1235k"),
+    ],
+)
+def test_human_int(value, expected):
+    from mtng.generate import human_int
+
+    assert str(human_int(value)) == expected
