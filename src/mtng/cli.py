@@ -19,6 +19,7 @@ import aiohttp
 import dateutil.parser
 import yaml
 from keyring.errors import KeyringError
+import tomllib
 from dateutil.tz import tzlocal
 from rich.status import Status
 from rich import print
@@ -59,6 +60,16 @@ def have_lualatex() -> bool:
     if not latexmk_path.exists():
         return False
     return True
+
+
+def load_spec(config: typer.FileText) -> Spec:
+    suffix = Path(config.name).suffix.lower()
+    content = config.read()
+
+    if suffix == ".toml":
+        return Spec.model_validate(tomllib.loads(content))
+
+    return Spec.model_validate(yaml.safe_load(content))
 
 
 def make_sync(fn):
@@ -255,7 +266,7 @@ async def generate(
         if latexmk is None:
             raise ValueError("latexmk could not be found, cannot compile using --pdf")
 
-    spec = Spec.model_validate(yaml.safe_load(config))
+    spec = load_spec(config)
 
     async with aiohttp.ClientSession() as session:
         if event is not None:
