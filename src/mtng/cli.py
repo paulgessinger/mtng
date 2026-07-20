@@ -21,6 +21,7 @@ import yaml
 from keyring.errors import KeyringError
 import tomllib
 from dateutil.tz import tzlocal
+from rich.console import Console
 from rich.status import Status
 from rich import print
 from rich.panel import Panel
@@ -32,6 +33,7 @@ from mtng.collect import collect_repositories
 from mtng.generate import env
 from mtng import __version__
 
+console = Console()
 cli = typer.Typer()
 auth_cli = typer.Typer(help="Authentication helpers")
 KEYRING_SERVICE = "mtng"
@@ -78,6 +80,24 @@ def make_sync(fn):
         asyncio.run(fn(*args, **kwargs))
 
     return wrapped
+
+
+def normalize_preamble_content(content: str) -> str:
+    # Cheap heuristic: reject files that look like full LaTeX documents.
+    uncommented_lines = []
+    for line in content.splitlines():
+        if line.lstrip().startswith("%"):
+            continue
+        uncommented_lines.append(line)
+    uncommented = "\n".join(uncommented_lines)
+    if re.search(r"\\documentclass(?:\s|\[|\{)", uncommented) or re.search(
+        r"\\begin\{document\}", uncommented
+    ):
+        raise typer.BadParameter(
+            "--preamble appears to be a full LaTeX document (contains \\documentclass or \\begin{document}); pass a preamble-only file.",
+            param_hint="--preamble",
+        )
+    return content.strip()
 
 
 def get_keyring_token() -> Optional[str]:
@@ -239,6 +259,14 @@ async def generate(
     full_tex: bool = typer.Option(
         False, "--full", help="Write a full LaTeX file that is compileable on it's own"
     ),
+    preamble: Optional[Path] = typer.Option(
+        None,
+        "--preamble",
+        dir_okay=False,
+        exists=True,
+        readable=True,
+        help="Prepend this LaTeX preamble file to fragment output. Mutually exclusive with --full.",
+    ),
     pdf: Optional[Path] = typer.Option(
         None,
         dir_okay=False,
@@ -248,6 +276,12 @@ async def generate(
         None, dir_okay=False, help="Write LaTex output to this file"
     ),
 ):
+    if preamble is not None and full_tex:
+        raise typer.BadParameter(
+            "--preamble cannot be used with --full.",
+            param_hint="--preamble",
+        )
+
     token = resolve_github_token(token)
     now = now.replace(tzinfo=tzlocal())
     if since is None:
@@ -260,8 +294,12 @@ async def generate(
     else:
         since = since.replace(tzinfo=tzlocal())
 
-    if pdf is not None:
+    if pdf is not None and preamble is None:
         full_tex = True
+        latexmk = find_latexmk()
+        if latexmk is None:
+            raise ValueError("latexmk could not be found, cannot compile using --pdf")
+    elif pdf is not None:
         latexmk = find_latexmk()
         if latexmk is None:
             raise ValueError("latexmk could not be found, cannot compile using --pdf")
@@ -291,6 +329,24 @@ async def generate(
             full_tex=full_tex,
         )
 
+    if preamble is not None:
+        preamble_content = normalize_preamble_content(preamble.read_text())
+        if preamble_content == "":
+            raise typer.BadParameter(
+                "--preamble did not contain any preamble content before \\begin{document}.",
+                param_hint="--preamble",
+            )
+        if pdf is not None:
+            latex = (
+                "\\documentclass[aspectratio=169,9pt]{beamer}\n\n"
+                f"{preamble_content}\n\n"
+                "\\begin{document}\n\n"
+                f"{latex}\n\n"
+                "\\end{document}"
+            )
+        else:
+            latex = f"{preamble_content}\n\n{latex}"
+
     if pdf is None:
         if tex is not None:
             tex.write_text(latex)
@@ -310,8 +366,18 @@ async def generate(
             if have_lualatex():
                 args.append("-pdflatex=lualatex")
             args.append(source)
-            with Status("Compiling LaTeX"):
-                subprocess.check_call(args)
+            with Status("Compiling LaTeX", console=console):
+                proc = subprocess.Popen(
+                    args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+                for line in proc.stdout:
+                    console.out(line, end="", highlight=False)
+                proc.wait()
+                if proc.returncode != 0:
+                    raise subprocess.CalledProcessError(proc.returncode, args)
             shutil.copy(d / "source.pdf", pdf)
 
 

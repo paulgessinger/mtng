@@ -58,6 +58,8 @@ Options:
                                   events!
   --release TEXT                  Summarize merged PRs from a GitHub release
                                   tag or release URL instead of a date window.
+  --preamble FILE                 Prepend this LaTeX preamble file to fragment
+                                  output. Mutually exclusive with --full.
   --full                          Write a full LaTeX file that is compileable
                                   on it's own
   --pdf FILE                      Compile the report as a PDF file. This
@@ -178,3 +180,11 @@ Alternatively, you can generate a fully compileable LaTex document, by using the
 $ mtng generate spec.yml --full > gen.tex
 $ latexmk gen.tex
 ```
+
+If you have your own deck preamble and still want direct PDF output, pass it with `--preamble` together with `--pdf`:
+
+```console
+$ mtng generate spec.yml --since 2024-01-01 --preamble mypreamble.tex --pdf notes.pdf
+```
+
+If `--preamble` points to a full `.tex` deck file (contains `\documentclass` or `\begin{document}`), `mtng` fails with an explicit error; pass a preamble-only file instead.
