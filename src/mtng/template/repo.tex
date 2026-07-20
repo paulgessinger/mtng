@@ -20,16 +20,16 @@
 
 {% endif %}
 
-{% if repo["merged_prs"]|length > 0 %}
-
 {% if repo["spec"].display_name is not none %}
 \def\reponame{ {{ repo["spec"].display_name }} }
 {% else %}
 \def\reponame{ {{ repo_name}} }
 {% endif %}
 
-\section{ \reponame \\ Merged PRs}
-\begin{frame}[allowframebreaks]{ \reponame: PRs merged {{ date_range() }}}
+{% if repo["merged_prs"]|length > 0 %}
+
+\section{ \reponame{} \\ Merged PRs}
+\begin{frame}[allowframebreaks]{ \reponame{}: PRs merged {{ date_range() }}}
 
   \begin{itemize}
     {% for pr in repo["merged_prs"]|sort(attribute="closed_at") %}
