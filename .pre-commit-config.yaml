@@ -1,0 +1,27 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+# Run with prek: https://github.com/j178/prek
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  # reference.tex is a byte-exact snapshot of generated LaTeX output; the
+  # whitespace hooks would rewrite it out from under test_generate.
+  - id: trailing-whitespace
+    exclude: '^tests/ref/reference\.tex$'
+  - id: end-of-file-fixer
+    exclude: '^tests/ref/reference\.tex$'
+  - id: check-yaml
+  - id: check-added-large-files
+
+# Lints GitHub Actions workflows. Fails on unpinned `uses:` refs, so this is
+# what keeps the SHA pins from rotting.
+- repo: https://github.com/zizmorcore/zizmor-pre-commit
+  rev: v1.27.0
+  hooks:
+  - id: zizmor
+
+- repo: https://github.com/psf/black
+  rev: "26.5.1"
+  hooks:
+  - id: black
