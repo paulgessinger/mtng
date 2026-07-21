@@ -1,4 +1,4 @@
-# mtng 
+# mtng
 Generate meeting notes from GitHub + [Indico](https://getindico.io/). This tool generates
 LaTeX code that can be compiled into a PDF presentation. The result looks something like this:
 
@@ -82,11 +82,11 @@ repos:
     show_wip: true
     do_recent_issues: true
     no_assignee_attention: true
-    filter_labels: 
+    filter_labels:
       - backport
 ```
 
-### Schema 
+### Schema
 - **`Repository`** *(object)*: Cannot contain additional properties.
   - **`name`** *(string)*: Name of the repository, e.g. 'acts-project/acts'.
   - **`display_name`** *(string)*: Alternative repository name. Useful when fetching one repository multiple times.
@@ -121,7 +121,7 @@ no_assignee_attention = true
 filter_labels = ["backport"]
 ```
 
-This configuration will look up the `acts-project/acts` repository. The output will contain sections on 
+This configuration will look up the `acts-project/acts` repository. The output will contain sections on
 
 1. Stale PRs and issues. If this is turned on, the `stale_label` key must be given as well
 2. A list of open PRs, optionally filtered to not include the label given by `wip_label`
