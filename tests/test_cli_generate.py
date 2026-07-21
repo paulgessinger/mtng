@@ -1,8 +1,19 @@
+import re
 from pathlib import Path
 
 from typer.testing import CliRunner
 
 import mtng.cli
+
+# Strip ANSI escape codes so assertions on error text survive rich's
+# colorization: in a color-capable environment (e.g. CI) rich highlights
+# option names, splitting "--preamble" into escape-wrapped fragments that
+# defeat a plain substring match.
+_ANSI_RE = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+
+def _plain(text: str) -> str:
+    return _ANSI_RE.sub("", text)
 
 
 def test_generate_rejects_preamble_with_full(tmp_path):
@@ -26,7 +37,7 @@ def test_generate_rejects_preamble_with_full(tmp_path):
     )
 
     assert result.exit_code != 0
-    assert "--preamble cannot be used with --full." in result.output
+    assert "--preamble cannot be used with --full." in _plain(result.output)
 
 
 def test_generate_accepts_preamble_with_pdf(monkeypatch, tmp_path):
@@ -158,4 +169,4 @@ def test_generate_rejects_full_document_as_preamble_with_pdf(monkeypatch, tmp_pa
     )
 
     assert result.exit_code != 0
-    assert "--preamble appears to be a full LaTeX document" in result.output
+    assert "--preamble appears to be a full LaTeX document" in _plain(result.output)
