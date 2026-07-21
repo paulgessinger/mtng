@@ -98,7 +98,7 @@ def test_generate_accepts_preamble_with_pdf(monkeypatch, tmp_path):
 
     assert result.exit_code == 0
     source = captured["source"]
-    assert "\\documentclass[aspectratio=169,9pt]{beamer}" in source
+    assert "\\documentclass[aspectratio=169,t,13pt,dvipsnames]{beamer}" in source
     assert "\\usepackage{tikz}" in source
     assert "\\begin{document}" in source
     assert "\\end{document}" in source

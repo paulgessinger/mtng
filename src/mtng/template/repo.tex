@@ -6,6 +6,11 @@
 \begin{frame}[allowframebreaks,t]{Needs discussion}
 
   \begin{itemize}
+    \footnotesize
+    \setlength{\itemsep}{0.2em}
+    \setlength{\parsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\topsep}{0pt}
     {%- call show_item(item, repo["spec"], mode) -%}
     {%- endcall %}
   \end{itemize}
@@ -57,9 +62,14 @@
 \end{frame}
 {% endif %}
 
-\begin{frame}[allowframebreaks]{ \reponame{}: {% if repo["release_tag"] is not none %}PRs in release {{ repo["release_tag"]|sanitize }}{% else %}PRs merged {{ date_range() }}{% endif %}}
+\begin{frame}[allowframebreaks,t]{ \reponame{}: {% if repo["release_tag"] is not none %}PRs in release {{ repo["release_tag"]|sanitize }}{% else %}PRs merged {{ date_range() }}{% endif %}}
 
   \begin{itemize}
+    \footnotesize
+    \setlength{\itemsep}{0.2em}
+    \setlength{\parsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\topsep}{0pt}
     {% for pr in repo["merged_prs"]|sort(attribute="closed_at") %}
     {%- call show_item(pr, repo["spec"], mode="MERGED") -%}
     , merged on {{ pr.closed_at.strftime('%Y-%m-%d') }}
@@ -88,7 +98,7 @@
 {%- if repo["release_tag"] is none %}
 \section{ \reponame{} \\ Open PRs}
 {% if repo["open_prs"]| length > 0 %}
-\begin{frame}[allowframebreaks]{ \reponame{}: Open PRs
+\begin{frame}[allowframebreaks,t]{ \reponame{}: Open PRs
 }
 
   \begin{itemize}

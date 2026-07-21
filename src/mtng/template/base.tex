@@ -1,20 +1,29 @@
-\documentclass[aspectratio=169,9pt]{beamer}
+\documentclass[aspectratio=169,t,13pt,dvipsnames]{beamer}
 
 \setbeamertemplate{navigation symbols}{}
-\setbeamersize{text margin left=5mm,text margin right=5mm} 
-\setbeamertemplate{footline}[frame number]
+\setbeamersize{text margin left=8mm,text margin right=8mm}
 
 {{ include_raw("preamble.tex") }}
 
 
 \begin{document}
 
+{% if spec.title %}
+\title{ {{ spec.title|sanitize }} }
+{% else %}
 \title{Pull request and issue summary for \\
 {% for repo_name, repo in repos.items() %}
 {{ repo_name }}\\
 {%- endfor -%}
 }
-\frame{\titlepage}
+{% endif %}
+{% if spec.footline_left %}
+\author{ {{ spec.footline_left|sanitize }} }
+{% else %}
+\author{mtng}
+{% endif %}
+\date{ {{ now.strftime('%Y-%m-%d') }} }
+\frame[plain]{\titlepage}
   
 {% block body %}
 {% endblock %}

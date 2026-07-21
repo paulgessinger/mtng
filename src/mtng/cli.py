@@ -338,7 +338,7 @@ async def generate(
             )
         if pdf is not None:
             latex = (
-                "\\documentclass[aspectratio=169,9pt]{beamer}\n\n"
+                "\\documentclass[aspectratio=169,t,13pt,dvipsnames]{beamer}\n\n"
                 f"{preamble_content}\n\n"
                 "\\begin{document}\n\n"
                 f"{latex}\n\n"

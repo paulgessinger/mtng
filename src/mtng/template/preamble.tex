@@ -2,63 +2,173 @@
 \providecolor{LimeGreen}{rgb}{0.53,0.79,0.27}
 \providecolor{Yellow}{rgb}{1,0.92,0.24}
 \providecolor{beige}{HTML}{ffebc6}
+\providecolor{shivablue}{RGB}{34,82,158}
+\providecolor{mDarkTeal}{HTML}{23373b}
+\providecolor{alertred}{HTML}{EF5D60}
 
 \usepackage{iftex}
-
-\ifluatex
-\usepackage{emoji}
-\providecommand{\cusemoji}[1]{\raisebox{-0.15\height}{\emoji{#1}}}
-\providecommand{\emojispace}[1]{\raisebox{-0.15\height}{\emoji{#1} }}
-\fi
-
-\providecommand{\prstr}[1]{\##1}
-\providecommand{\issstr}[1]{\##1}
-
+\usepackage{microtype}
+\usepackage{calc}
+\usepackage{etoolbox}
+\usepackage{hyperref}
+\usepackage{changepage}
 \usepackage{tikz}
 \usetikzlibrary{calc,arrows,arrows.meta,external}
 \tikzset{>={Triangle[angle=50:0.13em 3]}}
 
+\hypersetup{
+  colorlinks,
+  allcolors=.,
+  urlcolor=blue,
+}
+
+\ifluatex
+\usepackage{fontspec}
+\IfFontExistsTF{Helvetica}{%
+\setsansfont{Helvetica}[
+ItalicFont=* Oblique,
+BoldFont=* Bold,
+BoldItalicFont=* Bold Oblique]%
+}{%
+\setsansfont{Arial}
+}
+\IfFontExistsTF{Avenir}{%
+\newfontfamily{\avenir}{Avenir}
+\setbeamerfont{title}{size=\fontsize{24pt}{26pt},series=\bfseries,family=\avenir}
+\setbeamerfont{frametitle}{series=\bfseries,family=\avenir}
+\newcommand{\addheight}{\parbox{0pt}{\rule{0pt}{1em}}}
+\setbeamerfont*{block title}{family=\avenir,series=\bfseries\addheight}
+}{%
+\setbeamerfont{title}{size=\fontsize{24pt}{26pt},series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+}
+\usepackage{emoji}
+\providecommand{\cusemoji}[1]{\raisebox{-0.15\height}{\emoji{#1}}}
+\providecommand{\emojispace}[1]{\raisebox{-0.15\height}{\emoji{#1} }}
+\else
+\providecommand{\cusemoji}[1]{}
+\providecommand{\emojispace}[1]{}
+\fi
+
+% Inlined Shiva theme styling (adapted to stay self-contained in mtng).
+\setbeamercolor{normal text}{fg=mDarkTeal,bg=black!2}
+\usebeamercolor[fg]{normal text}
+\setbeamercolor{alerted text}{fg=LimeGreen}
+\setbeamercolor{block body alerted}{bg=alertred!20}
+\setbeamercolor{block title alerted}{bg=alertred}
+\setbeamercolor{block body}{bg=shivablue!30}
+\setbeamercolor{block title}{bg=shivablue,fg=white}
+\setbeamercolor{block body example}{bg=green!10}
+\setbeamercolor{block title example}{bg=green!20}
+\setbeamercolor{titlelike}{use=normal text,parent=normal text}
+\setbeamercolor{author}{use=normal text,parent=normal text}
+\setbeamercolor{date}{use=normal text,parent=normal text}
+\setbeamercolor{institute}{use=normal text,parent=normal text}
+\setbeamercolor{structure}{use=normal text,fg=normal text.fg}
+\setbeamercolor{palette primary}{use=normal text,fg=shivablue,bg=normal text.fg}
+\setbeamercolor{frametitle}{fg=shivablue}
+\setbeamercolor{title}{fg=shivablue}
+\setbeamercolor{section title}{fg=shivablue}
+\setbeamercolor{footline}{fg=white,bg=shivablue}
+\setbeamerfont{section title}{size=\huge,series=\bfseries}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamerfont{page number in head/foot}{size=\tiny}
+\setbeamerfont{footline}{size=\tiny}
+\setbeamertemplate{blocks}[rounded][shadow=false]
+
+\settowidth{\leftmargini}{\usebeamertemplate{itemize item}}
+\setbeamertemplate{itemize item}{\usebeamercolor[fg]{title}\raisebox{0.1em}{\scriptsize$\blacksquare$}}
+\settowidth{\leftmarginii}{\usebeamertemplate{itemize subitem}}
+\setbeamertemplate{itemize subitem}{\usebeamercolor[fg]{title}\raisebox{0.1em}{\scriptsize$\blacktriangleright$}}
+\settowidth{\leftmarginiii}{\usebeamertemplate{itemize subsubitem}}
+\setbeamertemplate{itemize subsubitem}{\usebeamercolor[fg]{title}\raisebox{0.1em}{\scriptsize$\bullet$}}
+
+\setbeamertemplate{title page}{
+  \hspace*{0.7em}
+  \begin{minipage}[t][\paperheight]{\textwidth-2em}
+    {\linespread{1.1}\usebeamerfont{title}\usebeamercolor[fg]{title}\vspace*{1em}\inserttitle\par}
+    \vspace*{2em}
+    \begin{tikzpicture}
+      \node[fill=title.fg,minimum width=\textwidth,minimum height=3pt,inner sep=0] (hline) at (0,0) {};
+      \node[anchor=north west,inner sep=0,align=left] at ($(hline.south west) + (0,-1em)$) {
+        {\footnotesize \insertinstitute} \\
+        \insertdate
+      };
+    \end{tikzpicture}
+  \end{minipage}
+}
+\def\insertframetitle{}
+\setbeamertemplate{frametitle}{
+  \begin{beamercolorbox}[wd=\textwidth]{frametitle}
+    \usebeamerfont{frametitle}\insertframetitle
+  \end{beamercolorbox}
+}
+\defbeamertemplate{frame numbering}{none}{}
+\defbeamertemplate{frame numbering}{counter}{\insertframenumber}
+\defbeamertemplate{frame numbering}{counter roman}{\romannumeral \insertframenumber}
+\defbeamertemplate{frame numbering}{fraction}{\insertframenumber/\inserttotalframenumber}
+\setbeamertemplate{frame numbering}[fraction]
+\setbeamertemplate{footline}{
+  \begin{beamercolorbox}[wd=\textwidth,leftskip=1em,rightskip=1em]{footline}
+    \parbox[c][1.45em][c]{\dimexpr\textwidth-2em\relax}{%
+      \usebeamerfont{page number in head/foot}\strut
+      \insertshortauthor\hfill\insertshortdate\hfill\usebeamertemplate*{frame numbering}%
+    }%
+  \end{beamercolorbox}
+}
+\setbeamertemplate{section page}{
+  \begin{center}
+    \usebeamercolor[fg]{section title}
+    \usebeamerfont{section title}
+    \insertsectionhead\par
+  \end{center}
+}
+\AtBeginSection{\frame[plain,c,noframenumbering]{\sectionpage}}
+\addtobeamertemplate{block begin}{}{\vspace{0.3em}\begin{adjustwidth}{0.3cm}{0.3cm}}
+\addtobeamertemplate{block end}{\end{adjustwidth}\vspace{0.3em}}{}
+\addtobeamertemplate{block alerted begin}{}{\vspace{0.3em}\begin{adjustwidth}{0.3cm}{0.3cm}}
+\addtobeamertemplate{block alerted end}{\end{adjustwidth}\vspace{0.3em}}{}
+
+\providecommand{\prstr}[1]{\##1}
+\providecommand{\issstr}[1]{\##1}
+
 \providecommand{\prmerged}{
   \normalsize
   \tikzsetnextfilename{prmerged}
-  \hspace*{-0.8em}
+  \hspace*{-1em}
   \raisebox{-0.3\height}{
-  \begin{tikzpicture}[line width=1pt,color=Purple]
-    \begin{scope}[transform canvas={scale=0.80}]
+  \begin{tikzpicture}[line width=1pt]
+    \node[fill=Purple,text=white,rounded corners=0.5em,inner sep=0.3em] (f) at (0,0) {\hspace{1.3em}\small Merged};
+    \begin{scope}[color=white,shift={($(f.west) + (0.7em,-0.3em)$)},scale=0.7]
       \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};
       \node[draw,circle,inner sep=0,minimum width=0.27em] (mr) at (0.9em,0.4em) {};
       \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};
       \draw[shorten <=-0.1pt,shorten >=-0.1pt] (mr) to[in=-90,out=180] (tl);
       \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
     \end{scope}
-    \coordinate (tl) at (-0.3em,-0.3em);
-    \coordinate (br) at (1.1em,1em);
-    \clip (tl) rectangle (br);
   \end{tikzpicture}
-  \hspace*{-0.9em}
   }
 }
 
 
 \providecommand{\propen}{
   \normalsize
-  % \tikzset{external/export next=false}
   \tikzsetnextfilename{propen}
-  \hspace*{-0.8em}
+  \hspace*{-1em}
   \raisebox{-0.3\height}{
-  \begin{tikzpicture}[line width=1pt,color=LimeGreen]
-    \begin{scope}[transform canvas={scale=0.80}]
+  \begin{tikzpicture}[line width=1pt]
+    \node[fill=LimeGreen,text=white,rounded corners=0.5em, inner sep=0.3em] (f) at (0,0) {\hspace{1.3em}\small Open};
+    \begin{scope}[color=white,shift={($(f.west) + (0.7em,-0.3em)$)},scale=0.7]
+      \tikzset{>={Triangle[angle=35:2pt 2]}}
       \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};
       \node[draw,circle,inner sep=0,minimum width=0.27em] (br) at (0.9em,0) {};
       \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};
-      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br) --++(0,0.5em) ..controls ++(0,0.4em) and ++(0.5em,0).. (tl);
+      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br)
+        --++(0,0.7em)
+        to[out=90,in=0] (tl);
       \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
     \end{scope}
-    \coordinate (tl) at (-0.3em,-0.3em);
-    \coordinate (br) at (1.1em,1em);
-    \clip (tl) rectangle (br);
   \end{tikzpicture}
-  \hspace*{-0.9em}
 }
 }
 

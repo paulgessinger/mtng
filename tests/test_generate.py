@@ -102,6 +102,22 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
         )
 
 
+def test_full_tex_uses_configured_title():
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    output = generate_latex(
+        Spec(title="Weekly sync", footline_left="Core team", repos=[]),
+        {},
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=True,
+    )
+
+    assert r"\title{ Weekly sync }" in output
+    assert r"\author{ Core team }" in output
+
+
 needs_gh_token = pytest.mark.skipif(
     "GH_TOKEN" not in os.environ, reason="GH_TOKEN environment variable not set"
 )

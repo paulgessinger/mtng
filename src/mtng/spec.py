@@ -103,4 +103,12 @@ class Repository(BaseModel):
 
 
 class Spec(BaseModel):
+    title: Optional[str] = pydantic.Field(
+        None,
+        description="Deck title shown on the title slide. If omitted, mtng uses the default repository-based title.",
+    )
+    footline_left: Optional[str] = pydantic.Field(
+        None,
+        description="Left-side text shown in the footline. If omitted, mtng is used.",
+    )
     repos: List[Repository]

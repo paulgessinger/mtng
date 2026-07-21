@@ -75,6 +75,8 @@ Options:
 An example YAML configuration could look like this:
 
 ```yml
+title: Weekly PR and issue update
+footline_left: Core team
 repos:
   - name: acts-project/acts
     stale_label: Stale
@@ -106,11 +108,15 @@ repos:
   - **`do_reviewers`** *(boolean)*: Show reviewer information for PRs. Default: `False`.
   - **`show_review_summary`** *(boolean)*: Show review outcome text (for example, `reviewed by`). Default: `True`.
   - **`Spec`** *(object)*: Cannot contain additional properties.
+    - **`title`** *(string)*: Deck title shown on the title slide. If omitted, mtng uses the default repository-based title.
+    - **`footline_left`** *(string)*: Left-side text shown in the footline. If omitted, `mtng` is used.
     - **`repos`** *(array)*
       - **Items**: Refer to *#/definitions/Repository*.
   The equivalent TOML configuration is:
 
 ```toml
+title = "Weekly PR and issue update"
+footline_left = "Core team"
 [[repos]]
 name = "acts-project/acts"
 stale_label = "Stale"
