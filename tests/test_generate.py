@@ -11,13 +11,19 @@ import os
 import subprocess
 
 import pytest
+import pydantic
 import aiohttp
 from gidgethub.aiohttp import GitHubAPI
 import yaml
 from dateutil.tz import tzlocal
 
 import mtng.collect
-from mtng.generate import generate_latex, env
+from mtng.generate import (
+    build_placeholders,
+    env,
+    expand_placeholders,
+    generate_latex,
+)
 from mtng.spec import Repository, Spec
 from mtng.collect import (
     Label,
@@ -28,6 +34,9 @@ from mtng.collect import (
     get_open_pulls,
     collect_repositories,
     extract_release_pull_numbers,
+    parse_pr_category,
+    parse_pr_metadata,
+    resolve_category_label,
     parse_release_tag,
 )
 
@@ -116,6 +125,75 @@ def test_full_tex_uses_configured_title():
 
     assert r"\title{ Weekly sync }" in output
     assert r"\author{ Core team }" in output
+
+
+def test_placeholders_in_title_and_footline():
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    repo = Repository(name="acts-project/acts")
+    data = {
+        "acts-project/acts": {
+            "merged_prs": [],
+            "open_prs": [],
+            "stale": [],
+            "recent_issues": [],
+            "needs_discussion": [],
+            "merged_prs_by_category": [],
+            "open_prs_by_category": [],
+            "release_tag": "v1.2.3",
+            "release_stats": None,
+            "spec": repo,
+        }
+    }
+
+    output = generate_latex(
+        Spec(
+            title="ACTS {release}",
+            footline_left="Core team -- {release}",
+            repos=[repo],
+        ),
+        data,
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=True,
+    )
+
+    assert r"\title{ ACTS v1.2.3 }" in output
+    assert r"\author{ Core team -- v1.2.3 }" in output
+
+
+def test_placeholders_expand():
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    values = build_placeholders(
+        {
+            "acts-project/acts": {
+                "release_tag": None,
+                "spec": Repository(name="acts-project/acts", display_name="ACTS"),
+            }
+        },
+        since,
+        now,
+    )
+
+    assert values == {
+        "release": "",
+        "repos": "ACTS",
+        "since": "2022-08-01",
+        "date": "2022-08-11",
+        "range": "between 2022-08-01 and 2022-08-11",
+    }
+
+    # A placeholder that expands to nothing takes its separator with it.
+    assert expand_placeholders("Core team -- {release}", values) == "Core team"
+    assert expand_placeholders("{release}: weekly", values) == "weekly"
+    assert expand_placeholders("Update for {repos}", values) == "Update for ACTS"
+    # Unknown keywords are left alone, so LaTeX groups survive.
+    assert (
+        expand_placeholders(r"\textbf{bold} {nope}", values) == r"\textbf{bold} {nope}"
+    )
+    assert expand_placeholders(None, values) is None
 
 
 needs_gh_token = pytest.mark.skipif(
@@ -336,11 +414,22 @@ def test_item_render(try_render):
     assert "\\prmerged" in output
     assert "\\prwip" not in output
     assert "\\prstale" not in output
+    assert "\\prcategory" not in output
     assert "EXTRA" in output
     assert user_a.login in output
     assert user_b.login in output
     assert "reviewed by" in output
     assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
+
+    item.pr_category_label = "feat"
+    item.pr_category_color = "LimeGreen"
+    output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
+    assert "\\prcategory" in output
+    assert "feat" in output
+
+    item.pr_category_breaking = True
+    output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
+    assert "police-car-light" in output
 
     spec.show_review_summary = False
     output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
@@ -455,6 +544,314 @@ def test_extract_release_pull_numbers_generated_notes_format():
     assert extract_release_pull_numbers(body, "acts-project/acts") == [5579, 5593]
 
 
+def test_parse_pr_category():
+    assert parse_pr_category("feat(parser): add grouped output") == ("feat", False)
+    assert parse_pr_category("fix!: drop deprecated output") == ("fix", True)
+    assert parse_pr_category("refactor:drop prefixless subject") == ("refactor", False)
+    assert parse_pr_category("not conventional") == ("other", False)
+
+
+def test_parse_pr_metadata():
+    assert parse_pr_metadata("feat(ui): add badge") == (
+        "feat",
+        False,
+        "add badge",
+        True,
+    )
+    assert parse_pr_metadata("refactor!: cleanup") == (
+        "refactor",
+        True,
+        "cleanup",
+        True,
+    )
+    assert parse_pr_metadata("not conventional") == (
+        "other",
+        False,
+        "not conventional",
+        False,
+    )
+
+
+def test_grouped_pr_sections_render():
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    repo_spec = Repository(name="acts-project/acts", group_prs_by_category=True)
+    user = User(login="someone", html_url="https://example.com")
+    pr = PullRequest(
+        title="feat(core)!: break API",
+        user=user,
+        labels=[],
+        number=1,
+        html_url="https://example.com/pull/1",
+        url="https://example.com/pull/1",
+        updated_at=now,
+        created_at=since,
+        closed_at=now,
+        pull_request=[],
+        pr_category="feat",
+        pr_category_label="Feature",
+        pr_category_breaking=True,
+        pr_category_color="alertred",
+        pr_category_order=0,
+    )
+    data = {
+        "acts-project/acts": {
+            "merged_prs": [pr],
+            "open_prs": [],
+            "stale": [],
+            "recent_issues": [],
+            "needs_discussion": [],
+            "release_tag": None,
+            "release_stats": None,
+            "merged_prs_by_category": [
+                {
+                    "category": "feat",
+                    "title": "Feature",
+                    "emoji": None,
+                    "order": 0,
+                    "items": [pr],
+                }
+            ],
+            "open_prs_by_category": [],
+            "spec": repo_spec,
+        }
+    }
+
+    output = generate_latex(
+        Spec(repos=[repo_spec]),
+        data,
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=False,
+    )
+    # Section pages are titled with the category alone.
+    assert "\\section{ Feature}" in output
+    assert "police-car-light" in output
+
+
+def test_grouped_pr_section_shows_category_emoji():
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    repo_spec = Repository(name="acts-project/acts", group_prs_by_category=True)
+    user = User(login="someone", html_url="https://example.com")
+    pr = PullRequest(
+        title="fix: repair the thing",
+        user=user,
+        labels=[],
+        number=1,
+        html_url="https://example.com/pull/1",
+        url="https://example.com/pull/1",
+        updated_at=now,
+        created_at=since,
+        closed_at=now,
+        pull_request=[],
+    )
+    mtng.collect.enrich_item(pr, repo_spec)
+    (group,) = mtng.collect.group_prs_by_category([pr])
+
+    assert group["title"] == "Bugfix"
+    assert group["emoji"] == "bug"
+
+    data = {
+        "acts-project/acts": {
+            "merged_prs": [pr],
+            "open_prs": [],
+            "stale": [],
+            "recent_issues": [],
+            "needs_discussion": [],
+            "release_tag": None,
+            "release_stats": None,
+            "merged_prs_by_category": [group],
+            "open_prs_by_category": [],
+            "spec": repo_spec,
+        }
+    }
+
+    output = generate_latex(
+        Spec(repos=[repo_spec]),
+        data,
+        since=since,
+        now=now,
+        contributions=[],
+        full_tex=False,
+    )
+    assert "\\section{ \\protect\\cusemoji{bug}{} Bugfix}" in output
+
+
+def _merged_pr(title: str, repo_spec: Repository, number: int = 1) -> PullRequest:
+    since = datetime(2022, 8, 1, tzinfo=tzlocal())
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    pr = PullRequest(
+        title=title,
+        user=User(login="someone", html_url="https://example.com"),
+        labels=[],
+        number=number,
+        html_url="https://example.com/pull/1",
+        url="https://example.com/pull/1",
+        updated_at=now,
+        created_at=since,
+        closed_at=now,
+    )
+    mtng.collect.enrich_item(pr, repo_spec)
+    return pr
+
+
+def test_default_category_order():
+    repo_spec = Repository(name="acts-project/acts")
+    prs = [
+        _merged_pr(f"{kind}: something", repo_spec, number=i)
+        for i, kind in enumerate(["chore", "refactor", "fix", "perf", "feat"])
+    ]
+
+    groups = mtng.collect.group_prs_by_category(prs)
+
+    assert [group["category"] for group in groups] == [
+        "feat",
+        "fix",
+        "refactor",
+        "perf",
+        "chore",
+    ]
+
+
+def test_configured_category_order():
+    repo_spec = Repository(
+        name="acts-project/acts",
+        group_prs_by_category=True,
+        pr_category_order=["chore", "fix"],
+    )
+    prs = [
+        _merged_pr(f"{kind}: something", repo_spec, number=i)
+        for i, kind in enumerate(["feat", "fix", "chore", "docs"])
+    ]
+
+    groups = mtng.collect.group_prs_by_category(prs)
+
+    # Listed categories first, everything else in the default order behind them.
+    assert [group["category"] for group in groups] == ["chore", "fix", "feat", "docs"]
+
+
+def _repo_data(repo_spec: Repository, prs, release_tag=None):
+    return {
+        repo_spec.name: {
+            "merged_prs": prs,
+            "open_prs": [],
+            "stale": [],
+            "recent_issues": [],
+            "needs_discussion": [],
+            "release_tag": release_tag,
+            "release_stats": None,
+            "merged_prs_by_category": mtng.collect.group_prs_by_category(prs),
+            "open_prs_by_category": [],
+            "spec": repo_spec,
+        }
+    }
+
+
+def _render(repo_spec, data):
+    return generate_latex(
+        Spec(repos=[repo_spec]),
+        data,
+        since=datetime(2022, 8, 1, tzinfo=tzlocal()),
+        now=datetime(2022, 8, 11, tzinfo=tzlocal()),
+        contributions=[],
+        full_tex=False,
+    )
+
+
+def test_default_frame_titles():
+    repo_spec = Repository(name="acts-project/acts")
+    prs = [_merged_pr("feat: something", repo_spec)]
+
+    output = _render(repo_spec, _repo_data(repo_spec, prs))
+
+    # {category} is empty without grouping, and takes its parentheses with it.
+    assert (
+        "{\\reponame{}: PRs merged between 2022-08-01 and 2022-08-11}" in output
+    ), output
+
+
+def test_configured_frame_title():
+    repo_spec = Repository(
+        name="acts-project/acts",
+        group_prs_by_category=True,
+        frame_titles={"merged_prs": "What landed {range} -- {category}"},
+    )
+    prs = [_merged_pr("feat: something", repo_spec)]
+
+    output = _render(repo_spec, _repo_data(repo_spec, prs))
+
+    assert "{What landed between 2022-08-01 and 2022-08-11 -- Feature}" in output
+
+
+def test_frame_title_uses_release_tag():
+    repo_spec = Repository(
+        name="acts-project/acts",
+        frame_titles={"release_prs": "{repo} {release}"},
+    )
+    prs = [_merged_pr("feat: something", repo_spec)]
+
+    output = _render(repo_spec, _repo_data(repo_spec, prs, release_tag="v1.2.3"))
+
+    assert "{\\reponame{} v1.2.3}" in output
+
+
+def test_frame_titles_single_string_applies_to_every_frame():
+    repo_spec = Repository(
+        name="acts-project/acts",
+        group_prs_by_category=True,
+        frame_titles="{repo} {category}",
+    )
+
+    assert repo_spec.frame_titles["merged_prs"] == "{repo} {category}"
+    assert repo_spec.frame_titles["open_prs"] == "{repo} {category}"
+
+    prs = [_merged_pr("feat: something", repo_spec)]
+    output = _render(repo_spec, _repo_data(repo_spec, prs))
+
+    assert "{\\reponame{} Feature}" in output
+
+
+def test_frame_title_sanitizes_and_rejects_unknown_keys():
+    repo_spec = Repository(
+        name="acts-project/acts",
+        frame_titles={"merged_prs": "100% merged & counting: {range}"},
+    )
+    prs = [_merged_pr("feat: something", repo_spec)]
+    output = _render(repo_spec, _repo_data(repo_spec, prs))
+    assert "100\\% merged \\& counting: between 2022-08-01 and 2022-08-11" in output
+
+    with pytest.raises(pydantic.ValidationError, match="Unknown frame_titles key"):
+        Repository(name="acts-project/acts", frame_titles={"merged": "nope"})
+
+
+def test_resolve_category_label():
+    assert resolve_category_label("feat", {"feat": "Feature"}) == "Feature"
+    assert resolve_category_label("unknown", {"other": "Other"}) == "Other"
+
+
+def test_item_render_uses_stripped_title_when_present():
+    repo = Repository(name="acts-project/acts")
+    tpl = env.get_template("item.tex")
+    item = PullRequest(
+        title="feat: Keep original in data",
+        pr_title_display="Keep original in data",
+        user=User(login="someone", html_url="https://example.com"),
+        labels=[],
+        number=1,
+        html_url="https://example.com/pull/1",
+        url="https://example.com/pull/1",
+        updated_at=datetime.now(),
+        created_at=datetime.now(),
+        closed_at=datetime.now(),
+        pull_request=[],
+    )
+    output = tpl.render(item=item, spec=repo, mode="MERGED", extra="")
+    assert "Keep original in data" in output
+    assert "feat: Keep original in data" not in output
+
+
 def test_parse_release_tag():
     assert parse_release_tag("v47.0.0", "acts-project/acts") == "v47.0.0"
     assert (
@@ -513,6 +910,8 @@ async def test_collect_repositories_release(monkeypatch: pytest.MonkeyPatch):
     repo_data = result["acts-project/acts"]
     assert repo_data["release_tag"] == "v47.0.0"
     assert len(repo_data["merged_prs"]) == 1
+    assert len(repo_data["merged_prs_by_category"]) == 1
+    assert repo_data["merged_prs"][0].pr_category is not None
 
 
 @pytest.mark.asyncio
@@ -648,15 +1047,12 @@ async def test_release_bento_renders_churn(monkeypatch: pytest.MonkeyPatch):
     assert "days, Aug 02--Aug 06" in output
 
 
-def test_bento_absent_outside_release_mode():
-    """release_stats is None in every non-release path, which gates the frame.
-
-    The provides.tex fallback definitions are always emitted, but no tile is
-    ever instantiated outside release mode.
-    """
+def test_bento_present_outside_release_mode():
+    """Regular period-based reports should also render the bento frame."""
     reference = (Path(__file__).parent / "ref" / "reference.tex").read_text()
-    assert "\\bentobox{" not in reference
-    assert "at a glance" not in reference
+    assert "\\bentobox{" in reference
+    assert "period" in reference
+    assert "reporting period" in reference
 
 
 @pytest.mark.skipif(not have_latexmk, reason="latexmk not found")

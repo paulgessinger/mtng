@@ -1,10 +1,47 @@
 {% from "macros.tex" import show_item %}
 
 
+{% macro render_pr_frame(title, prs, mode, date_prefix) %}
+\begin{frame}[allowframebreaks,t]{ {{- title -}} }
+
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+  \begin{itemize}
+    \footnotesize
+    \setlength{\itemsep}{0.2em}
+    \setlength{\parsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\topsep}{0pt}
+    {% if mode == "OPEN" %}
+    {% for wip in ["false", "true"] %}
+    {% for pr in prs|selectattr("is_wip", wip)|sort(reverse=True, attribute="updated_at") %}
+    {%- call show_item(pr, repo["spec"], mode=mode) -%}
+    , {{ date_prefix }} {{ pr.updated_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+    {%- endfor %}
+    {% else %}
+    {% for pr in prs|sort(attribute="closed_at") %}
+    {%- call show_item(pr, repo["spec"], mode=mode) -%}
+    , {{ date_prefix }} {{ pr.closed_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+    {% endif %}
+  \end{itemize}
+
+\end{frame}
+{% endmacro %}
+
+{% if repo["spec"].display_name is not none %}
+\def\reponame{ {{ repo["spec"].display_name }} }
+{% else %}
+\def\reponame{ {{ repo_name}} }
+{% endif %}
+
 {% if repo["needs_discussion"]|length > 0 %}
 {% for item in repo["needs_discussion"] %}
-\begin{frame}[allowframebreaks,t]{Needs discussion}
+\begin{frame}[allowframebreaks,t]{ {{- frame_title("needs_discussion", repo) -}} }
 
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
     \footnotesize
     \setlength{\itemsep}{0.2em}
@@ -25,22 +62,22 @@
 
 {% endif %}
 
-{% if repo["spec"].display_name is not none %}
-\def\reponame{ {{ repo["spec"].display_name }} }
-{% else %}
-\def\reponame{ {{ repo_name}} }
-{% endif %}
-
 {% if repo["merged_prs"]|length > 0 %}
 
+{% if not repo["spec"].group_prs_by_category %}
 \section{ \reponame{} \\ {% if repo["release_tag"] is not none %}Release {{ repo["release_tag"]|sanitize }}{% else %}Merged PRs{% endif %}}
+{% endif %}
 
 {% set stats = repo["release_stats"] %}
 {% if stats is not none and stats.pr_count > 0 %}
 {% set rowb = 1 if stats.has_churn else 0 %}
-\begin{frame}{ \reponame{}: release {{ repo["release_tag"]|sanitize }} at a glance}
+\begin{frame}{ {{- frame_title("release_stats" if repo["release_tag"] is not none else "stats", repo) -}} }
   \bentobox{
+    {% if repo["release_tag"] is not none %}
     \bentotile{0}{0}{2}{1}{bentohero}{ {{- repo["release_tag"]|sanitize -}} }{release}
+    {% else %}
+    \bentolisttile{0}{0}{2}{1}{bentohero}{ {{- since.strftime('%Y-%m-%d') -}}\\{{- now.strftime('%Y-%m-%d') -}} }{reporting period}
+    {% endif %}
     \bentotile{2}{0}{1}{1}{bentotile}{ {{- stats.pr_count|human_int -}} }{merged PRs}
     \bentotile{3}{0}{1}{1}{bentotile}{ {{- stats.contributors|human_int -}} }{contributors}
     {%- if stats.has_churn %}
@@ -62,22 +99,31 @@
 \end{frame}
 {% endif %}
 
-\begin{frame}[allowframebreaks,t]{ \reponame{}: {% if repo["release_tag"] is not none %}PRs in release {{ repo["release_tag"]|sanitize }}{% else %}PRs merged {{ date_range() }}{% endif %}}
-
-  \begin{itemize}
-    \footnotesize
-    \setlength{\itemsep}{0.2em}
-    \setlength{\parsep}{0pt}
-    \setlength{\parskip}{0pt}
-    \setlength{\topsep}{0pt}
-    {% for pr in repo["merged_prs"]|sort(attribute="closed_at") %}
-    {%- call show_item(pr, repo["spec"], mode="MERGED") -%}
-    , merged on {{ pr.closed_at.strftime('%Y-%m-%d') }}
-    {%- endcall %}
-    {%- endfor %}
-  \end{itemize}
-
-\end{frame}
+{% if repo["spec"].group_prs_by_category and repo["merged_prs_by_category"]|length > 0 %}
+{% for group in repo["merged_prs_by_category"] %}
+\section{ {% if group.get("emoji") %}\protect\cusemoji{ {{- group["emoji"] -}} }{} {% endif %}{{ group["title"]|sanitize }}}
+{{- render_pr_frame(
+  frame_title(
+    "release_prs" if repo["release_tag"] is not none else "merged_prs",
+    repo,
+    group["title"]
+  ),
+  group["items"],
+  "MERGED",
+  "merged on"
+) -}}
+{% endfor %}
+{% else %}
+{{- render_pr_frame(
+  frame_title(
+    "release_prs" if repo["release_tag"] is not none else "merged_prs",
+    repo
+  ),
+  repo["merged_prs"],
+  "MERGED",
+  "merged on"
+) -}}
+{% endif %}
 
 {% else %}
 \begin{frame}[c]{}
@@ -96,29 +142,34 @@
 {% endif %}
 
 {%- if repo["release_tag"] is none %}
-\section{ \reponame{} \\ Open PRs}
 {% if repo["open_prs"]| length > 0 %}
-\begin{frame}[allowframebreaks,t]{ \reponame{}: Open PRs
-}
-
-  \begin{itemize}
-    {% for wip in ["false", "true"] %}
-    {% for pr in repo["open_prs"]|selectattr("is_wip", wip)|sort(reverse=True, attribute="updated_at") %}
-    {%- call show_item(pr, repo["spec"], mode="OPEN") -%}
-    , updated on {{ pr.updated_at.strftime('%Y-%m-%d') }}
-    {%- endcall %}
-    {%- endfor %}
-    {%- endfor %}
-  \end{itemize}
-
-\end{frame}
+{% if repo["spec"].group_prs_by_category and repo["open_prs_by_category"]|length > 0 %}
+{% for group in repo["open_prs_by_category"] %}
+\section{ {% if group.get("emoji") %}\protect\cusemoji{ {{- group["emoji"] -}} }{} {% endif %}{{ group["title"]|sanitize }}}
+{{- render_pr_frame(
+  frame_title("open_prs", repo, group["title"]),
+  group["items"],
+  "OPEN",
+  "updated on"
+) -}}
+{% endfor %}
+{% else %}
+\section{ \reponame{} \\ Open PRs}
+{{- render_pr_frame(
+  frame_title("open_prs", repo),
+  repo["open_prs"],
+  "OPEN",
+  "updated on"
+) -}}
+{% endif %}
 {% endif %}
 {%- endif %}
 
 {%- if repo["release_tag"] is none and repo["spec"].do_recent_issues %}
 {% if repo["recent_issues"] | length > 0 %}
   \section{ \reponame{} \\ Issues opened since {{ since.strftime('%Y-%m-%d') }} }
-  \begin{frame}[allowframebreaks]{ \reponame{}: Issues opened since {{ since.strftime('%Y-%m-%d') }} }
+  \begin{frame}[allowframebreaks]{ {{- frame_title("recent_issues", repo) -}} }
+    \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
     \begin{itemize}
       {% for item in repo["recent_issues"]|sort(reverse=True, attribute="updated_at") %}
       {%- call show_item(item, repo["spec"]) -%}
@@ -136,7 +187,8 @@
 {% set newly_stale = repo["stale"] | selectattr("updated_at", "gt", since) | list %}
 {% if newly_stale | length > 0 %}
 \section{ \reponame{} \\ Stale Issues and PRs}
-\begin{frame}[allowframebreaks]{ \reponame{}: New stale Issues / PRs since {{ since.strftime('%Y-%m-%d') }} }
+\begin{frame}[allowframebreaks]{ {{- frame_title("new_stale", repo) -}} }
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
     {% for item in newly_stale %}
     {%- call show_item(item, repo["spec"], mode="OPEN") -%}
@@ -151,7 +203,8 @@
 
 {% if repo["stale"]|length > 0 %}
 \section{ \reponame{} \\ All stale Issues and PRs}
-\begin{frame}[allowframebreaks]{ \reponame{}: All stale Issues / PRs}
+\begin{frame}[allowframebreaks]{ {{- frame_title("all_stale", repo) -}} }
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
     {% for item in repo["stale"]|sort(reverse=True, attribute="updated_at") %}
     {%- call show_item(item, repo["spec"], mode="OPEN") -%}

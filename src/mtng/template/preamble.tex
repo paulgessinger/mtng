@@ -22,6 +22,11 @@
   urlcolor=blue,
 }
 
+% Declared outside \ifluatex: when pdflatex skips that branch, TeX still has to
+% recognize this conditional to find the matching \fi.
+\newif\ifmtngemoji
+\mtngemojifalse
+
 \ifluatex
 \usepackage{fontspec}
 \IfFontExistsTF{Helvetica}{%
@@ -30,7 +35,13 @@ ItalicFont=* Oblique,
 BoldFont=* Bold,
 BoldItalicFont=* Bold Oblique]%
 }{%
-\setsansfont{Arial}
+\IfFontExistsTF{Arial}{%
+\setsansfont{Arial}%
+}{%
+% Neither is installed on a typical Linux box; TeX Gyre Heros is the Helvetica
+% clone that ships with TeX Live, so a CI run still gets the intended look.
+\IfFontExistsTF{TeX Gyre Heros}{\setsansfont{TeX Gyre Heros}}{}%
+}%
 }
 \IfFontExistsTF{Avenir}{%
 \newfontfamily{\avenir}{Avenir}
@@ -42,9 +53,22 @@ BoldItalicFont=* Bold Oblique]%
 \setbeamerfont{title}{size=\fontsize{24pt}{26pt},series=\bfseries}
 \setbeamerfont{frametitle}{size=\Large,series=\bfseries}
 }
+% emoji.sty only warns when no emoji font is installed, but \emoji then errors
+% out where it is used. Check for the same fonts it probes for, and fall back to
+% no-op macros so the deck still compiles on a minimal TeX installation.
+\IfFontExistsTF{Apple Color Emoji}{\mtngemojitrue}{%
+\IfFontExistsTF{Segoe UI Emoji}{\mtngemojitrue}{%
+\IfFontExistsTF{Noto Color Emoji}{\mtngemojitrue}{}%
+}%
+}
+\ifmtngemoji
 \usepackage{emoji}
 \providecommand{\cusemoji}[1]{\raisebox{-0.15\height}{\emoji{#1}}}
 \providecommand{\emojispace}[1]{\raisebox{-0.15\height}{\emoji{#1} }}
+\else
+\providecommand{\cusemoji}[1]{}
+\providecommand{\emojispace}[1]{}
+\fi
 \else
 \providecommand{\cusemoji}[1]{}
 \providecommand{\emojispace}[1]{}
@@ -135,26 +159,25 @@ BoldItalicFont=* Bold Oblique]%
 \providecommand{\prmerged}{
   \normalsize
   \tikzsetnextfilename{prmerged}
-  \hspace*{-1em}
-  \raisebox{-0.3\height}{
+  \raisebox{-0.15\height}{%
   \begin{tikzpicture}[line width=1pt]
-    \node[fill=Purple,text=white,rounded corners=0.5em,inner sep=0.3em] (f) at (0,0) {\hspace{1.3em}\small Merged};
-    \begin{scope}[color=white,shift={($(f.west) + (0.7em,-0.3em)$)},scale=0.7]
+    \begin{scope}[color=Purple,scale=0.9]
       \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};
       \node[draw,circle,inner sep=0,minimum width=0.27em] (mr) at (0.9em,0.4em) {};
       \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};
       \draw[shorten <=-0.1pt,shorten >=-0.1pt] (mr) to[in=-90,out=180] (tl);
       \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
     \end{scope}
-  \end{tikzpicture}
-  }
+  \end{tikzpicture}%
+  }%
+  \hspace*{0.2em}%
 }
 
 
 \providecommand{\propen}{
   \normalsize
   \tikzsetnextfilename{propen}
-  \hspace*{-1em}
+  \hspace*{-0.2em}
   \raisebox{-0.3\height}{
   \begin{tikzpicture}[line width=1pt]
     \node[fill=LimeGreen,text=white,rounded corners=0.5em, inner sep=0.3em] (f) at (0,0) {\hspace{1.3em}\small Open};
@@ -196,6 +219,22 @@ BoldItalicFont=* Bold Oblique]%
   \end{tikzpicture}
   \hspace*{-0.8em}
 }
+}
+
+% Gap between the category pill and the PR title, overridable by the host deck.
+\providecommand{\prcategorysep}{0.35em}
+% Extra indent for PR/issue lists, so the bullet and the status symbol do not sit
+% flush against the text margin.
+\providecommand{\prlistindent}{0.8em}
+\providecommand{\prcategory}[2]{%
+  \normalsize
+  \raisebox{-0.3\height}{%
+  \begin{tikzpicture}[]
+    \node[rectangle,fill=#2,text=white,rounded corners=0.5em,
+          minimum height=1.55em,inner xsep=0.5em] (t) {\small{}#1};
+  \end{tikzpicture}%
+  }%
+  \hspace*{\prcategorysep}%
 }
 
 %% ---- bento statistics tiles ----------------------------------------------

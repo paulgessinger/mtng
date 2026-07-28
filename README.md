@@ -82,6 +82,15 @@ repos:
     stale_label: Stale
     wip_label: ":construction: WIP"
     show_wip: true
+    group_prs_by_category: true
+    pr_category_labels:
+      feat: New features
+      fix: Bug fixes
+    pr_category_colors:
+      feat: LimeGreen
+      fix: Purple
+      breaking: alertred
+    pr_category_order: [fix, feat]
     do_recent_issues: true
     no_assignee_attention: true
     filter_labels: 
@@ -107,9 +116,16 @@ repos:
   - **`no_assignee_attention`** *(boolean)*: Draw attention to items without an assignee. Default: `True`.
   - **`do_reviewers`** *(boolean)*: Show reviewer information for PRs. Default: `False`.
   - **`show_review_summary`** *(boolean)*: Show review outcome text (for example, `reviewed by`). Default: `True`.
+  - **`show_pr_categories`** *(boolean)*: Parse conventional-commit style prefixes from PR titles and render category pills. Default: `True`.
+  - **`group_prs_by_category`** *(boolean)*: Group open and merged PR slides into one section per category. Default: `False`. Section pages are titled with the category alone (`Feature`, `Bugfix`, ...); the `fix` category also carries a 🐛.
+  - **`pr_category_labels`** *(object)*: Override display names for category keys used in pills and grouped sections (for example, `feat: Feature`).
+  - **`pr_category_colors`** *(object)*: Override LaTeX color names for category pills. Supports keys like `feat`, `fix`, `docs`, `other`, and `breaking`.
+  - **`pr_category_order`** *(array)*: Order of the grouped category sections. Categories that are not listed follow in the default order.
+    - **Items** *(string)*
+  - **`frame_titles`** *(string or object)*: Override the title of a kind of frame, either as one string used for every frame or as a map. See [frame titles](#frame-titles).
   - **`Spec`** *(object)*: Cannot contain additional properties.
-    - **`title`** *(string)*: Deck title shown on the title slide. If omitted, mtng uses the default repository-based title.
-    - **`footline_left`** *(string)*: Left-side text shown in the footline. If omitted, `mtng` is used.
+    - **`title`** *(string)*: Deck title shown on the title slide. Supports the [placeholders](#placeholders) `{release}`, `{repos}`, `{since}` and `{date}`. If omitted, mtng uses the default repository-based title.
+    - **`footline_left`** *(string)*: Left-side text shown in the footline. Supports the [placeholders](#placeholders) `{release}`, `{repos}`, `{since}` and `{date}`. If omitted, `mtng` is used.
     - **`repos`** *(array)*
       - **Items**: Refer to *#/definitions/Repository*.
   The equivalent TOML configuration is:
@@ -122,6 +138,10 @@ name = "acts-project/acts"
 stale_label = "Stale"
 wip_label = ":construction: WIP"
 show_wip = true
+group_prs_by_category = true
+pr_category_labels = { feat = "New features", fix = "Bug fixes" }
+pr_category_colors = { feat = "LimeGreen", fix = "Purple", breaking = "alertred" }
+pr_category_order = ["fix", "feat"]
 do_recent_issues = true
 no_assignee_attention = true
 filter_labels = ["backport"]
@@ -134,6 +154,98 @@ This configuration will look up the `acts-project/acts` repository. The output w
 3. Merged PRs since the date given by the `--since` option
 4. Issues opened since the date given by the `--since` option
 
+
+### PR categories
+
+Conventional-commit prefixes on PR titles (`feat:`, `fix(core)!:`, ...) drive the pill next
+to each PR and, with `group_prs_by_category`, the section a PR lands in. The defaults are:
+
+| Key | Label | Section page | Pill color |
+| --- | --- | --- | --- |
+| `feat` | Feature | 🚀 | LimeGreen |
+| `fix` | Bugfix | 🐛 | Purple |
+| `refactor` | Refactor | ♻️ | CadetBlue |
+| `perf` | Performance | ⚡ | TealBlue |
+| `docs` | Docs | 📚 | CornflowerBlue |
+| `test` | Tests | 🧪 | RoyalBlue |
+| `build` | Build | 🔨 | Goldenrod |
+| `ci` | CI | 🤖 | Orange |
+| `chore` | Chore | ⚙️ | Gray |
+| `revert` | Revert | 🔄 | Mahogany |
+| `other` | Other | 📦 | beige |
+
+Titles that do not parse land in `other`; a `!` marks the PR as breaking and switches the
+pill to the `breaking` color. The table order is also the order of the grouped sections, and
+`pr_category_order` overrides it — listed categories come first, the rest follow in the
+default order:
+
+```yml
+pr_category_order: [fix, feat]
+```
+
+### Placeholders
+
+`title` and `footline_left` are expanded before rendering, so the release the deck was
+generated for can be pulled into the title slide or the footline:
+
+```yml
+title: ACTS {release}
+footline_left: Core team -- {release}
+```
+
+| Placeholder | Expands to |
+| --- | --- |
+| `{release}` | The release tag(s) resolved from `--release`. Empty when not in release mode. |
+| `{repos}` | The repositories in the spec, by `display_name` where set. |
+| `{since}` | The start of the reporting window (`--since`), as `YYYY-MM-DD`. |
+| `{date}` | The generation date, as `YYYY-MM-DD`. |
+| `{range}` | The reporting window, as `between <since> and <now>`. |
+
+Unknown keywords are left untouched, so `{}`-heavy LaTeX in these strings still works. A
+placeholder that expands to nothing takes a dangling separator, or an empty pair of
+brackets, with it: `Core team -- {release}` is just `Core team` outside of release mode.
+
+### Frame titles
+
+`frame_titles` overrides the title of a kind of frame, per repository, using the same
+placeholders plus `{repo}` (the repository's `display_name`, or its name) and `{category}`
+(the PR category, when `group_prs_by_category` is on).
+
+A single string is shorthand for "this title, on every frame" — with the placeholders
+carrying the per-frame detail, that is often all you need:
+
+```yml
+repos:
+  - name: acts-project/acts
+    frame_titles: "{repo} {category}"
+```
+
+A map overrides individual frames instead:
+
+```yml
+repos:
+  - name: acts-project/acts
+    frame_titles:
+      merged_prs: "What landed {range} -- {category}"
+      open_prs: "{repo}: in flight ({category})"
+```
+
+| Key | Default |
+| --- | --- |
+| `merged_prs` | `{repo}: PRs merged {range} ({category})` |
+| `release_prs` | `{repo}: PRs in release {release} ({category})` |
+| `open_prs` | `{repo}: Open PRs ({category})` |
+| `recent_issues` | `{repo}: Issues opened since {since}` |
+| `new_stale` | `{repo}: New stale Issues / PRs since {since}` |
+| `all_stale` | `{repo}: All stale Issues / PRs` |
+| `needs_discussion` | `Needs discussion` |
+| `stats` | `{repo}: period at a glance` |
+| `release_stats` | `{repo}: release {release} at a glance` |
+
+Keys are validated, so a typo is a configuration error rather than a silently ignored
+setting. Only the keys you list are overridden; the rest keep their defaults. Because
+`{category}` is empty unless PRs are grouped, the default `({category})` suffix disappears
+by itself in ungrouped decks.
 
 In addition and independent of this config, a meeting agenda can be attached at the end if the `--event` option is provided and contains a valid Indico URL.
 

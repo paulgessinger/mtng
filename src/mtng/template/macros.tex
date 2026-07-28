@@ -9,10 +9,16 @@
     {%- endif -%}
     {%- if item.is_stale -%}\prstale
     {%- endif -%}
+    {%- if item.is_pr and spec.show_pr_categories and item.pr_category_label is not none and item.pr_category_color is not none -%}
+      \prcategory{
+        {%- if item.pr_category_breaking -%}\cusemoji{police-car-light} {% endif -%}
+        {{- item.pr_category_label|sanitize -}}
+      }{ {{- item.pr_category_color -}} }
+    {%- endif -%}
     \textbf{\href{
       {{- item.html_url -}}
     }{\textcolor{black}{
-      {{- item.title|sanitize -}}
+      {{- (item.pr_title_display if item.pr_title_display is not none else item.title)|sanitize -}}
     }}}
     (\href{ {{- item.html_url -}} }{
     {%- if item.is_pr -%}

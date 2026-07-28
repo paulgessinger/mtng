@@ -6,10 +6,6 @@
 
 {% include "provides.tex" %}
 
-{% macro date_range() %}
-between {{ since.strftime('%Y-%m-%d') }} and {{ now.strftime('%Y-%m-%d') }}
-{% endmacro %}
-
 {% for repo_name, repo in repos.items() %}
 
 {% include "repo.tex" %}

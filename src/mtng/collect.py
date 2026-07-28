@@ -1,5 +1,5 @@
 import functools
-from typing import Any, List, Optional, Literal, Dict
+from typing import Any, Dict, List, Literal, Optional
 from datetime import datetime
 import urllib.parse
 import asyncio
@@ -16,7 +16,13 @@ from rich import print
 from rich.rule import Rule
 from rich.status import Status
 
-from mtng.spec import Repository
+from mtng.spec import (
+    DEFAULT_PR_CATEGORY_COLORS,
+    DEFAULT_PR_CATEGORY_EMOJI,
+    DEFAULT_PR_CATEGORY_LABELS,
+    DEFAULT_PR_CATEGORY_ORDER,
+    Repository,
+)
 from mtng.stats import compute_release_stats
 
 
@@ -54,6 +60,12 @@ class IssueBase(pydantic.BaseModel):
 
     is_wip: bool = False
     is_stale: bool = False
+    pr_title_display: Optional[str] = None
+    pr_category: Optional[str] = None
+    pr_category_label: Optional[str] = None
+    pr_category_breaking: bool = False
+    pr_category_color: Optional[str] = None
+    pr_category_order: int = 999
 
     draft: Optional[bool] = None
 
@@ -91,7 +103,14 @@ FETCH_CONCURRENCY = 8
 # Bump whenever a model stored in the cache gains or loses fields. Entries are
 # pickled pydantic instances, so an old entry restored into a new class is
 # missing the new attributes entirely and raises AttributeError on access.
-CACHE_VERSION = 2
+CACHE_VERSION = 3
+
+CONVENTIONAL_TITLE_RE = re.compile(
+    r"^(?P<kind>[a-z][a-z0-9-]*)(?:\([^)]+\))?(?P<breaking>!)?:\s*(?P<subject>.+)$",
+    re.IGNORECASE,
+)
+CATEGORY_ORDER = tuple(DEFAULT_PR_CATEGORY_ORDER)
+CATEGORY_ORDER_INDEX = {name: index for index, name in enumerate(CATEGORY_ORDER)}
 
 
 def memoize(expire=0, key_func=None):
@@ -349,6 +368,115 @@ async def get_open_pulls(
     return prs
 
 
+def parse_pr_metadata(title: str) -> tuple[str, bool, str, bool]:
+    m = CONVENTIONAL_TITLE_RE.match(title.strip())
+    if m is None:
+        return "other", False, title.strip(), False
+    return (
+        m.group("kind").lower(),
+        bool(m.group("breaking")),
+        m.group("subject").strip(),
+        True,
+    )
+
+
+def parse_pr_category(title: str) -> tuple[str, bool]:
+    category, is_breaking, _, _ = parse_pr_metadata(title)
+    return category, is_breaking
+
+
+def resolve_category_order(order: Optional[List[str]] = None) -> Dict[str, int]:
+    """Position of every known category: the configured keys first, then any
+    default category the configuration left out."""
+    if order is None:
+        return dict(CATEGORY_ORDER_INDEX)
+    resolved = list(order)
+    resolved += [name for name in DEFAULT_PR_CATEGORY_ORDER if name not in resolved]
+    return {name: index for index, name in enumerate(resolved)}
+
+
+def category_order(category: str, order: Optional[List[str]] = None) -> int:
+    index = resolve_category_order(order)
+    return index.get(category, len(index))
+
+
+def resolve_category_color(
+    category: str, is_breaking: bool, category_colors: Dict[str, str]
+) -> str:
+    if is_breaking:
+        return category_colors.get(
+            "breaking", DEFAULT_PR_CATEGORY_COLORS.get("breaking", "alertred")
+        )
+    return category_colors.get(
+        category,
+        DEFAULT_PR_CATEGORY_COLORS.get(
+            category,
+            category_colors.get(
+                "other", DEFAULT_PR_CATEGORY_COLORS.get("other", "beige")
+            ),
+        ),
+    )
+
+
+def resolve_category_label(category: str, category_labels: Dict[str, str]) -> str:
+    return category_labels.get(
+        category,
+        DEFAULT_PR_CATEGORY_LABELS.get(
+            category,
+            category_labels.get(
+                "other",
+                DEFAULT_PR_CATEGORY_LABELS.get(
+                    "other", category.replace("-", " ").strip().capitalize()
+                ),
+            ),
+        ),
+    )
+
+
+def enrich_item(item: IssueBase, repo: Repository) -> None:
+    labels = [l.name for l in item.labels]
+    item.is_wip = repo.wip_label in labels
+    if item.is_pr:
+        item.is_wip = item.is_wip or (item.draft if item.draft is not None else False)
+    item.is_stale = repo.stale_label in labels
+
+    if not item.is_pr:
+        return
+
+    category, is_breaking, display_title, parsed = parse_pr_metadata(item.title)
+    item.pr_category = category
+    item.pr_category_breaking = is_breaking
+    item.pr_category_label = resolve_category_label(category, repo.pr_category_labels)
+    item.pr_category_color = resolve_category_color(
+        category, is_breaking, repo.pr_category_colors
+    )
+    item.pr_category_order = category_order(category, repo.pr_category_order)
+    if parsed:
+        item.pr_title_display = display_title
+
+
+def group_prs_by_category(items: List[IssueBase]) -> List[Dict[str, Any]]:
+    grouped: Dict[str, Dict[str, Any]] = {}
+    for item in items:
+        if not item.is_pr:
+            continue
+        category = item.pr_category or "other"
+        group = grouped.setdefault(
+            category,
+            {
+                "category": category,
+                "title": item.pr_category_label or category,
+                "emoji": DEFAULT_PR_CATEGORY_EMOJI.get(category),
+                # Set per repository by enrich_item, so the configured
+                # pr_category_order carries over to the section sequence.
+                "order": item.pr_category_order,
+                "items": [],
+            },
+        )
+        group["items"].append(item)
+    return sorted(grouped.values(), key=lambda group: (group["order"], group["title"]))
+
+
 async def collect_repositories(
     repos: List[Repository],
     since: datetime,
@@ -369,6 +497,8 @@ async def collect_repositories(
         data[key]["needs_discussion"] = []
         data[key]["release_tag"] = None
         data[key]["release_stats"] = None
+        data[key]["merged_prs_by_category"] = []
+        data[key]["open_prs_by_category"] = []
         data[key]["spec"] = repo
 
         if repo.do_merged_prs:
@@ -392,14 +522,19 @@ async def collect_repositories(
                     without_labels=repo.without_labels,
                 )
             data[key]["merged_prs"] = merged_prs
-
-        if release is not None:
             data[key]["release_stats"] = compute_release_stats(
                 data[key]["merged_prs"],
                 ignore_labels=[
                     label for label in (repo.wip_label, repo.stale_label) if label
                 ],
             )
+            for pr in data[key]["merged_prs"]:
+                enrich_item(pr, repo)
+            data[key]["merged_prs_by_category"] = group_prs_by_category(
+                data[key]["merged_prs"]
+            )
+
+        if release is not None:
             # In release mode we intentionally only show PRs that landed in the
             # selected release and skip open/stale/recent/discussion lists.
             continue
@@ -449,14 +584,10 @@ async def collect_repositories(
 
                 data[key]["recent_issues"] = recent_issues
 
-        for prk in "open_prs", "merged_prs", "stale", "recent_issues":
-            for pr in data[key][prk]:
-                pr.is_wip = repo.wip_label in [l.name for l in pr.labels]
-                if pr.is_pr:
-                    pr.is_wip = pr.is_wip or (
-                        pr.draft if pr.draft is not None else False
-                    )
-                pr.is_stale = repo.stale_label in [l.name for l in pr.labels]
+        for item_type in "open_prs", "stale", "recent_issues":
+            for item in data[key][item_type]:
+                enrich_item(item, repo)
+        data[key]["open_prs_by_category"] = group_prs_by_category(data[key]["open_prs"])
 
         if repo.needs_discussion_label is not None:
             with Status("Getting items that need discussion"):
@@ -467,5 +598,7 @@ async def collect_repositories(
                     without_labels=repo.without_labels,
                 )
                 data[key]["needs_discussion"] = needs_discussion
+                for item in data[key]["needs_discussion"]:
+                    enrich_item(item, repo)
 
     return data
