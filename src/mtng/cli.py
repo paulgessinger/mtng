@@ -2,7 +2,7 @@ import os
 import shutil
 import subprocess
 from tempfile import TemporaryDirectory
-from typing import Optional, List
+from typing import Annotated
 import functools
 import asyncio
 import datetime
@@ -40,7 +40,7 @@ KEYRING_SERVICE = "mtng"
 KEYRING_USERNAME = "github-token"
 
 
-def find_latexmk() -> Path:
+def find_latexmk() -> Path | None:
     try:
         latexmk_path = Path(
             subprocess.check_output(["which", "latexmk"]).decode().strip()
@@ -103,7 +103,7 @@ def normalize_preamble_content(content: str) -> str:
     return content.strip()
 
 
-def get_keyring_token() -> Optional[str]:
+def get_keyring_token() -> str | None:
     try:
         token = keyring.get_password(KEYRING_SERVICE, KEYRING_USERNAME)
     except KeyringError as e:
@@ -117,12 +117,12 @@ def get_keyring_token() -> Optional[str]:
     return token or None
 
 
-def resolve_github_token(token: Optional[str]) -> str:
+def resolve_github_token(token: str | None) -> str:
     token_value, _ = resolve_github_token_with_source(token)
     return token_value
 
 
-def resolve_github_token_with_source(token: Optional[str]) -> tuple[str, str]:
+def resolve_github_token_with_source(token: str | None) -> tuple[str, str]:
     if token is not None:
         token = token.strip()
         if token != "":
@@ -170,8 +170,8 @@ def format_github_request_error(e: Exception) -> str:
 
 
 def parse_datetime_option(
-    value: Optional[str], param_hint: str
-) -> Optional[datetime.datetime]:
+    value: str | None, param_hint: str
+) -> datetime.datetime | None:
     if value is None:
         return None
 
@@ -257,48 +257,66 @@ async def handle_event(event: str, session):
 @make_sync
 async def generate(
     config: typer.FileText,
-    token: Optional[str] = typer.Option(
-        None,
-        help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
-        show_default=False,
-    ),
-    since: Optional[str] = typer.Option(
-        None,
-        help="Start window for queries. Required unless --release is used. Accepts ISO and human-readable values like '1 week ago'.",
-    ),
-    now: str = typer.Option(
-        "now",
-        help="End window for queries. Accepts ISO and human-readable values like 'now' or 'next monday'.",
-    ),
-    event: Optional[str] = typer.Option(
-        None,
-        "--event",
-        help="Optionally attach an Indico based agenda overview. This only works with public events!",
-    ),
-    release: Optional[str] = typer.Option(
-        None,
-        "--release",
-        help="Summarize merged PRs from a GitHub release tag or release URL instead of a date window.",
-    ),
-    full_tex: bool = typer.Option(
-        False, "--full", help="Write a full LaTeX file that is compileable on it's own"
-    ),
-    preamble: Optional[Path] = typer.Option(
-        None,
-        "--preamble",
-        dir_okay=False,
-        exists=True,
-        readable=True,
-        help="Prepend this LaTeX preamble file to fragment output. Mutually exclusive with --full.",
-    ),
-    pdf: Optional[Path] = typer.Option(
-        None,
-        dir_okay=False,
-        help="Compile the report as a PDF file. This requires a LaTeX installation.",
-    ),
-    tex: Optional[Path] = typer.Option(
-        None, dir_okay=False, help="Write LaTex output to this file"
-    ),
+    token: Annotated[
+        str | None,
+        typer.Option(
+            help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
+            show_default=False,
+        ),
+    ] = None,
+    since: Annotated[
+        str | None,
+        typer.Option(
+            help="Start window for queries. Required unless --release is used. Accepts ISO and human-readable values like '1 week ago'.",
+        ),
+    ] = None,
+    now: Annotated[
+        str,
+        typer.Option(
+            help="End window for queries. Accepts ISO and human-readable values like 'now' or 'next monday'.",
+        ),
+    ] = "now",
+    event: Annotated[
+        str | None,
+        typer.Option(
+            "--event",
+            help="Optionally attach an Indico based agenda overview. This only works with public events!",
+        ),
+    ] = None,
+    release: Annotated[
+        str | None,
+        typer.Option(
+            "--release",
+            help="Summarize merged PRs from a GitHub release tag or release URL instead of a date window.",
+        ),
+    ] = None,
+    full_tex: Annotated[
+        bool,
+        typer.Option(
+            "--full", help="Write a full LaTeX file that is compileable on it's own"
+        ),
+    ] = False,
+    preamble: Annotated[
+        Path | None,
+        typer.Option(
+            "--preamble",
+            dir_okay=False,
+            exists=True,
+            readable=True,
+            help="Prepend this LaTeX preamble file to fragment output. Mutually exclusive with --full.",
+        ),
+    ] = None,
+    pdf: Annotated[
+        Path | None,
+        typer.Option(
+            dir_okay=False,
+            help="Compile the report as a PDF file. This requires a LaTeX installation.",
+        ),
+    ] = None,
+    tex: Annotated[
+        Path | None,
+        typer.Option(dir_okay=False, help="Write LaTex output to this file"),
+    ] = None,
 ):
     if preamble is not None and full_tex:
         raise typer.BadParameter(
@@ -407,15 +425,19 @@ async def generate(
 
 @auth_cli.command("login", help="Store a GitHub API token in your system keychain")
 def login(
-    token: Optional[str] = typer.Option(
-        None,
-        help="GitHub API token to store. If omitted, mtng prompts for it.",
-    ),
-    validate: bool = typer.Option(
-        True,
-        "--validate/--no-validate",
-        help="Validate the token against GitHub before storing it.",
-    ),
+    token: Annotated[
+        str | None,
+        typer.Option(
+            help="GitHub API token to store. If omitted, mtng prompts for it."
+        ),
+    ] = None,
+    validate: Annotated[
+        bool,
+        typer.Option(
+            "--validate/--no-validate",
+            help="Validate the token against GitHub before storing it.",
+        ),
+    ] = True,
 ):
     if token is None:
         token = typer.prompt("GitHub API token", hide_input=True)
@@ -444,11 +466,13 @@ def login(
     "check", help="Validate the configured GitHub token against the GitHub API"
 )
 def check(
-    token: Optional[str] = typer.Option(
-        None,
-        help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
-        show_default=False,
-    ),
+    token: Annotated[
+        str | None,
+        typer.Option(
+            help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
+            show_default=False,
+        ),
+    ] = None,
 ):
     resolved_token = resolve_github_token(token)
     login_name = validate_github_token_sync(resolved_token)
@@ -460,16 +484,20 @@ def check(
     help="Show where the configured GitHub token is loaded from and optionally validate it",
 )
 def status(
-    token: Optional[str] = typer.Option(
-        None,
-        help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
-        show_default=False,
-    ),
-    validate: bool = typer.Option(
-        False,
-        "--validate/--no-validate",
-        help="Validate the token against GitHub.",
-    ),
+    token: Annotated[
+        str | None,
+        typer.Option(
+            help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
+            show_default=False,
+        ),
+    ] = None,
+    validate: Annotated[
+        bool,
+        typer.Option(
+            "--validate/--no-validate",
+            help="Validate the token against GitHub.",
+        ),
+    ] = False,
 ):
     _, source = resolve_github_token_with_source(token)
     print(f"GitHub token is configured (source: {source}).")

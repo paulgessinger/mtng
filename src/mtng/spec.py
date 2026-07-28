@@ -1,4 +1,3 @@
-from typing import Dict, List, Optional, Union
 import pydantic
 from pydantic import ConfigDict
 
@@ -90,12 +89,12 @@ class Repository(BaseModel):
         ...,
         description="Name of the repository, e.g. 'acts-project/acts'.",
     )
-    display_name: Optional[str] = pydantic.Field(
+    display_name: str | None = pydantic.Field(
         None,
         title="Display name",
         description="Alternative repository name. Useful when fetching one repository multiple times.",
     )
-    wip_label: Optional[str] = pydantic.Field(
+    wip_label: str | None = pydantic.Field(
         None, title="WIP label", description="Label to identify WIP PRs."
     )
     show_wip: bool = pydantic.Field(
@@ -103,19 +102,19 @@ class Repository(BaseModel):
         title="Show WIP PRs",
         description="If true, WIP PRs will be included in the output, else they are ignored.",
     )
-    filter_labels: List[str] = pydantic.Field(
+    filter_labels: list[str] = pydantic.Field(
         default_factory=list,
         description="If any PR or issue has any label that matches any of these labels, they are excluded. Mutually exclusive with 'include_labels' and 'exclude_labels'.",
     )
-    include_labels: List[str] = pydantic.Field(
+    include_labels: list[str] = pydantic.Field(
         default_factory=list,
         description="If set, only PRs or issues that have all of these labels are included. Mutually exclusive with 'filter_labels'.",
     )
-    exclude_labels: List[str] = pydantic.Field(
+    exclude_labels: list[str] = pydantic.Field(
         default_factory=list,
         description="If any PR or issue has any label that matches any of these labels, they are excluded. Mutually exclusive with 'filter_labels'.",
     )
-    stale_label: Optional[str] = pydantic.Field(
+    stale_label: str | None = pydantic.Field(
         None,
         description="A label to identify stale PRs/issues. If set, stale PRs and issues will be listed separately and split into newly and other stale items.",
     )
@@ -153,7 +152,7 @@ class Repository(BaseModel):
         description="Show review outcome text such as 'reviewed by', comments, and requested changes.",
     )
 
-    needs_discussion_label: Optional[str] = pydantic.Field(
+    needs_discussion_label: str | None = pydantic.Field(
         None,
         title="Label for items to list as 'needs discussion'",
         description="Adds the item to a dedicated group of slides",
@@ -168,12 +167,12 @@ class Repository(BaseModel):
         title="Group PRs by category",
         description="If true, open and merged PR slides are grouped into one section per parsed PR category.",
     )
-    pr_category_colors: Dict[str, str] = pydantic.Field(
+    pr_category_colors: dict[str, str] = pydantic.Field(
         default_factory=lambda: dict(DEFAULT_PR_CATEGORY_COLORS),
         title="PR category colors",
         description="Map from PR category to LaTeX color name used by category pills. The special key 'breaking' controls the color of breaking-change pills.",
     )
-    pr_category_labels: Dict[str, str] = pydantic.Field(
+    pr_category_labels: dict[str, str] = pydantic.Field(
         default_factory=lambda: dict(DEFAULT_PR_CATEGORY_LABELS),
         title="PR category labels",
         description="Map from PR category key to display label shown in pills and grouped section titles (for example feat -> Feature).",
@@ -188,12 +187,12 @@ class Repository(BaseModel):
         title="Repeat breaking changes",
         description="If true, breaking PRs stay in the regular merged/category slides in addition to the breaking changes section. If false, they are listed there only.",
     )
-    pr_category_order: List[str] = pydantic.Field(
+    pr_category_order: list[str] = pydantic.Field(
         default_factory=lambda: list(DEFAULT_PR_CATEGORY_ORDER),
         title="PR category order",
         description="Order of the grouped category sections. Categories that are not listed follow in the default order.",
     )
-    frame_titles: Union[str, Dict[str, str]] = pydantic.Field(
+    frame_titles: str | dict[str, str] = pydantic.Field(
         default_factory=lambda: dict(DEFAULT_FRAME_TITLES),
         title="Frame titles",
         description=(
@@ -228,11 +227,11 @@ class Repository(BaseModel):
         return self
 
     @property
-    def with_labels(self) -> List[str]:
+    def with_labels(self) -> list[str]:
         return self.include_labels
 
     @property
-    def without_labels(self) -> List[str]:
+    def without_labels(self) -> list[str]:
         return self.filter_labels + self.exclude_labels
 
     @property
@@ -241,12 +240,12 @@ class Repository(BaseModel):
 
 
 class Spec(BaseModel):
-    title: Optional[str] = pydantic.Field(
+    title: str | None = pydantic.Field(
         None,
         description="Deck title shown on the title slide. Supports the {release}, {repos}, {since} and {date} placeholders. If omitted, mtng uses the default repository-based title.",
     )
-    footline_left: Optional[str] = pydantic.Field(
+    footline_left: str | None = pydantic.Field(
         None,
         description="Left-side text shown in the footline. Supports the {release}, {repos}, {since} and {date} placeholders. If omitted, mtng is used.",
     )
-    repos: List[Repository]
+    repos: list[Repository]

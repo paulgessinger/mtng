@@ -1,6 +1,7 @@
 from collections import Counter
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import pydantic
 
@@ -23,20 +24,20 @@ class ReleaseStats(pydantic.BaseModel):
     contributors: int = 0
     reviewers: int = 0
 
-    additions: Optional[int] = None
-    deletions: Optional[int] = None
-    changed_files: Optional[int] = None
-    commits: Optional[int] = None
+    additions: int | None = None
+    deletions: int | None = None
+    changed_files: int | None = None
+    commits: int | None = None
 
     # False when at least one PR was missing churn data, i.e. the sums above are
     # lower bounds rather than exact totals.
     churn_complete: bool = True
 
-    first_merged_at: Optional[datetime] = None
-    last_merged_at: Optional[datetime] = None
-    span_days: Optional[int] = None
+    first_merged_at: datetime | None = None
+    last_merged_at: datetime | None = None
+    span_days: int | None = None
 
-    top_labels: List[LabelCount] = pydantic.Field(default_factory=list)
+    top_labels: list[LabelCount] = pydantic.Field(default_factory=list)
 
     @property
     def has_churn(self) -> bool:
@@ -50,7 +51,7 @@ class ReleaseStats(pydantic.BaseModel):
         return self.first_merged_at is not None and self.last_merged_at is not None
 
 
-def _sum_optional(values: Sequence[Optional[int]]) -> Tuple[Optional[int], bool]:
+def _sum_optional(values: Sequence[int | None]) -> tuple[int | None, bool]:
     """Sum ignoring None. Returns (total or None if nothing present, complete)."""
     present = [v for v in values if v is not None]
     total = sum(present) if len(present) > 0 else None

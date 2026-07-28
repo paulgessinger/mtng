@@ -12,8 +12,9 @@ import os
 import sys
 import types
 import typing
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Union
+from typing import Any
 
 import pydantic
 
@@ -45,7 +46,7 @@ def get_input(inputs: Mapping[str, str], input_name: str) -> str:
     return (inputs.get(env_name(input_name)) or "").strip()
 
 
-def split_entries(value: str) -> List[str]:
+def split_entries(value: str) -> list[str]:
     """Split a multi-value input. Entries are separated by newlines, commas, or
     both, which are the two conventions actions typically accept."""
     entries = []
@@ -68,7 +69,7 @@ def parse_bool(value: str, input_name: str) -> bool:
     )
 
 
-def parse_mapping(value: str, input_name: str) -> Dict[str, str]:
+def parse_mapping(value: str, input_name: str) -> dict[str, str]:
     mapping = {}
     for entry in split_entries(value):
         if "=" in entry:
@@ -91,7 +92,9 @@ def parse_mapping(value: str, input_name: str) -> Dict[str, str]:
 
 def unwrap_optional(annotation: Any) -> Any:
     origin = typing.get_origin(annotation)
-    if origin is Union or origin is types.UnionType:
+    # `X | None` yields types.UnionType; typing.Union still shows up for
+    # annotations built through typing constructs (and is the same object on 3.14).
+    if origin is typing.Union or origin is types.UnionType:
         args = [a for a in typing.get_args(annotation) if a is not type(None)]
         if len(args) == 1:
             return args[0]
@@ -112,11 +115,11 @@ def coerce_value(annotation: Any, value: str, input_name: str) -> Any:
 
 
 def collect_fields(
-    inputs: Mapping[str, str], model: type[pydantic.BaseModel], fields: List[str]
-) -> Dict[str, Any]:
+    inputs: Mapping[str, str], model: type[pydantic.BaseModel], fields: list[str]
+) -> dict[str, Any]:
     """Read the subset of `fields` that were actually passed. Empty inputs are
     dropped so the model defaults stay in charge."""
-    data: Dict[str, Any] = {}
+    data: dict[str, Any] = {}
     for field in fields:
         value = get_input(inputs, field)
         if value == "":
@@ -127,7 +130,7 @@ def collect_fields(
     return data
 
 
-def provided_spec_inputs(inputs: Mapping[str, str]) -> List[str]:
+def provided_spec_inputs(inputs: Mapping[str, str]) -> list[str]:
     """Spec-describing inputs that were set, in action (kebab-case) spelling."""
     provided = []
     for field in [REPOSITORY_INPUT] + SPEC_FIELDS + REPOSITORY_FIELDS:
@@ -150,7 +153,7 @@ def build_spec(inputs: Mapping[str, str]) -> Spec:
     repo = {"name": repository}
     repo.update(collect_fields(inputs, Repository, REPOSITORY_FIELDS))
 
-    data: Dict[str, Any] = collect_fields(inputs, Spec, SPEC_FIELDS)
+    data: dict[str, Any] = collect_fields(inputs, Spec, SPEC_FIELDS)
     data["repos"] = [repo]
 
     try:
@@ -182,7 +185,7 @@ def resolve_config(inputs: Mapping[str, str], generated: Path) -> Path:
     return generated
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if len(argv) != 1:
         print("usage: python -m mtng.action <generated-spec-path>", file=sys.stderr)

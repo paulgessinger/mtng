@@ -1,7 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 import re
-from typing import Optional
 from markupsafe import Markup
 from jinja2 import Environment, FileSystemLoader
 
@@ -77,8 +76,8 @@ def build_placeholders(data, since: datetime, now: datetime) -> dict:
 
 
 def expand_placeholders(
-    text: Optional[str], values: dict, escape: bool = False
-) -> Optional[str]:
+    text: str | None, values: dict, escape: bool = False
+) -> str | None:
     """Substitute {keyword} occurrences. Unknown keywords are left untouched, and
     a keyword that expands to nothing takes any dangling separator or empty
     bracket pair with it. With `escape`, the literal text around the
@@ -111,7 +110,7 @@ def make_frame_title(placeholders: dict):
     """Jinja helper resolving a repository's configured title for one kind of
     frame. Values are sanitized here, the configured template around them too."""
 
-    def frame_title(kind: str, repo, category: Optional[str] = None) -> str:
+    def frame_title(kind: str, repo, category: str | None = None) -> str:
         spec = repo["spec"]
         template = spec.frame_titles.get(kind, DEFAULT_FRAME_TITLES[kind])
         values = dict(placeholders)

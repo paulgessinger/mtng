@@ -1,5 +1,5 @@
 import functools
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 from datetime import datetime
 import urllib.parse
 import asyncio
@@ -38,40 +38,40 @@ class User(pydantic.BaseModel):
 class Review(pydantic.BaseModel):
     user: User
     state: Literal["APPROVED", "COMMENTED", "CHANGES_REQUESTED", "DISMISSED", "PENDING"]
-    body: Optional[str] = None
+    body: str | None = None
 
-    submitted_at: Optional[datetime] = None
+    submitted_at: datetime | None = None
 
 
 class IssueBase(pydantic.BaseModel):
     title: str
     user: User
-    labels: List[Label]
+    labels: list[Label]
     html_url: str
     number: int
-    assignee: Optional[User] = None
+    assignee: User | None = None
 
-    body: Optional[str] = None
+    body: str | None = None
     url: str
 
     updated_at: datetime
     created_at: datetime
-    closed_at: Optional[datetime] = None
+    closed_at: datetime | None = None
 
     is_wip: bool = False
     is_stale: bool = False
-    pr_title_display: Optional[str] = None
-    pr_category: Optional[str] = None
-    pr_category_label: Optional[str] = None
+    pr_title_display: str | None = None
+    pr_category: str | None = None
+    pr_category_label: str | None = None
     pr_category_breaking: bool = False
-    pr_category_color: Optional[str] = None
+    pr_category_color: str | None = None
     pr_category_order: int = 999
 
-    draft: Optional[bool] = None
+    draft: bool | None = None
 
 
 class Issue(IssueBase):
-    pull_request: Optional[Any] = None
+    pull_request: Any | None = None
 
     @property
     def is_pr(self) -> bool:
@@ -79,16 +79,16 @@ class Issue(IssueBase):
 
 
 class PullRequest(IssueBase):
-    requested_reviewers: List[User] = pydantic.Field(default_factory=list)
-    reviews: List[Review] = pydantic.Field(default_factory=list)
+    requested_reviewers: list[User] = pydantic.Field(default_factory=list)
+    reviews: list[Review] = pydantic.Field(default_factory=list)
 
     # Only populated by GET /repos/{repo}/pulls/{n}. The /search/issues endpoint
     # never returns these, so anything sourced from a search stays None.
-    additions: Optional[int] = None
-    deletions: Optional[int] = None
-    changed_files: Optional[int] = None
-    commits: Optional[int] = None
-    merged_at: Optional[datetime] = None
+    additions: int | None = None
+    deletions: int | None = None
+    changed_files: int | None = None
+    commits: int | None = None
+    merged_at: datetime | None = None
 
     @property
     def is_pr(self) -> bool:
@@ -171,9 +171,9 @@ async def get_merged_pulls(
     repo_name: str,
     start: datetime,
     end: datetime,
-    with_labels: List[str] = [],
-    without_labels: List[str] = [],
-) -> List[PullRequest]:
+    with_labels: list[str] = [],
+    without_labels: list[str] = [],
+) -> list[PullRequest]:
     url = f"/search/issues?q=repo:{repo_name}+is:pull-request+merged:{start:%Y-%m-%d}..{end:%Y-%m-%d}"
     for label in without_labels:
         url += f'+-label:"{urllib.parse.quote(label)}"'
@@ -203,8 +203,8 @@ async def get_merged_pulls(
 
 
 def extract_release_pull_numbers(
-    release_body: str, repo_name: str, max_results: Optional[int] = None
-) -> List[int]:
+    release_body: str, repo_name: str, max_results: int | None = None
+) -> list[int]:
     url_pattern = re.compile(
         rf"https://github\.com/{re.escape(repo_name)}/pull/(\d+)\b", re.IGNORECASE
     )
@@ -253,9 +253,9 @@ async def get_release_pulls(
     gh: GitHubAPI,
     repo_name: str,
     release_ref: str,
-    with_labels: List[str] = [],
-    without_labels: List[str] = [],
-) -> tuple[str, List[PullRequest]]:
+    with_labels: list[str] = [],
+    without_labels: list[str] = [],
+) -> tuple[str, list[PullRequest]]:
     release_tag = parse_release_tag(release_ref, repo_name)
     release = await getitem(
         gh,
@@ -303,12 +303,12 @@ async def get_release_pulls(
 async def get_open_issues(
     gh: GitHubAPI,
     repo_name: str,
-    with_labels: List[str] = [],
-    without_labels: List[str] = [],
-    start: Optional[datetime] = None,
-    end: Optional[datetime] = None,
+    with_labels: list[str] = [],
+    without_labels: list[str] = [],
+    start: datetime | None = None,
+    end: datetime | None = None,
     type: Literal["pr", "issue", "any"] = "issue",
-) -> List[Issue]:
+) -> list[Issue]:
     def build_url(kind: Literal["issue", "pr"]) -> str:
         mapped_kind = "pull-request" if kind == "pr" else "issue"
         url = f"/search/issues?q=repo:{repo_name}+is:open+is:{mapped_kind}"
@@ -334,7 +334,7 @@ async def get_open_issues(
     ]
     prs = [Issue.model_validate(issue) async for issue in gh.getiter(build_url("pr"))]
     # Keep deterministic ordering and prevent accidental duplicates.
-    merged: Dict[str, Issue] = {issue.url: issue for issue in issues}
+    merged: dict[str, Issue] = {issue.url: issue for issue in issues}
     for pr in prs:
         merged.setdefault(pr.url, pr)
     return list(merged.values())
@@ -345,7 +345,7 @@ async def get_open_pulls(
     gh: GitHubAPI,
     *args: Any,
     **kwargs: Any,
-) -> List[PullRequest]:
+) -> list[PullRequest]:
     with Status("Getting open PR list"):
         items = await get_open_issues(gh, *args, type="pr", **kwargs)
 
@@ -385,7 +385,7 @@ def parse_pr_category(title: str) -> tuple[str, bool]:
     return category, is_breaking
 
 
-def resolve_category_order(order: Optional[List[str]] = None) -> Dict[str, int]:
+def resolve_category_order(order: list[str] | None = None) -> dict[str, int]:
     """Position of every known category: the configured keys first, then any
     default category the configuration left out."""
     if order is None:
@@ -395,13 +395,13 @@ def resolve_category_order(order: Optional[List[str]] = None) -> Dict[str, int]:
     return {name: index for index, name in enumerate(resolved)}
 
 
-def category_order(category: str, order: Optional[List[str]] = None) -> int:
+def category_order(category: str, order: list[str] | None = None) -> int:
     index = resolve_category_order(order)
     return index.get(category, len(index))
 
 
 def resolve_category_color(
-    category: str, is_breaking: bool, category_colors: Dict[str, str]
+    category: str, is_breaking: bool, category_colors: dict[str, str]
 ) -> str:
     if is_breaking:
         return category_colors.get(
@@ -418,7 +418,7 @@ def resolve_category_color(
     )
 
 
-def resolve_category_label(category: str, category_labels: Dict[str, str]) -> str:
+def resolve_category_label(category: str, category_labels: dict[str, str]) -> str:
     return category_labels.get(
         category,
         DEFAULT_PR_CATEGORY_LABELS.get(
@@ -455,8 +455,8 @@ def enrich_item(item: IssueBase, repo: Repository) -> None:
         item.pr_title_display = display_title
 
 
-def group_prs_by_category(items: List[IssueBase]) -> List[Dict[str, Any]]:
-    grouped: Dict[str, Dict[str, Any]] = {}
+def group_prs_by_category(items: list[IssueBase]) -> list[dict[str, Any]]:
+    grouped: dict[str, dict[str, Any]] = {}
     for item in items:
         if not item.is_pr:
             continue
@@ -478,11 +478,11 @@ def group_prs_by_category(items: List[IssueBase]) -> List[Dict[str, Any]]:
 
 
 async def collect_repositories(
-    repos: List[Repository],
+    repos: list[Repository],
     since: datetime,
     now: datetime,
     gh: GitHubAPI,
-    release: Optional[str] = None,
+    release: str | None = None,
 ):
     data = {}
 
