@@ -42,6 +42,41 @@ jobs:
       - name: Run integration tests
         run: uv run --group dev pytest -m integration -n 1
 
+  action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Configured entirely through inputs, the way a project that does not want
+      # to check in a config file would use it.
+      - name: Summarize a period from inputs
+        uses: ./
+        with:
+          repository: acts-project/acts
+          since: 2022-08-01
+          now: 2022-08-17
+          title: ACTS since {since}
+          stale_label: Stale
+          do_recent_issues: "true"
+          group_prs_by_category: "true"
+          output: from-inputs.pdf
+          tex: from-inputs.tex
+      # Same action, driven by a checked-in config file. LaTeX is already
+      # installed by the step above.
+      - name: Summarize a period from a config file
+        uses: ./
+        with:
+          config: tests/acts_spec.yml
+          since: 2022-08-01
+          now: 2022-08-17
+          output: pdf/from-config.pdf
+          install-latex: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: action-pdf
+          path: |
+            from-inputs.pdf
+            pdf/from-config.pdf
+
   generate:
     runs-on: ubuntu-latest
     env:

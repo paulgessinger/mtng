@@ -1,0 +1,330 @@
+name: "mtng summary"
+description: >-
+  Generate a PDF summary of pull requests and issues for a GitHub release or a
+  configurable time period.
+author: "Paul Gessinger"
+branding:
+  icon: file-text
+  color: blue
+
+inputs:
+  # --- what to report on -----------------------------------------------------
+  config:
+    description: >-
+      Path to an mtng config file (TOML, YAML or JSON). Mutually exclusive with
+      the repository/spec inputs below. If unset, a single-repository spec is
+      built from those inputs.
+    required: false
+    default: ""
+  release:
+    description: >-
+      Release tag or release URL to summarize. Merged PRs are read from the
+      release description instead of a date window. Defaults to the tag of the
+      release that triggered the workflow, if any.
+    required: false
+    default: ${{ github.event.release.tag_name }}
+  since:
+    description: >-
+      Start of the reporting window, ISO or human readable ("1 week ago").
+      Required unless `release` is set.
+    required: false
+    default: ""
+  now:
+    description: End of the reporting window, ISO or human readable.
+    required: false
+    default: "now"
+  event:
+    description: Indico event URL to attach as an agenda. Public events only.
+    required: false
+    default: ""
+
+  # --- output ----------------------------------------------------------------
+  output:
+    description: Path of the PDF to write.
+    required: false
+    default: mtng-summary.pdf
+  tex:
+    description: Optional path to also write the generated LaTeX source to.
+    required: false
+    default: ""
+  preamble:
+    description: >-
+      Optional LaTeX preamble file to use instead of the built-in one. Must not
+      be a full document.
+    required: false
+    default: ""
+  upload-artifact:
+    description: Upload the generated PDF as a workflow artifact.
+    required: false
+    default: "false"
+  artifact-name:
+    description: Name of the uploaded artifact.
+    required: false
+    default: mtng-summary
+  artifact-retention-days:
+    description: Retention period of the uploaded artifact, in days.
+    required: false
+    default: ""
+
+  # --- spec inputs (alternative to `config`) ---------------------------------
+  repository:
+    description: Repository to summarize, as `owner/name`. Defaults to the current repository.
+    required: false
+    default: ""
+  title:
+    description: Deck title. Supports the {release}, {repos}, {since} and {date} placeholders.
+    required: false
+    default: ""
+  footline_left:
+    description: Left-hand footline text. Supports the same placeholders as `title`.
+    required: false
+    default: ""
+  display_name:
+    description: Alternative repository name to display.
+    required: false
+    default: ""
+  wip_label:
+    description: Label identifying WIP PRs.
+    required: false
+    default: ""
+  show_wip:
+    description: Include WIP PRs in the output.
+    required: false
+    default: ""
+  stale_label:
+    description: Label identifying stale PRs/issues. Enables the stale slides.
+    required: false
+    default: ""
+  needs_discussion_label:
+    description: Label that moves items onto dedicated "needs discussion" slides.
+    required: false
+    default: ""
+  filter_labels:
+    description: >-
+      Labels to exclude, one per line or comma separated. Mutually exclusive
+      with include_labels/exclude_labels.
+    required: false
+    default: ""
+  include_labels:
+    description: Only include items carrying all of these labels.
+    required: false
+    default: ""
+  exclude_labels:
+    description: Exclude items carrying any of these labels.
+    required: false
+    default: ""
+  do_open_prs:
+    description: Show open PRs.
+    required: false
+    default: ""
+  do_merged_prs:
+    description: Show merged PRs.
+    required: false
+    default: ""
+  do_recent_issues:
+    description: Show issues opened in the reporting window.
+    required: false
+    default: ""
+  do_assignee:
+    description: Show assignees.
+    required: false
+    default: ""
+  no_assignee_attention:
+    description: Draw attention to items without an assignee.
+    required: false
+    default: ""
+  do_reviewers:
+    description: Show reviewers or requested reviewers.
+    required: false
+    default: ""
+  show_review_summary:
+    description: Show review outcome text such as "reviewed by".
+    required: false
+    default: ""
+  show_pr_categories:
+    description: Parse conventional-commit prefixes from PR titles into category pills.
+    required: false
+    default: ""
+  group_prs_by_category:
+    description: Group PR slides into one section per category.
+    required: false
+    default: ""
+  pr_category_labels:
+    description: Category display labels, as `key=value` entries (e.g. `feat=Feature`).
+    required: false
+    default: ""
+  pr_category_colors:
+    description: Category colors, as `key=value` entries (e.g. `feat=LimeGreen`).
+    required: false
+    default: ""
+  pr_category_order:
+    description: Order of the grouped category sections, one key per line or comma separated.
+    required: false
+    default: ""
+  frame_titles:
+    description: >-
+      Frame title overrides, as `key=value` entries (e.g. `merged_prs=Merged in
+      {range}`). Run `mtng schema` for the valid keys.
+    required: false
+    default: ""
+
+  # --- environment -----------------------------------------------------------
+  token:
+    description: GitHub token used for the API queries.
+    required: false
+    default: ${{ github.token }}
+  mtng-version:
+    description: >-
+      Version of mtng to install from PyPI (e.g. `0.8.3`). Defaults to the
+      checked-out source of this action, keeping the tool and the action in step.
+    required: false
+    default: ""
+  install-latex:
+    description: >-
+      Install a LaTeX toolchain with apt. Set to false on runners or containers
+      that already provide `latexmk`.
+    required: false
+    default: "true"
+  emoji:
+    description: >-
+      Render emoji. This adds the LuaTeX toolchain and a color emoji font to the
+      installed LaTeX packages, since emoji only render under lualatex. Set to
+      false for a smaller, faster install.
+    required: false
+    default: "true"
+  latex-packages:
+    description: >-
+      apt packages installed when `install-latex` is true, on top of the ones
+      `emoji` implies.
+    required: false
+    default: texlive-latex-recommended texlive-latex-extra texlive-pictures texlive-fonts-recommended latexmk
+  emoji-packages:
+    description: apt packages installed when `emoji` is true.
+    required: false
+    default: texlive-luatex fonts-noto-color-emoji
+
+outputs:
+  pdf:
+    description: Path of the generated PDF.
+    value: ${{ steps.generate.outputs.pdf }}
+  config:
+    description: Path of the spec file that was used, generated or given.
+    value: ${{ steps.config.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v5
+
+    - name: Install LaTeX
+      if: inputs.install-latex == 'true'
+      shell: bash
+      env:
+        LATEX_PACKAGES: ${{ inputs.latex-packages }}
+        EMOJI_PACKAGES: ${{ inputs.emoji == 'true' && inputs.emoji-packages || '' }}
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        # Unquoted on purpose: the inputs are package lists.
+        sudo apt-get install -y $LATEX_PACKAGES $EMOJI_PACKAGES
+
+    - name: Install mtng
+      id: install
+      shell: bash
+      env:
+        MTNG_VERSION: ${{ inputs.mtng-version }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        venv="${RUNNER_TEMP}/mtng-venv"
+        if [ -n "$MTNG_VERSION" ]; then
+          target="mtng==${MTNG_VERSION}"
+        else
+          target="$ACTION_PATH"
+        fi
+        uv venv --python 3.12 "$venv"
+        uv pip install --python "$venv/bin/python" "$target"
+        echo "python=$venv/bin/python" >> "$GITHUB_OUTPUT"
+        echo "mtng=$venv/bin/mtng" >> "$GITHUB_OUTPUT"
+
+    - name: Resolve configuration
+      id: config
+      shell: bash
+      env:
+        MTNG_INPUT_CONFIG: ${{ inputs.config }}
+        MTNG_INPUT_REPOSITORY: ${{ inputs.repository }}
+        MTNG_INPUT_TITLE: ${{ inputs.title }}
+        MTNG_INPUT_FOOTLINE_LEFT: ${{ inputs.footline_left }}
+        MTNG_INPUT_DISPLAY_NAME: ${{ inputs.display_name }}
+        MTNG_INPUT_WIP_LABEL: ${{ inputs.wip_label }}
+        MTNG_INPUT_SHOW_WIP: ${{ inputs.show_wip }}
+        MTNG_INPUT_STALE_LABEL: ${{ inputs.stale_label }}
+        MTNG_INPUT_NEEDS_DISCUSSION_LABEL: ${{ inputs.needs_discussion_label }}
+        MTNG_INPUT_FILTER_LABELS: ${{ inputs.filter_labels }}
+        MTNG_INPUT_INCLUDE_LABELS: ${{ inputs.include_labels }}
+        MTNG_INPUT_EXCLUDE_LABELS: ${{ inputs.exclude_labels }}
+        MTNG_INPUT_DO_OPEN_PRS: ${{ inputs.do_open_prs }}
+        MTNG_INPUT_DO_MERGED_PRS: ${{ inputs.do_merged_prs }}
+        MTNG_INPUT_DO_RECENT_ISSUES: ${{ inputs.do_recent_issues }}
+        MTNG_INPUT_DO_ASSIGNEE: ${{ inputs.do_assignee }}
+        MTNG_INPUT_NO_ASSIGNEE_ATTENTION: ${{ inputs.no_assignee_attention }}
+        MTNG_INPUT_DO_REVIEWERS: ${{ inputs.do_reviewers }}
+        MTNG_INPUT_SHOW_REVIEW_SUMMARY: ${{ inputs.show_review_summary }}
+        MTNG_INPUT_SHOW_PR_CATEGORIES: ${{ inputs.show_pr_categories }}
+        MTNG_INPUT_GROUP_PRS_BY_CATEGORY: ${{ inputs.group_prs_by_category }}
+        MTNG_INPUT_PR_CATEGORY_LABELS: ${{ inputs.pr_category_labels }}
+        MTNG_INPUT_PR_CATEGORY_COLORS: ${{ inputs.pr_category_colors }}
+        MTNG_INPUT_PR_CATEGORY_ORDER: ${{ inputs.pr_category_order }}
+        MTNG_INPUT_FRAME_TITLES: ${{ inputs.frame_titles }}
+        PYTHON: ${{ steps.install.outputs.python }}
+      run: |
+        set -euo pipefail
+        path="$("$PYTHON" -m mtng.action "${RUNNER_TEMP}/mtng-spec.json")"
+        echo "path=$path" >> "$GITHUB_OUTPUT"
+
+    - name: Generate summary
+      id: generate
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        CONFIG: ${{ steps.config.outputs.path }}
+        RELEASE: ${{ inputs.release }}
+        SINCE: ${{ inputs.since }}
+        NOW: ${{ inputs.now }}
+        EVENT: ${{ inputs.event }}
+        OUTPUT: ${{ inputs.output }}
+        TEX: ${{ inputs.tex }}
+        PREAMBLE: ${{ inputs.preamble }}
+        MTNG: ${{ steps.install.outputs.mtng }}
+      run: |
+        set -euo pipefail
+        # Without this, mtng falls through to the system keychain, which on a
+        # runner fails with an error that says nothing about the action input.
+        if [ -z "${GH_TOKEN:-}" ]; then
+          echo "::error::No GitHub token available. The 'token' input defaults to github.token; set it explicitly to query another repository."
+          exit 1
+        fi
+        if [ -z "$RELEASE" ] && [ -z "$SINCE" ]; then
+          echo "::error::Set either the 'release' input or the 'since' input to select what to report on."
+          exit 1
+        fi
+
+        args=(generate "$CONFIG" --pdf "$OUTPUT")
+        if [ -n "$RELEASE" ]; then args+=(--release "$RELEASE"); fi
+        if [ -n "$SINCE" ]; then args+=(--since "$SINCE"); fi
+        if [ -n "$NOW" ]; then args+=(--now "$NOW"); fi
+        if [ -n "$EVENT" ]; then args+=(--event "$EVENT"); fi
+        if [ -n "$TEX" ]; then args+=(--tex "$TEX"); fi
+        if [ -n "$PREAMBLE" ]; then args+=(--preamble "$PREAMBLE"); fi
+
+        mkdir -p "$(dirname "$OUTPUT")"
+        "$MTNG" "${args[@]}"
+        echo "pdf=$OUTPUT" >> "$GITHUB_OUTPUT"
+
+    - name: Upload summary
+      if: inputs.upload-artifact == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ steps.generate.outputs.pdf }}
+        retention-days: ${{ inputs.artifact-retention-days }}

@@ -16,7 +16,7 @@ import keyring
 from gidgethub.aiohttp import GitHubAPI
 import gidgethub
 import aiohttp
-import dateutil.parser
+import dateparser
 import yaml
 from keyring.errors import KeyringError
 import tomllib
@@ -70,6 +70,9 @@ def load_spec(config: typer.FileText) -> Spec:
 
     if suffix == ".toml":
         return Spec.model_validate(tomllib.loads(content))
+
+    if suffix == ".json":
+        return Spec.model_validate(json.loads(content))
 
     return Spec.model_validate(yaml.safe_load(content))
 
@@ -166,6 +169,27 @@ def format_github_request_error(e: Exception) -> str:
     return f"{status_code} {detail}"
 
 
+def parse_datetime_option(
+    value: Optional[str], param_hint: str
+) -> Optional[datetime.datetime]:
+    if value is None:
+        return None
+
+    parsed = dateparser.parse(value)
+    if parsed is None:
+        raise typer.BadParameter(
+            f"Could not parse date/time value for {param_hint}: {value!r}. Use an ISO timestamp/date or a human-readable value like '1 week ago'.",
+            param_hint=param_hint,
+        )
+    return parsed
+
+
+def normalize_local_datetime(dt: datetime.datetime) -> datetime.datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=tzlocal())
+    return dt.astimezone(tzlocal())
+
+
 async def collect(gh: GitHubAPI, repo: str, dt: datetime.datetime):
     merged_prs = [
         gh.getitem(f"/repos/{repo}/pulls/{issue['number']}")
@@ -238,13 +262,13 @@ async def generate(
         help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
         show_default=False,
     ),
-    since: Optional[datetime.datetime] = typer.Option(
+    since: Optional[str] = typer.Option(
         None,
-        help="Start window for queries. Required unless --release is used.",
+        help="Start window for queries. Required unless --release is used. Accepts ISO and human-readable values like '1 week ago'.",
     ),
-    now: datetime.datetime = typer.Option(
-        datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        help="End window for queries",
+    now: str = typer.Option(
+        "now",
+        help="End window for queries. Accepts ISO and human-readable values like 'now' or 'next monday'.",
     ),
     event: Optional[str] = typer.Option(
         None,
@@ -283,7 +307,7 @@ async def generate(
         )
 
     token = resolve_github_token(token)
-    now = now.replace(tzinfo=tzlocal())
+    now = normalize_local_datetime(parse_datetime_option(now, "--now"))
     if since is None:
         if release is None:
             raise typer.BadParameter(
@@ -292,7 +316,7 @@ async def generate(
             )
         since = now
     else:
-        since = since.replace(tzinfo=tzlocal())
+        since = normalize_local_datetime(parse_datetime_option(since, "--since"))
 
     if pdf is not None and preamble is None:
         full_tex = True
@@ -459,12 +483,14 @@ def status(
 def preamble():
     out = env.loader.get_source(env, "preamble.tex")[0]
 
-    print(out)
+    # typer.echo, not rich's print: this output is meant to be redirected into a
+    # file, and rich would consume '[...]' as style markup and wrap long lines.
+    typer.echo(out)
 
 
 @cli.command(help="Print the configuration schema")
 def schema():
-    print(json.dumps(Spec.model_json_schema(), indent=2))
+    typer.echo(json.dumps(Spec.model_json_schema(), indent=2))
 
 
 cli.add_typer(auth_cli, name="auth")

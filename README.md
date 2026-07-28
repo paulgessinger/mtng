@@ -47,12 +47,12 @@ Arguments:
 Options:
   --token TEXT                    Github API token. Falls back to GH_TOKEN or
                                   a token stored via `mtng auth login`.
-  --since [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]
-                                  Start window for queries. Required unless
-                                  --release is used.
-  --now [%Y-%m-%d|%Y-%m-%dT%H:%M:%S|%Y-%m-%d %H:%M:%S]
-                                  End window for queries  [default:
-                                  2022-08-17T21:24:07]
+  --since TEXT                    Start window for queries. Required unless
+                                  --release is used. Accepts ISO and human-
+                                  readable values like "1 week ago".
+  --now TEXT                      End window for queries. Accepts ISO and
+                                  human-readable values like "now" or "next
+                                  monday".  [default: now]
   --event TEXT                    Optionally attach an Indico based agenda
                                   overview. This only works with public
                                   events!
@@ -70,7 +70,7 @@ Options:
 
 ## Configuration
 
-`mtng` consumes a configuration file to specify which GitHub repositories to ingest. YAML (`.yml` / `.yaml`) and TOML (`.toml`) are both supported.
+`mtng` consumes a configuration file to specify which GitHub repositories to ingest. YAML (`.yml` / `.yaml`), TOML (`.toml`) and JSON (`.json`) are all supported.
 
 An example YAML configuration could look like this:
 
@@ -306,3 +306,128 @@ $ mtng generate spec.yml --since 2024-01-01 --preamble mypreamble.tex --pdf note
 ```
 
 If `--preamble` points to a full `.tex` deck file (contains `\documentclass` or `\begin{document}`), `mtng` fails with an explicit error; pass a preamble-only file instead.
+
+## GitHub Action
+
+This repository is also a reusable action that generates the PDF summary for the project it
+runs in, either for a release or for a time period. It installs a LaTeX toolchain, installs
+`mtng`, and runs `mtng generate --pdf`.
+
+Summarize every release, as it is published:
+
+```yml
+name: Release summary
+on:
+  release:
+    types: [published]
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: paulgessinger/mtng@v0.8.3
+        with:
+          title: "{repos} {release}"
+          group_prs_by_category: "true"
+          upload-artifact: "true"
+```
+
+The `release` input defaults to the tag of the release that triggered the workflow, and
+`repository` defaults to the repository the action runs in, so the above needs no further
+configuration. Merged PRs are then read from the release description.
+
+Summarize a period instead, for example as a weekly report:
+
+```yml
+on:
+  schedule:
+    - cron: "0 7 * * MON"
+
+jobs:
+  summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: paulgessinger/mtng@v0.8.3
+        with:
+          since: 1 week ago
+          stale_label: Stale
+          do_recent_issues: "true"
+          output: reports/weekly.pdf
+          upload-artifact: "true"
+```
+
+Either `release` or `since` must be set. `since` and `now` accept the same ISO and
+human-readable values as the CLI.
+
+### Configuration
+
+The action takes its configuration in one of two ways, and refuses to mix them:
+
+- **Inline**, through the inputs named after the [config schema](#schema) fields
+  (`stale_label`, `wip_label`, `group_prs_by_category`, ...), which describe a single
+  repository. This is what the examples above use.
+- **From a file**, through the `config` input, which points at a checked-in TOML, YAML or
+  JSON config. Use this to report on several repositories, or to share the config with local
+  `mtng` runs:
+
+  ```yml
+  - uses: actions/checkout@v4
+  - uses: paulgessinger/mtng@v0.8.3
+    with:
+      config: .github/mtng.toml
+      since: 1 week ago
+  ```
+
+  The config file is read from the workspace, so the workflow has to check the repository out
+  first.
+
+  Combining `config` with any of the inline spec inputs is an error, so a config file is never
+  silently half-overridden.
+
+List-valued inputs (`filter_labels`, `pr_category_order`, ...) take one entry per line or a
+comma-separated list; map-valued inputs (`pr_category_labels`, `pr_category_colors`,
+`frame_titles`) take `key=value` entries in the same shape:
+
+```yml
+with:
+  filter_labels: |
+    backport
+    Stale
+  pr_category_labels: feat=Feature, fix=Bugfix
+```
+
+### Action inputs
+
+Besides the spec fields, the action accepts:
+
+| Input | Default | Description |
+| --- | --- | --- |
+| `config` | | Path to a config file. Mutually exclusive with the spec inputs. |
+| `repository` | current repository | Repository to summarize, as `owner/name`. |
+| `release` | tag of the triggering release | Release tag or URL to summarize. |
+| `since` / `now` | / `now` | Reporting window. `since` is required unless `release` is set. |
+| `event` | | Indico event URL to attach as an agenda. |
+| `output` | `mtng-summary.pdf` | Path of the PDF to write. |
+| `tex` | | Optional path to also write the LaTeX source to. |
+| `preamble` | | LaTeX preamble file to use instead of the built-in one. |
+| `upload-artifact` | `false` | Upload the PDF as a workflow artifact. |
+| `artifact-name` | `mtng-summary` | Name of that artifact. |
+| `artifact-retention-days` | | Retention period of that artifact. |
+| `token` | `github.token` | Token used for the GitHub API queries. |
+| `mtng-version` | | Version to install from PyPI. Defaults to the source of the action ref itself. |
+| `install-latex` | `true` | Install a LaTeX toolchain with apt. Set to `false` if the runner or container already has `latexmk`. |
+| `emoji` | `true` | Also install the LuaTeX toolchain and a color emoji font, so emoji render. |
+| `latex-packages` | base toolchain | apt packages to install for LaTeX. |
+| `emoji-packages` | `texlive-luatex fonts-noto-color-emoji` | apt packages added when `emoji` is true. |
+
+Outputs are `pdf` (the path of the generated PDF) and `config` (the path of the spec that was
+used, generated or given).
+
+Emoji only render under `lualatex`, which is why `emoji` pulls in an extra toolchain. Turning it
+off gives a smaller, faster pdflatex-only install; the deck then compiles with the emoji left
+out, which is also what happens on any TeX installation without an emoji font:
+
+```yml
+with:
+  emoji: "false"
+```
