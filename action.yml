@@ -149,6 +149,14 @@ inputs:
     description: Group PR slides into one section per category.
     required: false
     default: ""
+  show_breaking_changes:
+    description: Give merged breaking PRs (a `!` in the prefix) their own leading section.
+    required: false
+    default: ""
+  repeat_breaking_changes:
+    description: Also keep breaking PRs in the regular merged/category slides.
+    required: false
+    default: ""
   pr_category_labels:
     description: Category display labels, as `key=value` entries (e.g. `feat=Feature`).
     required: false
@@ -272,6 +280,8 @@ runs:
         MTNG_INPUT_SHOW_REVIEW_SUMMARY: ${{ inputs.show_review_summary }}
         MTNG_INPUT_SHOW_PR_CATEGORIES: ${{ inputs.show_pr_categories }}
         MTNG_INPUT_GROUP_PRS_BY_CATEGORY: ${{ inputs.group_prs_by_category }}
+        MTNG_INPUT_SHOW_BREAKING_CHANGES: ${{ inputs.show_breaking_changes }}
+        MTNG_INPUT_REPEAT_BREAKING_CHANGES: ${{ inputs.repeat_breaking_changes }}
         MTNG_INPUT_PR_CATEGORY_LABELS: ${{ inputs.pr_category_labels }}
         MTNG_INPUT_PR_CATEGORY_COLORS: ${{ inputs.pr_category_colors }}
         MTNG_INPUT_PR_CATEGORY_ORDER: ${{ inputs.pr_category_order }}

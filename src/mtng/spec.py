@@ -56,6 +56,7 @@ DEFAULT_PR_CATEGORY_EMOJI = {
 # {category}, {range}, {since} and {date} placeholders; a placeholder that
 # expands to nothing takes its separator (or its empty parentheses) with it.
 DEFAULT_FRAME_TITLES = {
+    "breaking_changes": "{repo}: Breaking changes",
     "merged_prs": "{repo}: PRs merged {range} ({category})",
     "release_prs": "{repo}: PRs in release {release} ({category})",
     "open_prs": "{repo}: Open PRs ({category})",
@@ -176,6 +177,16 @@ class Repository(BaseModel):
         default_factory=lambda: dict(DEFAULT_PR_CATEGORY_LABELS),
         title="PR category labels",
         description="Map from PR category key to display label shown in pills and grouped section titles (for example feat -> Feature).",
+    )
+    show_breaking_changes: bool = pydantic.Field(
+        True,
+        title="Show breaking changes",
+        description="If true, merged PRs marked breaking (a '!' in the conventional-commit prefix) also get their own leading section. The section is skipped when there are none.",
+    )
+    repeat_breaking_changes: bool = pydantic.Field(
+        True,
+        title="Repeat breaking changes",
+        description="If true, breaking PRs stay in the regular merged/category slides in addition to the breaking changes section. If false, they are listed there only.",
     )
     pr_category_order: List[str] = pydantic.Field(
         default_factory=lambda: list(DEFAULT_PR_CATEGORY_ORDER),

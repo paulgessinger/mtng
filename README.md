@@ -120,6 +120,8 @@ repos:
   - **`group_prs_by_category`** *(boolean)*: Group open and merged PR slides into one section per category. Default: `False`. Section pages are titled with the category alone (`Feature`, `Bugfix`, ...); the `fix` category also carries a 🐛.
   - **`pr_category_labels`** *(object)*: Override display names for category keys used in pills and grouped sections (for example, `feat: Feature`).
   - **`pr_category_colors`** *(object)*: Override LaTeX color names for category pills. Supports keys like `feat`, `fix`, `docs`, `other`, and `breaking`.
+  - **`show_breaking_changes`** *(boolean)*: Give merged breaking PRs their own leading section. Default: `True`. See [breaking changes](#breaking-changes).
+  - **`repeat_breaking_changes`** *(boolean)*: Keep breaking PRs in the regular merged/category slides as well. Default: `True`.
   - **`pr_category_order`** *(array)*: Order of the grouped category sections. Categories that are not listed follow in the default order.
     - **Items** *(string)*
   - **`frame_titles`** *(string or object)*: Override the title of a kind of frame, either as one string used for every frame or as a map. See [frame titles](#frame-titles).
@@ -183,6 +185,25 @@ default order:
 pr_category_order: [fix, feat]
 ```
 
+### Breaking changes
+
+A `!` in the prefix (`feat!:`, `fix(core)!:`) marks a PR as breaking. Merged breaking PRs are
+pulled out of the categories into a ⚠️ section of their own, ahead of the category sections,
+so they lead the deck. The section is skipped when nothing broke, and only covers merged
+(or, with `--release`, released) PRs — open breaking work keeps its red pill where it is.
+
+Two switches control it, per repository:
+
+```yml
+show_breaking_changes: true      # the section itself; default true
+repeat_breaking_changes: false   # list them ONLY there, not under their category
+```
+
+With `repeat_breaking_changes` left at its default, a breaking PR appears twice: once in the
+breaking section and once under its own category. Set it to `false` to move them out of the
+category slides entirely. Its frame title is the `breaking_changes` key in
+[`frame_titles`](#frame-titles).
+
 ### Placeholders
 
 `title` and `footline_left` are expanded before rendering, so the release the deck was
@@ -232,6 +253,7 @@ repos:
 
 | Key | Default |
 | --- | --- |
+| `breaking_changes` | `{repo}: Breaking changes` |
 | `merged_prs` | `{repo}: PRs merged {range} ({category})` |
 | `release_prs` | `{repo}: PRs in release {release} ({category})` |
 | `open_prs` | `{repo}: Open PRs ({category})` |

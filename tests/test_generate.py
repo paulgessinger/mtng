@@ -697,6 +697,90 @@ def _merged_pr(title: str, repo_spec: Repository, number: int = 1) -> PullReques
     return pr
 
 
+def test_breaking_changes_section():
+    repo_spec = Repository(name="acts-project/acts", group_prs_by_category=True)
+    prs = [
+        _merged_pr("feat!: break the API", repo_spec, number=1),
+        _merged_pr("feat: add a thing", repo_spec, number=2),
+    ]
+
+    output = _render(repo_spec, _repo_data(repo_spec, prs))
+
+    assert "\\section{ \\protect\\cusemoji{warning}{} Breaking changes}" in output
+    assert "{\\reponame{}: Breaking changes}" in output
+    # Repeated by default, so the breaking PR is on its category slide as well.
+    assert output.count("break the API") == 2
+
+
+def test_breaking_changes_not_repeated():
+    repo_spec = Repository(
+        name="acts-project/acts",
+        group_prs_by_category=True,
+        repeat_breaking_changes=False,
+    )
+    prs = [
+        _merged_pr("feat!: break the API", repo_spec, number=1),
+        _merged_pr("feat: add a thing", repo_spec, number=2),
+    ]
+    data = _repo_data(repo_spec, prs)
+
+    output = _render(repo_spec, data)
+
+    assert output.count("break the API") == 1
+    assert "add a thing" in output
+
+
+def test_breaking_changes_can_be_disabled():
+    repo_spec = Repository(
+        name="acts-project/acts",
+        group_prs_by_category=True,
+        show_breaking_changes=False,
+    )
+    prs = [_merged_pr("feat!: break the API", repo_spec, number=1)]
+
+    output = _render(repo_spec, _repo_data(repo_spec, prs))
+
+    assert "Breaking changes" not in output
+    assert output.count("break the API") == 1
+
+
+def test_breaking_changes_section_skipped_when_empty():
+    repo_spec = Repository(name="acts-project/acts")
+    prs = [_merged_pr("feat: add a thing", repo_spec, number=1)]
+
+    output = _render(repo_spec, _repo_data(repo_spec, prs))
+
+    assert "Breaking changes" not in output
+
+
+@pytest.mark.asyncio
+async def test_collect_splits_breaking_prs(monkeypatch):
+    repo = Repository(
+        name="acts-project/acts",
+        do_open_prs=False,
+        repeat_breaking_changes=False,
+    )
+    breaking = _merged_pr("feat!: break the API", repo, number=1)
+    normal = _merged_pr("feat: add a thing", repo, number=2)
+
+    async def fake_merged(*args, **kwargs):
+        return [breaking, normal]
+
+    monkeypatch.setattr("mtng.collect.get_merged_pulls", fake_merged)
+
+    result = await mtng.collect.collect_repositories(
+        [repo],
+        since=datetime(2022, 8, 1, tzinfo=tzlocal()),
+        now=datetime(2022, 8, 11, tzinfo=tzlocal()),
+        gh=Mock(),
+    )
+
+    data = result["acts-project/acts"]
+    assert data["breaking_prs"] == [breaking]
+    assert data["merged_prs_listed"] == [normal]
+    assert data["merged_prs"] == [breaking, normal]
+
+
 def test_default_category_order():
     repo_spec = Repository(name="acts-project/acts")
     prs = [
@@ -733,16 +817,24 @@ def test_configured_category_order():
 
 
 def _repo_data(repo_spec: Repository, prs, release_tag=None):
+    breaking = [pr for pr in prs if pr.pr_category_breaking]
+    listed = (
+        prs
+        if repo_spec.repeat_breaking_changes or not repo_spec.show_breaking_changes
+        else [pr for pr in prs if not pr.pr_category_breaking]
+    )
     return {
         repo_spec.name: {
             "merged_prs": prs,
+            "merged_prs_listed": listed,
+            "breaking_prs": breaking,
             "open_prs": [],
             "stale": [],
             "recent_issues": [],
             "needs_discussion": [],
             "release_tag": release_tag,
             "release_stats": None,
-            "merged_prs_by_category": mtng.collect.group_prs_by_category(prs),
+            "merged_prs_by_category": mtng.collect.group_prs_by_category(listed),
             "open_prs_by_category": [],
             "spec": repo_spec,
         }

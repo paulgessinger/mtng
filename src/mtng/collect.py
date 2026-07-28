@@ -491,6 +491,8 @@ async def collect_repositories(
         key = repo.display_name or repo.name
         data[key] = {}
         data[key]["merged_prs"] = []
+        data[key]["merged_prs_listed"] = []
+        data[key]["breaking_prs"] = []
         data[key]["open_prs"] = []
         data[key]["stale"] = []
         data[key]["recent_issues"] = []
@@ -530,9 +532,19 @@ async def collect_repositories(
             )
             for pr in data[key]["merged_prs"]:
                 enrich_item(pr, repo)
-            data[key]["merged_prs_by_category"] = group_prs_by_category(
-                data[key]["merged_prs"]
+
+            data[key]["breaking_prs"] = [
+                pr for pr in merged_prs if pr.pr_category_breaking
+            ]
+            # Without repeat_breaking_changes, a breaking PR is only listed on
+            # its own slide, not again under its category.
+            listed = (
+                merged_prs
+                if repo.repeat_breaking_changes or not repo.show_breaking_changes
+                else [pr for pr in merged_prs if not pr.pr_category_breaking]
             )
+            data[key]["merged_prs_listed"] = listed
+            data[key]["merged_prs_by_category"] = group_prs_by_category(listed)
 
         if release is not None:
             # In release mode we intentionally only show PRs that landed in the
