@@ -1,10 +1,10 @@
 [build-system]
-requires = ["uv_build>=0.11.29,<0.12"]
-build-backend = "uv_build"
+requires = ["hatchling", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
 
 [project]
 name = "mtng"
-version = "0.8.3"
+dynamic = ["version"]
 description = ""
 authors = [
     { name = "Paul Gessinger", email = "hello@paulgessinger.com" }
@@ -47,3 +47,13 @@ dev = [
 markers = [
     "integration: tests that call external services",
 ]
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mtng"]
+
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "pep440"
