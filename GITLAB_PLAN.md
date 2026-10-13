@@ -1,130 +1,86 @@
-# Plan: GitLab support
+# GitLab support and report boundaries
 
-Goal: let `mtng` collect merge requests and issues from GitLab (gitlab.com and
-self-hosted instances such as gitlab.cern.ch) as well as GitHub, with the same
-slides.
+## Direction
 
-## Phase 1 — Forge abstraction (done, uncommitted)
+GitLab is the primary expansion target, including CERN and other self-hosted
+instances. Keep a small `Forge` protocol and shared rendering models, without
+introducing a plugin framework. Existing GitHub configurations and output remain
+compatible. GitHub-shaped model names are retained to avoid unrelated churn.
 
-The GitHub fetch code now sits behind a `Forge` protocol. There is no change in
-behaviour: the snapshot test passes byte-for-byte and the live tests pass.
+## Implemented on `generic`
 
-- `models.py`: forge-neutral pydantic models (`Issue`, `PullRequest`, `Review`,
-  `User`, `Label`). Templates and `stats.py` read only these, so a new backend
-  just has to fill them.
-- `forge/base.py`: the `Forge` protocol (`merged_prs`, `release_prs`,
-  `open_prs`, `open_issues(include_prs=)`), plus `memoize` and
-  `bounded_gather`. Cache keys use the instance's `cache_id` instead of
-  pickling the client. `CACHE_VERSION` is now 4.
-- `forge/github.py`: `GitHubForge`, plus the GitHub release-tag and URL
-  parsing.
-- `collect.py`: orchestration and enrichment only. `collect_repositories(...,
-  forge=...)`.
-- `tests/fake_forge.py`: answers calls by what they ask for, not by call order.
+- `models.py` defines normalized issues, PRs/MRs, users, labels and reviews.
+  `forge/github.py` and `forge/gitlab.py` translate API payloads. Collection and
+  rendering do not inspect backend-specific payloads.
+- `Repository` keeps `name` and adds `forge` (default `github`) and optional
+  `host` (default host per backend). GitLab paths can contain nested groups.
+  HTTPS hosts are normalized; URL subpaths and GitHub Enterprise are rejected.
+- Collection accepts a mapping of `(forge, host)` to backend instances. Duplicate
+  display keys fail early with instructions to set distinct `display_name`s.
+- GitLab credentials use host-specific keychain entries. Existing `github-token`
+  entries still work. `--token` requires one backend/host; `GITLAB_TOKEN` requires
+  one GitLab host. Mixed GitHub/GitLab reports resolve tokens independently.
+- `auth login`, `check` and `status` support `--host`. GitLab validates through
+  `/api/v4/user`. Redirects are disabled on authenticated GitLab requests.
+- GitLab transport preserves encoded project/tag paths, paginates, sets a timeout
+  and retries rate-limit/502/503/504 responses up to three total attempts.
+- Cache keys include backend, origin and a credential digest, never raw tokens.
+  Cache version 5 accounts for the new review-availability field. GitHub review
+  fetching now follows pagination instead of returning only its first page.
+- GitLab supports merged/open MRs, open issues, label filters and release
+  descriptions containing local `!123` references or full MR URLs. Release
+  collection resolves data only; it does not select report sections or layout.
+- GitLab reports use MR terminology and `!` references, preserving custom title
+  overrides. The GitHub Action remains GitHub-only and rejects GitLab configs
+  before forwarding its GitHub token.
 
-Still GitHub-specific: token resolution, validation and keyring in `cli.py`
-(handled in Phase 3).
+## Deliberate semantics and limits
 
-## Phase 2 — Configuration
+- GitLab uses `updated_after` to obtain merge candidates, then filters inclusively
+  on `merged_at`. It must not use `updated_before=end`, which loses MRs updated
+  after the reporting window. GitHub retains existing calendar-date searches;
+  harmonizing time-window semantics is a separate compatibility decision.
+- Label filtering is local for GitLab to preserve exact names, including commas
+  and reserved API values, and all-required include/any-match exclude semantics.
+- GitLab reviews include approvals and assigned reviewers. REST reviewer `state`
+  is account state, not a review decision. Missing approvals endpoints (404/405)
+  produce unavailable review data; other failures remain errors. Reviewer totals
+  are unknown if any MR's review data is unavailable.
+- GitLab additions/deletions/file/commit counts remain `None`; fetching paginated
+  diffs and commits is deferred. Existing single-assignee models display the
+  first GitLab assignee when several are assigned.
+- Tests use synthetic documented payloads, isolated caches, mixed-backend
+  collection/auth checks, and a GitLab LaTeX snapshot. Live GitLab testing is
+  opt-in through `GITLAB_TOKEN`, `MTNG_GITLAB_TEST_PROJECT`, and optional
+  `MTNG_GITLAB_TEST_HOST`. Actual CERN deployment compatibility requires that
+  smoke test; no minimum GitLab server version is claimed yet.
 
-- Add the forge to `Repository` in `spec.py`, e.g. `forge: "github" | "gitlab"`
-  and `host: str | None` (default `github.com` / `gitlab.com`). Alternative: a
-  single `url` field (`https://gitlab.cern.ch/group/sub/project`) that both are
-  derived from. Decide which one before implementing.
-- `extra="forbid"` applies, so update the schema, `mtng schema` output and the
-  README together.
-- GitLab project paths can be nested (`group/subgroup/project`). Don't assume
-  `owner/repo` anywhere, including in release URL parsing.
-- `action.py` stays GitHub-only.
+## Follow-up: report modes and presentation
 
-## Phase 3 — Auth
+Keep the boundary explicit during the follow-up:
 
-- Tokens are per host. Resolution order per forge: `--token` (only
-  unambiguous when every repo in the spec uses the same host), then an env var
-  (`GH_TOKEN`, `GITLAB_TOKEN`), then the keyring entry keyed by host.
-- `mtng auth login --host gitlab.cern.ch`. The existing keyring username
-  `github-token` must keep working.
-- Validation: GitLab sends the token as `PRIVATE-TOKEN` and checks it against
-  `GET /api/v4/user`. A personal access token with the `read_api` scope is
-  enough.
-- Move validation onto the forge (`current_user()`) so `cli.py` doesn't branch
-  on the forge type.
-- `generate` builds one forge per `(forge, host)` and passes it per repo, so
-  `collect_repositories` takes a forge lookup instead of a single forge.
+1. A forge resolves releases and returns normalized data plus availability
+   information. It never decides which slides a report contains.
+2. A report mode determines required data, grouping, section selection and
+   defaults. Existing date-window and release behavior remain until this layer
+   is redesigned deliberately.
+3. Templates render the resulting report. Improve layouts after the intended
+   modes and their defaults are agreed.
 
-## Phase 4 — `GitLabForge`
+Start the modes work by defining the purposes of meeting/date-window and release
+reports, their required sections, and how explicit configuration overrides mode
+presets. Do not add more interacting mode flags to the forge interface. Consider
+whether review enrichment should be requested only when a report needs it.
 
-Client: [gidgetlab](https://gitlab.com/beenje/gidgetlab) (async, mirrors
-gidgethub's `getitem`/`getiter`), or plain aiohttp if it turns out to be
-unmaintained. Project paths are URL-encoded as the project id
-(`group%2Fproject`). `cache_id = f"gitlab:{host}"`.
+Other possible follow-ups: full diff statistics, comment/change-request review
+history, and broader self-hosted version coverage.
 
-| Method | Endpoint | Notes |
-|---|---|---|
-| `merged_prs` | `GET /projects/:id/merge_requests?state=merged&updated_after=&updated_before=` | No server-side filter on merge date: fetch by update time, then filter on `merged_at` in Python. |
-| `open_prs` | `…/merge_requests?state=opened` | `draft` exists, so the WIP logic is unchanged. |
-| `open_issues` | `GET /projects/:id/issues?state=opened&created_after=&created_before=` | `include_prs` means merging in open MRs, as GitHub does. |
-| `release_prs` | `GET /projects/:id/releases/:tag` | Parse `!123` and `…/-/merge_requests/123` from `description`, then fetch each MR. |
-| labels | `labels=a,b` / `not[labels]=a,b` | Server-side on all list endpoints. |
+## API references
 
-Mapping to the models:
-
-- `number` ← `iid` (not `id`). `html_url` ← `web_url`. `user` ← `author`
-  (`username`, `web_url`). `body` ← `description`. `labels` arrive as strings
-  and need wrapping in `Label`.
-- `url` must be unique per item, because `open_issues` dedupes on it. Use the
-  API URL of the MR/issue.
-- `Issue.pull_request` is how `is_pr` works. Set it for MRs merged into issue
-  lists.
-
-### Lossy parts
-
-- **Reviews.** GitLab has no review objects with
-  APPROVED/COMMENTED/CHANGES_REQUESTED. Combine
-  `GET …/merge_requests/:iid/approvals` (`approved_by` → `APPROVED`) and the MR
-  `reviewers` state (`requested_changes` → `CHANGES_REQUESTED`; only on recent
-  GitLab versions). There's no equivalent for "comment by". Either drop it, or
-  approximate it from non-system notes (an extra request per MR). Start by
-  dropping it.
-- **Release stats.** The MR payload has `changes_count` but no
-  additions/deletions. Line counts need `…/diffs` per MR (paginated and slow),
-  and commit counts need `…/commits`. Start with those fields as `None`: the
-  bento tiles already handle missing values. Make the full counts opt-in later
-  if they're wanted.
-
-## Phase 5 — Templates
-
-- Show `!` instead of `#` for MRs (`\prstr` in `macros.tex`), based on the
-  forge. That means exposing the forge kind in the repo data dict or on the
-  spec.
-- Optionally use "MR" instead of "PR" in the default frame titles for GitLab
-  repos (`DEFAULT_FRAME_TITLES`). Only do this if it doesn't complicate the
-  title overrides.
-
-## Phase 6 — Tests
-
-- JSON fixtures from a real GitLab project in `tests/ref/gitlab/`, and unit
-  tests for the payload → model mapping, especially reviews and `merged_at`
-  filtering.
-- A snapshot test rendering a GitLab repo through `FakeForge`, to pin the `!`
-  prefix.
-- Live tests gated on `GITLAB_TOKEN`, like the existing `GH_TOKEN` ones.
-- A spec with a GitHub repo and a GitLab repo side by side, to check per-repo
-  forge selection and auth.
-
-## Order and effort
-
-1. Commit Phase 1 on its own.
-2. Phases 2 + 3 together (config and auth have to agree on host handling):
-   about half a day.
-3. Phase 4 with the lossy parts stubbed, plus Phase 6 fixtures: about a day.
-4. Phase 5: an hour or two.
-5. Optional follow-ups: comment-based reviews and full diff stats.
-
-## Open questions
-
-- Config shape: separate `forge` + `host` fields, or a single `url`?
-- Is gitlab.cern.ch the only target? (It affects how much to test against
-  older GitLab versions without reviewer states.)
-- Are release line counts wanted for GitLab, given the cost of fetching each
-  MR's diffs?
+- [Merge requests](https://docs.gitlab.com/api/merge_requests/): time filters,
+  payloads and reviewer account state.
+- [Approvals](https://docs.gitlab.com/api/merge_request_approvals/): approvals and
+  edition differences.
+- [Issues](https://docs.gitlab.com/api/issues/) and
+  [releases](https://docs.gitlab.com/api/releases/).
+- [REST pagination](https://docs.gitlab.com/api/rest/).

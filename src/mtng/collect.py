@@ -1,4 +1,5 @@
 from typing import Any
+from collections.abc import Mapping
 from datetime import datetime
 import re
 
@@ -139,14 +140,20 @@ async def collect_repositories(
     repos: list[Repository],
     since: datetime,
     now: datetime,
-    forge: Forge,
+    forge: Forge | Mapping[tuple[str, str], Forge],
     release: str | None = None,
 ):
     data = {}
+    forges = forge
 
     for repo in repos:
+        forge = forges[repo.forge_key] if isinstance(forges, Mapping) else forges
         print(Rule(f"Collecting data for {repo.name}"))
         key = repo.display_name or repo.name
+        if key in data:
+            raise ValueError(
+                "Duplicate repository display names; set unique display_name values"
+            )
         data[key] = {}
         data[key]["merged_prs"] = []
         data[key]["merged_prs_listed"] = []

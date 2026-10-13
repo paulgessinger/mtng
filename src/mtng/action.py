@@ -1,7 +1,7 @@
 """Turn GitHub Action inputs into an ``mtng`` spec file.
 
-The composite action in ``action.yml`` exposes every ``Spec``/``Repository``
-field as an action input, so a workflow can either point at a checked-in config
+The composite action in ``action.yml`` exposes the GitHub-relevant ``Spec``/``Repository``
+fields as an action input, so a workflow can either point at a checked-in config
 file or configure a single repository inline. Inputs reach this module as
 ``MTNG_INPUT_<FIELD>`` environment variables; the field list and the coercion of
 each value are derived from the pydantic models, so a new spec field only needs
@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import pydantic
+import yaml
 
 from mtng.spec import Repository, Spec
 
@@ -27,7 +28,9 @@ REPOSITORY_INPUT = "repository"
 
 # The repository name comes from the dedicated `repository` input, which falls
 # back to the repository the action runs in.
-REPOSITORY_FIELDS = [name for name in Repository.model_fields if name != "name"]
+REPOSITORY_FIELDS = [
+    name for name in Repository.model_fields if name not in ("name", "forge", "host")
+]
 SPEC_FIELDS = [name for name in Spec.model_fields if name != "repos"]
 
 TRUE_VALUES = {"true", "1", "yes", "on"}
@@ -177,6 +180,19 @@ def resolve_config(inputs: Mapping[str, str], generated: Path) -> Path:
         path = Path(config)
         if not path.is_file():
             raise ActionInputError(f"Config file '{config}' does not exist.")
+        # The action supplies its GitHub token via --token. Reject other
+        # backends before that credential can reach an unrelated host.
+        from mtng.cli import load_spec
+
+        try:
+            with path.open() as stream:
+                spec = load_spec(stream)
+        except (ValueError, yaml.YAMLError) as error:
+            raise ActionInputError(f"Invalid configuration: {error}") from error
+        if any(repo.forge != "github" for repo in spec.repos):
+            raise ActionInputError(
+                "The GitHub Action only supports GitHub repositories; use the CLI for GitLab"
+            )
         return path
 
     spec = build_spec(inputs)

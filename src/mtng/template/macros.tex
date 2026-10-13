@@ -22,7 +22,7 @@
     }}}
     (\href{ {{- item.html_url -}} }{
     {%- if item.is_pr -%}
-    \prstr{ {{- item.number -}} }
+    {% if spec.forge == "gitlab" %}!{{- item.number -}}{% else %}\prstr{ {{- item.number -}} }{% endif %}
     {%- else -%}
     \issstr{ {{- item.number -}} }
     {%- endif -%}
@@ -43,7 +43,9 @@
         {%- endif -%}
     {%- endif -%}
     {%- if spec.do_reviewers and spec.show_review_summary and item.is_pr -%}
-        {%- if item.reviews is defined and item.reviews|length > 0 -%}
+        {%- if item.reviews_available is defined and not item.reviews_available -%}
+            review data unavailable
+        {%- elif item.reviews is defined and item.reviews|length > 0 -%}
             {%- set approvals = item.reviews|selectattr("state", "==", "APPROVED")|list -%}
             {%- set comments = item.reviews|selectattr("state", "==", "COMMENTED")|list -%}
             {%- if approvals|length -%}

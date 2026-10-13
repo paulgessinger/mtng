@@ -28,15 +28,19 @@ from rich.panel import Panel
 import rich.rule
 
 from mtng.generate import generate_latex
-from mtng.spec import Spec
+from mtng.spec import Spec, normalize_host
 from mtng.collect import collect_repositories
 from mtng.forge import GitHubForge
+from mtng.forge.gitlab import GitLabForge, GitLabError
+from mtng.auth import keyring_username, resolve_gitlab_token, validate_gitlab_token
 from mtng.generate import env
 from mtng import __version__
 
 console = Console()
-cli = typer.Typer()
-auth_cli = typer.Typer(help="Authentication helpers")
+cli = typer.Typer(pretty_exceptions_show_locals=False)
+auth_cli = typer.Typer(
+    help="Authentication helpers", pretty_exceptions_show_locals=False
+)
 KEYRING_SERVICE = "mtng"
 KEYRING_USERNAME = "github-token"
 
@@ -232,7 +236,7 @@ async def generate(
     token: Annotated[
         str | None,
         typer.Option(
-            help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
+            help="API token for a single host. Falls back to GH_TOKEN/GITLAB_TOKEN or host-specific keychain credentials.",
             show_default=False,
         ),
     ] = None,
@@ -259,7 +263,7 @@ async def generate(
         str | None,
         typer.Option(
             "--release",
-            help="Summarize merged PRs from a GitHub release tag or release URL instead of a date window.",
+            help="Summarize merged PRs/MRs from a release tag or release URL instead of a date window.",
         ),
     ] = None,
     full_tex: Annotated[
@@ -296,7 +300,6 @@ async def generate(
             param_hint="--preamble",
         )
 
-    token = resolve_github_token(token)
     now = normalize_local_datetime(parse_datetime_option(now, "--now"))
     if since is None:
         if release is None:
@@ -319,17 +322,48 @@ async def generate(
             raise ValueError("latexmk could not be found, cannot compile using --pdf")
 
     spec = load_spec(config)
+    if since > now:
+        raise typer.BadParameter("--since must not be after --now")
+    keys = {repo.forge_key for repo in spec.repos}
+    if token and token.strip() and len(keys) != 1:
+        raise typer.BadParameter(
+            "--token requires exactly one forge/host in the configuration"
+        )
+    gitlab_hosts = {host for kind, host in keys if kind == "gitlab"}
+    if len(gitlab_hosts) > 1 and os.environ.get("GITLAB_TOKEN", "").strip():
+        raise typer.BadParameter(
+            "GITLAB_TOKEN is ambiguous with multiple GitLab hosts; use host-specific auth login entries"
+        )
+    tokens = {}
+    for kind, host in sorted(keys):
+        tokens[(kind, host)] = (
+            resolve_github_token(token)
+            if kind == "github"
+            else resolve_gitlab_token(token, host, allow_env=len(gitlab_hosts) == 1)[0]
+        )
 
     async with aiohttp.ClientSession() as session:
         if event is not None:
             contributions = handle_event(event, session)
 
-        forge = GitHubForge(GitHubAPI(session, __name__, oauth_token=token))
+        forge = {
+            (kind, host): (
+                GitHubForge(GitHubAPI(session, __name__, oauth_token=value))
+                if kind == "github"
+                else GitLabForge(session, host, value)
+            )
+            for (kind, host), value in tokens.items()
+        }
 
-        print(Panel("Collection data from GitHub"))
-        data = await collect_repositories(
-            spec.repos, forge=forge, since=since, now=now, release=release
-        )
+        print(Panel("Collecting repository data"))
+        try:
+            data = await collect_repositories(
+                spec.repos, forge=forge, since=since, now=now, release=release
+            )
+        except (GitLabError, aiohttp.ClientError, TimeoutError) as error:
+            raise typer.BadParameter(
+                f"Repository collection failed: {error}"
+            ) from error
 
         contributions = await contributions if event is not None else []
 
@@ -395,33 +429,48 @@ async def generate(
             shutil.copy(d / "source.pdf", pdf)
 
 
-@auth_cli.command("login", help="Store a GitHub API token in your system keychain")
+@auth_cli.command("login", help="Store an API token in your system keychain")
 def login(
+    host: Annotated[
+        str, typer.Option(help="github.com or a GitLab host")
+    ] = "github.com",
     token: Annotated[
         str | None,
-        typer.Option(
-            help="GitHub API token to store. If omitted, mtng prompts for it."
-        ),
+        typer.Option(help="API token to store. If omitted, mtng prompts for it."),
     ] = None,
     validate: Annotated[
         bool,
         typer.Option(
             "--validate/--no-validate",
-            help="Validate the token against GitHub before storing it.",
+            help="Validate the token against the host before storing it.",
         ),
     ] = True,
 ):
+    host = normalize_host(host)
+    label = "GitHub" if host == "github.com" else f"GitLab ({host})"
     if token is None:
-        token = typer.prompt("GitHub API token", hide_input=True)
+        token = typer.prompt(f"{label} API token", hide_input=True)
 
     token = token.strip()
     if token == "":
         raise typer.BadParameter("Token cannot be empty", param_hint="--token")
 
-    login_name = validate_github_token_sync(token) if validate else None
+    login_name = (
+        (
+            validate_github_token_sync(token)
+            if host == "github.com"
+            else asyncio.run(validate_gitlab_token(token, host))
+        )
+        if validate
+        else None
+    )
 
     try:
-        keyring.set_password(KEYRING_SERVICE, KEYRING_USERNAME, token)
+        keyring.set_password(
+            KEYRING_SERVICE,
+            KEYRING_USERNAME if host == "github.com" else keyring_username(host),
+            token,
+        )
     except KeyringError as e:
         raise typer.BadParameter(
             f"Unable to store token in the system keychain: {e}",
@@ -429,23 +478,30 @@ def login(
         ) from e
 
     if login_name is None:
-        print("Stored GitHub token in your system keychain.")
+        print(f"Stored {label} token in your system keychain.")
     else:
-        print(f"Stored GitHub token for @{login_name} in your system keychain.")
+        print(f"Stored {label} token for @{login_name} in your system keychain.")
 
 
-@auth_cli.command(
-    "check", help="Validate the configured GitHub token against the GitHub API"
-)
+@auth_cli.command("check", help="Validate the configured token against its host")
 def check(
+    host: Annotated[
+        str, typer.Option(help="github.com or a GitLab host")
+    ] = "github.com",
     token: Annotated[
         str | None,
         typer.Option(
-            help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
+            help="API token for a single host. Falls back to GH_TOKEN/GITLAB_TOKEN or host-specific keychain credentials.",
             show_default=False,
         ),
     ] = None,
 ):
+    host = normalize_host(host)
+    if host != "github.com":
+        resolved_token, _ = resolve_gitlab_token(token, host)
+        login_name = asyncio.run(validate_gitlab_token(resolved_token, host))
+        print(f"GitLab ({host}) token is valid for @{login_name}.")
+        return
     resolved_token = resolve_github_token(token)
     login_name = validate_github_token_sync(resolved_token)
     print(f"GitHub token is valid for @{login_name}.")
@@ -453,13 +509,16 @@ def check(
 
 @auth_cli.command(
     "status",
-    help="Show where the configured GitHub token is loaded from and optionally validate it",
+    help="Show where the configured token is loaded from and optionally validate it",
 )
 def status(
+    host: Annotated[
+        str, typer.Option(help="github.com or a GitLab host")
+    ] = "github.com",
     token: Annotated[
         str | None,
         typer.Option(
-            help="Github API token. Falls back to GH_TOKEN or a token stored via `mtng auth login`.",
+            help="API token for a single host. Falls back to GH_TOKEN/GITLAB_TOKEN or host-specific keychain credentials.",
             show_default=False,
         ),
     ] = None,
@@ -467,10 +526,18 @@ def status(
         bool,
         typer.Option(
             "--validate/--no-validate",
-            help="Validate the token against GitHub.",
+            help="Validate the token against its host.",
         ),
     ] = False,
 ):
+    host = normalize_host(host)
+    if host != "github.com":
+        resolved_token, source = resolve_gitlab_token(token, host)
+        print(f"GitLab ({host}) token is configured (source: {source}).")
+        if validate:
+            login_name = asyncio.run(validate_gitlab_token(resolved_token, host))
+            print(f"GitLab ({host}) token is valid for @{login_name}.")
+        return
     _, source = resolve_github_token_with_source(token)
     print(f"GitHub token is configured (source: {source}).")
     if validate:

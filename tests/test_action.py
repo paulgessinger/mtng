@@ -124,6 +124,13 @@ def test_resolve_config_rejects_missing_config_file(tmp_path):
         )
 
 
+def test_action_rejects_gitlab_config_before_forwarding_github_token(tmp_path):
+    config = tmp_path / "gitlab.toml"
+    config.write_text('[[repos]]\nname = "group/project"\nforge = "gitlab"\n')
+    with pytest.raises(ActionInputError, match="only supports GitHub"):
+        resolve_config(inputs(config=str(config)), tmp_path / "generated.json")
+
+
 def test_main_prints_config_path(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv(env_name("repository"), "acts-project/acts")
     generated = tmp_path / "spec.json"

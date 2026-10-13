@@ -1,5 +1,5 @@
 # mtng 
-Generate meeting notes from GitHub + [Indico](https://getindico.io/). This tool generates
+Generate meeting notes from GitHub or GitLab + [Indico](https://getindico.io/). This tool generates
 LaTeX code that can be compiled into a PDF presentation. The result looks something like this:
 
 ![Screenshot of the tool's output](screen.png)
@@ -97,8 +97,70 @@ repos:
       - backport
 ```
 
+### GitLab and mixed-host reports
+
+The CLI supports GitLab.com and self-hosted GitLab, including CERN. Existing
+configurations default to GitHub. Keep `name` as the project path; select GitLab
+with `forge` and optionally `host` (an HTTPS hostname, without an API path).
+Nested GitLab groups are supported:
+
+```toml
+[[repos]]
+name = "acts-project/acts"
+display_name = "ACTS on GitHub"
+
+[[repos]]
+name = "group/subgroup/project"
+forge = "gitlab"
+host = "gitlab.cern.ch"
+display_name = "CERN project"
+do_recent_issues = true
+do_reviewers = true
+```
+
+Use unique `display_name` values if project paths repeat across hosts. GitHub
+Enterprise and GitLab installations under URL subpaths are not supported.
+The bundled GitHub Action remains GitHub-only; use the CLI for GitLab reports.
+
+Store a GitLab personal access token with `read_api` access:
+
+```console
+mtng auth login --host gitlab.cern.ch
+mtng auth check --host gitlab.cern.ch
+mtng auth status --host gitlab.cern.ch
+mtng generate report.toml --since "1 week ago" --full --tex report.tex
+```
+
+`auth` defaults to github.com; any other host selects GitLab. Tokens resolve from
+`--token`, then `GH_TOKEN` (GitHub) or `GITLAB_TOKEN` (GitLab), then the system
+keychain. `--token` requires exactly one backend/host in the configuration.
+`GITLAB_TOKEN` is accepted only when there is one GitLab host. For several GitLab
+hosts, unset that variable and run `auth login --host ...` for each host. Existing
+GitHub keychain entries continue to work. Cached API results are separated by
+host and credentials.
+
+GitLab reports use MR terminology and `!123` references. Existing `do_*_prs`
+and `pr_category_*` settings apply to MRs as well; explicit frame-title overrides
+are preserved. GitLab date windows include MRs whose `merged_at` lies within the
+specified bounds, even if they were edited later. GitHub retains its existing
+calendar-date search behavior.
+
+For a GitLab release, use `--release v1.0` or a matching project release URL.
+The release description must reference its merged MRs using `!123` or full
+project MR URLs. References to other projects are ignored. A tag applies to
+every configured repository; a full URL must match the repository and host.
+
+GitLab review summaries include approvals and assigned reviewers. Comment and
+change-request histories are not inferred from account state. If an instance
+lacks the approvals endpoint, the report marks review data unavailable;
+authentication and server failures remain errors. Line/commit counts are left
+unknown rather than reported as zero. Detailed diff statistics and report-mode
+redesign are follow-up work.
+
 ### Schema 
 - **`Repository`** *(object)*: Cannot contain additional properties.
+  - **`forge`** *(string)*: `github` (default) or `gitlab`.
+  - **`host`** *(string or null)*: HTTPS host; defaults to github.com or gitlab.com.
   - **`name`** *(string)*: Name of the repository, e.g. 'acts-project/acts'.
   - **`display_name`** *(string)*: Alternative repository name. Useful when fetching one repository multiple times.
   - **`wip_label`** *(string)*: Label to identify WIP PRs.
@@ -453,3 +515,16 @@ out, which is also what happens on any TeX installation without an emoji font:
 with:
   emoji: "false"
 ```
+
+## GitLab development tests
+
+Run adapter and authentication tests without network access:
+
+```console
+uv run --group dev pytest tests/test_forge_gitlab.py tests/test_gitlab_config_auth.py -m "not integration"
+```
+
+The fixtures are synthetic examples of documented GitLab REST payloads. For the
+optional live smoke test, set `GITLAB_TOKEN`, `MTNG_GITLAB_TEST_PROJECT` (a project
+path you can read), and optionally `MTNG_GITLAB_TEST_HOST` (default gitlab.com),
+then run `uv run --group dev pytest tests/test_forge_gitlab.py -m integration`.

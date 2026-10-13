@@ -65,7 +65,7 @@
 {% if repo["merged_prs"]|length > 0 %}
 
 {% if not repo["spec"].group_prs_by_category and repo["merged_prs_listed"]|length > 0 %}
-\section{ \reponame{} \\ {% if repo["release_tag"] is not none %}Release {{ repo["release_tag"]|sanitize }}{% else %}Merged PRs{% endif %}}
+\section{ \reponame{} \\ {% if repo["release_tag"] is not none %}Release {{ repo["release_tag"]|sanitize }}{% else %}Merged {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}{% endif %}}
 {% endif %}
 
 {% set stats = repo["release_stats"] %}
@@ -78,7 +78,7 @@
     {% else %}
     \bentolisttile{0}{0}{2}{1}{bentohero}{ {{- since.strftime('%Y-%m-%d') -}}\\{{- now.strftime('%Y-%m-%d') -}} }{reporting period}
     {% endif %}
-    \bentotile{2}{0}{1}{1}{bentotile}{ {{- stats.pr_count|human_int -}} }{merged PRs}
+    \bentotile{2}{0}{1}{1}{bentotile}{ {{- stats.pr_count|human_int -}} }{merged {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
     \bentotile{3}{0}{1}{1}{bentotile}{ {{- stats.contributors|human_int -}} }{contributors}
     {%- if stats.has_churn %}
     \bentotile{0}{1}{1}{1}{bentoadd}{ {%- if stats.additions is not none %}$+${% endif %}{{ stats.additions|human_int }} }{lines added}
@@ -142,9 +142,9 @@
     \color{shivablue}
     \sffamily
     {% if repo["release_tag"] is not none %}
-    No PRs found in release \textbf{ {{ repo["release_tag"]|sanitize }} } for\\
+    No {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }} found in release \textbf{ {{ repo["release_tag"]|sanitize }} } for\\
     {% else %}
-    No merged PRs since \textbf{ {{ since.strftime('%Y-%m-%d') }} } in\\
+    No merged {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }} since \textbf{ {{ since.strftime('%Y-%m-%d') }} } in\\
     {% endif %}
     \textbf{ \reponame{} }
   \end{center}
@@ -164,7 +164,7 @@
 ) -}}
 {% endfor %}
 {% else %}
-\section{ \reponame{} \\ Open PRs}
+\section{ \reponame{} \\ Open {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
 {{- render_pr_frame(
   frame_title("open_prs", repo),
   repo["open_prs"],
@@ -196,7 +196,7 @@
 {%- if repo["release_tag"] is none and repo["spec"].do_stale %}
 {% set newly_stale = repo["stale"] | selectattr("updated_at", "gt", since) | list %}
 {% if newly_stale | length > 0 %}
-\section{ \reponame{} \\ Stale Issues and PRs}
+\section{ \reponame{} \\ Stale Issues and {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
 \begin{frame}[allowframebreaks]{ {{- frame_title("new_stale", repo) -}} }
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
@@ -208,11 +208,11 @@
   \end{itemize}
 \end{frame}
 {% else %}
-\section{ \reponame{} \\ No new stale issues or PRs since {{ since.strftime('%Y-%m-%d') }} }
+\section{ \reponame{} \\ No new stale issues or {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }} since {{ since.strftime('%Y-%m-%d') }} }
 {% endif %}
 
 {% if repo["stale"]|length > 0 %}
-\section{ \reponame{} \\ All stale Issues and PRs}
+\section{ \reponame{} \\ All stale Issues and {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
 \begin{frame}[allowframebreaks]{ {{- frame_title("all_stale", repo) -}} }
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}

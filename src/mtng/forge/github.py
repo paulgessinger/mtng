@@ -2,6 +2,7 @@ from typing import Any, Literal
 from datetime import datetime
 import urllib.parse
 import re
+import hashlib
 
 from gidgethub.abc import GitHubAPI
 from rich.status import Status
@@ -68,11 +69,21 @@ def label_query(with_labels: list[str], without_labels: list[str]) -> str:
 class GitHubForge:
     def __init__(self, gh: GitHubAPI):
         self.gh = gh
-        self.cache_id = "github"
+
+    @property
+    def cache_id(self) -> str:
+        # Visibility depends on both the API host and credentials. Never put
+        # the token itself in a persisted cache key, and handle token rotation.
+        credential = hashlib.sha256((self.gh.oauth_token or "").encode()).hexdigest()
+        return f"github:{self.gh.base_url}:{credential}"
 
     @memoize(expire=300)
-    async def getitem(self, url: str, *args: Any, **kwargs: Any) -> Any:
-        return await self.gh.getitem(url, *args, **kwargs)
+    async def getitem(self, url: str) -> Any:
+        return await self.gh.getitem(url)
+
+    @memoize(expire=300)
+    async def get_reviews(self, url: str) -> list[Review]:
+        return [Review.model_validate(r) async for r in self.gh.getiter(url)]
 
     async def pull_details(self, urls: list[str]) -> list[PullRequest]:
         """Fetch full PR payloads. Search results lack the line and commit
@@ -83,10 +94,7 @@ class GitHubForge:
 
     async def add_reviews(self, prs: list[PullRequest]) -> list[PullRequest]:
         async def enrich_reviews(pr: PullRequest) -> PullRequest:
-            pr.reviews = [
-                Review.model_validate(r)
-                for r in await self.getitem(f"{pr.url}/reviews")
-            ]
+            pr.reviews = await self.get_reviews(f"{pr.url}/reviews")
             return pr
 
         with Status("Getting PR reviews"):

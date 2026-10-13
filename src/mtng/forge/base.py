@@ -18,7 +18,7 @@ FETCH_CONCURRENCY = 8
 # Bump whenever a model stored in the cache gains or loses fields. Entries are
 # pickled pydantic instances, so an old entry restored into a new class is
 # missing the new attributes entirely and raises AttributeError on access.
-CACHE_VERSION = 4
+CACHE_VERSION = 5
 
 
 class Forge(Protocol):
@@ -28,8 +28,8 @@ class Forge(Protocol):
     method returns only items matching ``with_labels`` and ``without_labels``.
     """
 
-    # Distinguishes cache entries of different forges and hosts. Two forge
-    # instances with the same cache_id must return the same data.
+    # Distinguishes forges, API hosts, and credential scopes. Never include
+    # raw credentials. Instances with the same cache_id must see the same data.
     cache_id: str
 
     async def merged_prs(
@@ -39,8 +39,7 @@ class Forge(Protocol):
         end: datetime,
         with_labels: list[str] = [],
         without_labels: list[str] = [],
-    ) -> list[PullRequest]:
-        ...
+    ) -> list[PullRequest]: ...
 
     async def release_prs(
         self,
@@ -58,8 +57,7 @@ class Forge(Protocol):
         repo_name: str,
         with_labels: list[str] = [],
         without_labels: list[str] = [],
-    ) -> list[PullRequest]:
-        ...
+    ) -> list[PullRequest]: ...
 
     async def open_issues(
         self,

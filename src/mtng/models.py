@@ -64,6 +64,7 @@ class Issue(IssueBase):
 
 
 class PullRequest(IssueBase):
+    reviews_available: bool = True
     requested_reviewers: list[User] = pydantic.Field(default_factory=list)
     reviews: list[Review] = pydantic.Field(default_factory=list)
 

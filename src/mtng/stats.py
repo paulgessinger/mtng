@@ -22,7 +22,7 @@ class LabelCount(pydantic.BaseModel):
 class ReleaseStats(pydantic.BaseModel):
     pr_count: int = 0
     contributors: int = 0
-    reviewers: int = 0
+    reviewers: int | None = 0
 
     additions: int | None = None
     deletions: int | None = None
@@ -107,7 +107,7 @@ def compute_release_stats(
     return ReleaseStats(
         pr_count=len(prs),
         contributors=len(authors),
-        reviewers=len(reviewers),
+        reviewers=len(reviewers) if all(pr.reviews_available for pr in prs) else None,
         additions=additions,
         deletions=deletions,
         changed_files=changed_files,
