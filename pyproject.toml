@@ -44,6 +44,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "-m 'not integration'"
 markers = [
     "integration: tests that call external services",
 ]

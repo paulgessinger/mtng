@@ -1,0 +1,23 @@
+name: Live API smoke test
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: live-api-smoke
+  cancel-in-progress: false
+jobs:
+  github:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Check the GitHub API contract (at most three requests)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MTNG_GITHUB_TEST_PROJECT: ${{ github.repository }}
+        run: uv run --group dev pytest tests/test_live_github.py -m integration -n 1

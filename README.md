@@ -528,3 +528,16 @@ The fixtures are synthetic examples of documented GitLab REST payloads. For the
 optional live smoke test, set `GITLAB_TOKEN`, `MTNG_GITLAB_TEST_PROJECT` (a project
 path you can read), and optionally `MTNG_GITLAB_TEST_HOST` (default gitlab.com),
 then run `uv run --group dev pytest tests/test_forge_gitlab.py -m integration`.
+
+### Offline tests and live smoke checks
+
+`uv run --group dev pytest` excludes `integration` by default. Ordinary tests
+reject live aiohttp/requests calls and use checked-in payloads; the CI PDF job
+renders those fixtures with `python tests/render_fixtures.py`. Action input
+handling is covered by `tests/test_action.py` without live report collection.
+
+The **Live API smoke test** workflow is manually dispatched and makes at most
+three GitHub requests against this repository. To run it locally, set `GH_TOKEN`
+and `MTNG_GITHUB_TEST_PROJECT=owner/repo`, then run
+`uv run --group dev pytest tests/test_live_github.py -m integration -n 1`.
+Live checks bypass the application cache; cached success is not API validation.
