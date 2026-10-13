@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import pydantic
 
 if TYPE_CHECKING:  # pragma: no cover - avoids a circular import with collect.py
-    from mtng.collect import PullRequest
+    from mtng.models import PullRequest
 
 
 # Review states that indicate someone actually looked at the PR. PENDING reviews

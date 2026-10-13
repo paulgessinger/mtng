@@ -1,0 +1,18 @@
+footline_left = "ACTS {release}"
+title = "PR Summary for ACTS {release}"
+[[repos]]
+frame_titles = "{category}"
+name = "acts-project/acts"
+stale_label = "Stale"
+wip_label = ":construction: WIP"
+show_wip = true
+do_recent_issues = true
+do_assignee = false
+do_reviewers = true
+needs_discussion_label = "Needs Discussion"
+filter_labels = ["backport"]
+show_review_summary = false
+group_prs_by_category = true
+pr_category_labels = { feat = "Feature", docs = "Docs", chore = "Chore", other = "Other" }
+show_breaking_changes = true
+repeat_breaking_changes = false

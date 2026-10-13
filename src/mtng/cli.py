@@ -30,6 +30,7 @@ import rich.rule
 from mtng.generate import generate_latex
 from mtng.spec import Spec
 from mtng.collect import collect_repositories
+from mtng.forge import GitHubForge
 from mtng.generate import env
 from mtng import __version__
 
@@ -190,35 +191,6 @@ def normalize_local_datetime(dt: datetime.datetime) -> datetime.datetime:
     return dt.astimezone(tzlocal())
 
 
-async def collect(gh: GitHubAPI, repo: str, dt: datetime.datetime):
-    merged_prs = [
-        gh.getitem(f"/repos/{repo}/pulls/{issue['number']}")
-        async for issue in gh.getiter(
-            f"/search/issues?q=repo:{repo}+is:pr+merged:>={dt.strftime('%Y-%m-%d')}",
-        )
-    ]
-
-    open_prs = [
-        gh.getitem(f"/repos/{repo}/pulls/{issue['number']}")
-        async for issue in gh.getiter(
-            f'/search/issues?q=repo:{repo}+is:pr+is:open+-label:":construction: WIP"',
-        )
-    ]
-
-    stale = [
-        issue
-        async for issue in gh.getiter(
-            f"/search/issues?q=repo:{repo}+is:open+label:Stale"
-        )
-    ]
-
-    merged_prs = await asyncio.gather(*merged_prs)
-    open_prs = await asyncio.gather(*open_prs)
-    # stale = await asyncio.gather(*stale)
-
-    return open_prs, merged_prs, stale
-
-
 async def handle_event(event: str, session):
     contributions = []
 
@@ -352,11 +324,11 @@ async def generate(
         if event is not None:
             contributions = handle_event(event, session)
 
-        gh = GitHubAPI(session, __name__, oauth_token=token)
+        forge = GitHubForge(GitHubAPI(session, __name__, oauth_token=token))
 
         print(Panel("Collection data from GitHub"))
         data = await collect_repositories(
-            spec.repos, gh=gh, since=since, now=now, release=release
+            spec.repos, forge=forge, since=since, now=now, release=release
         )
 
         contributions = await contributions if event is not None else []

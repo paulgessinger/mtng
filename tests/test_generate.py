@@ -2,7 +2,6 @@ from asyncio.subprocess import STDOUT
 import itertools
 from re import sub
 import shutil
-from unittest.mock import Mock
 import asyncio
 from datetime import datetime, timedelta
 import json
@@ -25,26 +24,21 @@ from mtng.generate import (
     generate_latex,
 )
 from mtng.spec import Repository, Spec
+from mtng.models import Label, PullRequest, Issue, Review, User
 from mtng.collect import (
-    Label,
-    PullRequest,
-    Issue,
-    Review,
-    User,
-    get_open_pulls,
     collect_repositories,
-    extract_release_pull_numbers,
     parse_pr_category,
     parse_pr_metadata,
     resolve_category_label,
-    parse_release_tag,
 )
+from mtng.forge import GitHubForge
+from mtng.forge.github import extract_release_pull_numbers, parse_release_tag
+
+from fake_forge import FakeForge
 
 
 @pytest.mark.asyncio
-async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
-    gh = Mock()
-
+async def test_generate(tmp_path):
     repo = Repository(
         name="acts-project/acts",
         stale_label="Stale",
@@ -54,36 +48,19 @@ async def test_generate(monkeypatch: pytest.MonkeyPatch, tmp_path):
     ref = Path(__file__).parent / "ref"
 
     def get_file_content(file: str, cls):
-        f = asyncio.Future()
         with (ref / file).open() as fh:
-            f.set_result([cls.model_validate(o) for o in json.load(fh)])
-        return f
+            return [cls.model_validate(o) for o in json.load(fh)]
 
-    monkeypatch.setattr(
-        "mtng.collect.get_merged_pulls",
-        Mock(return_value=get_file_content("merged_prs.json", PullRequest)),
-    )
-    monkeypatch.setattr(
-        "mtng.collect.get_open_issues",
-        Mock(
-            side_effect=[
-                get_file_content("stale.json", Issue),
-                get_file_content("recent_issues.json", Issue),
-            ]
-        ),
-    )
-    monkeypatch.setattr(
-        "mtng.collect.get_open_pulls",
-        Mock(
-            side_effect=[
-                get_file_content("open_prs.json", Issue),
-            ]
-        ),
+    forge = FakeForge(
+        merged_prs=get_file_content("merged_prs.json", PullRequest),
+        open_prs=get_file_content("open_prs.json", Issue),
+        recent_issues=get_file_content("recent_issues.json", Issue),
+        labelled={"Stale": get_file_content("stale.json", Issue)},
     )
     since = datetime(2022, 8, 1, tzinfo=tzlocal())
     now = datetime(2022, 8, 11, tzinfo=tzlocal())
     result = await mtng.collect.collect_repositories(
-        [repo], since=since, now=now, gh=gh
+        [repo], since=since, now=now, forge=forge
     )
 
     output = generate_latex(
@@ -215,7 +192,7 @@ async def test_collect(tmp_path):
         gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
         result = await mtng.collect.collect_repositories(
             [repo],
-            gh=gh,
+            forge=GitHubForge(gh),
             since=datetime(2022, 8, 1, tzinfo=tzlocal()),
             now=datetime(2022, 8, 11, tzinfo=tzlocal()),
         )
@@ -240,8 +217,7 @@ async def test_get_open_pulls():
 
     async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
         gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
-        open_prs = await get_open_pulls(
-            gh,
+        open_prs = await GitHubForge(gh).open_prs(
             repo.name,
             without_labels=repo.filter_labels,
         )
@@ -263,7 +239,7 @@ except:
 @pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
 @pytest.mark.asyncio
 @pytest.mark.parametrize("full_tex", [True, False], ids=["full", "fragment"])
-async def test_compile(monkeypatch, full_tex, tmp_path):
+async def test_compile(full_tex, tmp_path):
     since = datetime(2022, 8, 1, tzinfo=tzlocal())
     now = datetime(2022, 8, 11, tzinfo=tzlocal())
 
@@ -273,36 +249,18 @@ async def test_compile(monkeypatch, full_tex, tmp_path):
     ref = Path(__file__).parent / "ref"
 
     def get_file_content(file: str, cls):
-        f = asyncio.Future()
         with (ref / file).open() as fh:
-            f.set_result([cls.model_validate(o) for o in json.load(fh)])
-        return f
+            return [cls.model_validate(o) for o in json.load(fh)]
 
-    monkeypatch.setattr(
-        "mtng.collect.get_merged_pulls",
-        Mock(return_value=get_file_content("merged_prs.json", PullRequest)),
-    )
-    monkeypatch.setattr(
-        "mtng.collect.get_open_issues",
-        Mock(
-            side_effect=[
-                get_file_content("stale.json", Issue),
-                get_file_content("recent_issues.json", Issue),
-            ]
-        ),
-    )
-    monkeypatch.setattr(
-        "mtng.collect.get_open_pulls",
-        Mock(
-            side_effect=[
-                get_file_content("open_prs.json", Issue),
-            ]
-        ),
+    forge = FakeForge(
+        merged_prs=get_file_content("merged_prs.json", PullRequest),
+        open_prs=get_file_content("open_prs.json", Issue),
+        recent_issues=get_file_content("recent_issues.json", Issue),
+        labelled={"Stale": get_file_content("stale.json", Issue)},
     )
 
-    gh = Mock()
     result = await mtng.collect.collect_repositories(
-        spec.repos, gh=gh, since=since, now=now
+        spec.repos, forge=forge, since=since, now=now
     )
 
     tex = generate_latex(
@@ -754,7 +712,7 @@ def test_breaking_changes_section_skipped_when_empty():
 
 
 @pytest.mark.asyncio
-async def test_collect_splits_breaking_prs(monkeypatch):
+async def test_collect_splits_breaking_prs():
     repo = Repository(
         name="acts-project/acts",
         do_open_prs=False,
@@ -763,16 +721,11 @@ async def test_collect_splits_breaking_prs(monkeypatch):
     breaking = _merged_pr("feat!: break the API", repo, number=1)
     normal = _merged_pr("feat: add a thing", repo, number=2)
 
-    async def fake_merged(*args, **kwargs):
-        return [breaking, normal]
-
-    monkeypatch.setattr("mtng.collect.get_merged_pulls", fake_merged)
-
     result = await mtng.collect.collect_repositories(
         [repo],
         since=datetime(2022, 8, 1, tzinfo=tzlocal()),
         now=datetime(2022, 8, 11, tzinfo=tzlocal()),
-        gh=Mock(),
+        forge=FakeForge(merged_prs=[breaking, normal]),
     )
 
     data = result["acts-project/acts"]
@@ -974,8 +927,7 @@ def test_review_model_accepts_pending_state():
 
 
 @pytest.mark.asyncio
-async def test_collect_repositories_release(monkeypatch: pytest.MonkeyPatch):
-    gh = Mock()
+async def test_collect_repositories_release():
     repo = Repository(
         name="acts-project/acts",
         do_open_prs=False,
@@ -988,15 +940,12 @@ async def test_collect_repositories_release(monkeypatch: pytest.MonkeyPatch):
     with (ref / "merged_prs.json").open() as fh:
         merged = [PullRequest.model_validate(json.load(fh)[0])]
 
-    async def fake_get_release_pulls(*args, **kwargs):
-        return "v47.0.0", merged
-
-    monkeypatch.setattr("mtng.collect.get_release_pulls", fake_get_release_pulls)
+    forge = FakeForge(release=("v47.0.0", merged))
 
     since = datetime(2022, 8, 1, tzinfo=tzlocal())
     now = datetime(2022, 8, 11, tzinfo=tzlocal())
     result = await collect_repositories(
-        [repo], since=since, now=now, gh=gh, release="v47.0.0"
+        [repo], since=since, now=now, forge=forge, release="v47.0.0"
     )
 
     repo_data = result["acts-project/acts"]
@@ -1007,8 +956,7 @@ async def test_collect_repositories_release(monkeypatch: pytest.MonkeyPatch):
 
 
 @pytest.mark.asyncio
-async def test_release_mode_only_outputs_release_prs(monkeypatch: pytest.MonkeyPatch):
-    gh = Mock()
+async def test_release_mode_only_outputs_release_prs():
     repo = Repository(
         name="acts-project/acts",
         do_open_prs=True,
@@ -1022,28 +970,12 @@ async def test_release_mode_only_outputs_release_prs(monkeypatch: pytest.MonkeyP
     with (ref / "merged_prs.json").open() as fh:
         merged = [PullRequest.model_validate(json.load(fh)[0])]
 
-    calls = {"open_prs": 0, "open_issues": 0, "release_pulls": 0}
-
-    async def fake_get_release_pulls(*args, **kwargs):
-        calls["release_pulls"] += 1
-        return "v47.0.0", merged
-
-    async def fake_get_open_pulls(*args, **kwargs):
-        calls["open_prs"] += 1
-        return []
-
-    async def fake_get_open_issues(*args, **kwargs):
-        calls["open_issues"] += 1
-        return []
-
-    monkeypatch.setattr("mtng.collect.get_release_pulls", fake_get_release_pulls)
-    monkeypatch.setattr("mtng.collect.get_open_pulls", fake_get_open_pulls)
-    monkeypatch.setattr("mtng.collect.get_open_issues", fake_get_open_issues)
+    forge = FakeForge(release=("v47.0.0", merged))
 
     since = datetime(2022, 8, 1, tzinfo=tzlocal())
     now = datetime(2022, 8, 11, tzinfo=tzlocal())
     result = await collect_repositories(
-        [repo], since=since, now=now, gh=gh, release="v47.0.0"
+        [repo], since=since, now=now, forge=forge, release="v47.0.0"
     )
     output = generate_latex(
         Spec(repos=[repo]),
@@ -1054,9 +986,7 @@ async def test_release_mode_only_outputs_release_prs(monkeypatch: pytest.MonkeyP
         full_tex=False,
     )
 
-    assert calls["release_pulls"] == 1
-    assert calls["open_prs"] == 0
-    assert calls["open_issues"] == 0
+    assert forge.calls == ["release_prs"]
     assert "Release v47.0.0" in output
     assert "Open PRs" not in output
     assert "Issues opened since" not in output
@@ -1073,8 +1003,7 @@ async def test_release_mode_only_outputs_release_prs(monkeypatch: pytest.MonkeyP
 
 
 @pytest.mark.asyncio
-async def test_release_bento_renders_churn(monkeypatch: pytest.MonkeyPatch):
-    gh = Mock()
+async def test_release_bento_renders_churn():
     repo = Repository(name="acts-project/acts", do_merged_prs=True)
 
     user_a = User(login="alice", html_url="https://example.com")
@@ -1104,15 +1033,12 @@ async def test_release_bento_renders_churn(monkeypatch: pytest.MonkeyPatch):
         make(2, user_b, 34, 12, 2, 1, 6),
     ]
 
-    async def fake_get_release_pulls(*args, **kwargs):
-        return "v47.0.0", merged
-
-    monkeypatch.setattr("mtng.collect.get_release_pulls", fake_get_release_pulls)
+    forge = FakeForge(release=("v47.0.0", merged))
 
     since = datetime(2022, 8, 1, tzinfo=tzlocal())
     now = datetime(2022, 8, 11, tzinfo=tzlocal())
     result = await collect_repositories(
-        [repo], since=since, now=now, gh=gh, release="v47.0.0"
+        [repo], since=since, now=now, forge=forge, release="v47.0.0"
     )
     output = generate_latex(
         Spec(repos=[repo]),
@@ -1150,14 +1076,13 @@ def test_bento_present_outside_release_mode():
 @pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
 @pytest.mark.parametrize("full_tex", [True, False], ids=["full", "fragment"])
 @pytest.mark.asyncio
-async def test_compile_release_bento(monkeypatch, full_tex, tmp_path):
+async def test_compile_release_bento(full_tex, tmp_path):
     """Compile the bento frame for real.
 
     This is the only thing that catches pgfmath / \\dimexpr mistakes in
     \\bentogeom. The fragment case additionally exercises the provides.tex
     fallbacks, which must compile in a deck that never loaded tikz.
     """
-    gh = Mock()
     repo = Repository(name="acts-project/acts", do_merged_prs=True)
 
     user = User(login="alice", html_url="https://example.com")
@@ -1186,16 +1111,13 @@ async def test_compile_release_bento(monkeypatch, full_tex, tmp_path):
         )
     ]
 
-    async def fake_get_release_pulls(*args, **kwargs):
-        # A tag with LaTeX-hostile characters, to pin the sanitize fix.
-        return "v47.0.0_rc1", merged
-
-    monkeypatch.setattr("mtng.collect.get_release_pulls", fake_get_release_pulls)
+    # A tag with LaTeX-hostile characters, to pin the sanitize fix.
+    forge = FakeForge(release=("v47.0.0_rc1", merged))
 
     since = datetime(2022, 8, 1, tzinfo=tzlocal())
     now = datetime(2022, 8, 11, tzinfo=tzlocal())
     result = await collect_repositories(
-        [repo], since=since, now=now, gh=gh, release="v47.0.0_rc1"
+        [repo], since=since, now=now, forge=forge, release="v47.0.0_rc1"
     )
     tex = generate_latex(
         Spec(repos=[repo]),
