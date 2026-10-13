@@ -250,7 +250,7 @@ runs:
         else
           target="$ACTION_PATH"
         fi
-        uv venv --python 3.12 "$venv"
+        uv venv --clear --python 3.12 "$venv"
         uv pip install --python "$venv/bin/python" "$target"
         echo "python=$venv/bin/python" >> "$GITHUB_OUTPUT"
         echo "mtng=$venv/bin/mtng" >> "$GITHUB_OUTPUT"
