@@ -1,11 +1,18 @@
 import asyncio
 from typing import Protocol
+from dataclasses import dataclass
 from datetime import datetime
 
 from mtng.models import Issue, PullRequest
 
 
 FETCH_CONCURRENCY = 8
+
+
+@dataclass(frozen=True)
+class FetchRequirements:
+    reviews: bool = True
+    details: bool = True
 
 
 class Forge(Protocol):
@@ -44,6 +51,7 @@ class Forge(Protocol):
         repo_name: str,
         with_labels: list[str] = [],
         without_labels: list[str] = [],
+        requirements: FetchRequirements = FetchRequirements(),
     ) -> list[PullRequest]: ...
 
     async def open_issues(

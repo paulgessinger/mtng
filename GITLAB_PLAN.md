@@ -69,8 +69,10 @@ Keep the boundary explicit during the follow-up:
 
 Start the modes work by defining the purposes of meeting/date-window and release
 reports, their required sections, and how explicit configuration overrides mode
-presets. Do not add more interacting mode flags to the forge interface. Consider
-whether review enrichment should be requested only when a report needs it.
+presets. Do not add more interacting mode flags to the forge interface. Open-item
+review enrichment now follows report requirements; merged/release reports retain
+the data needed for statistics. Versioned collection snapshots support offline
+rendering and presentation overrides without changing mode semantics.
 
 Other possible follow-ups: full diff statistics, comment/change-request review
 history, and broader self-hosted version coverage.

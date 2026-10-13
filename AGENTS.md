@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-`mtng` generates LaTeX meeting presentations from GitHub activity and optional Indico agendas. Python code lives in `src/mtng/`: `cli.py` defines the Typer interface, `collect.py` retrieves data, `spec.py` defines Pydantic configuration models, `generate.py` renders output, and `stats.py` computes statistics. `action.py` supports the root `action.yml` GitHub Action. Jinja2/LaTeX templates live in `src/mtng/template/`.
+`mtng` generates LaTeX meeting presentations from GitHub activity and optional Indico agendas. Python code lives in `src/mtng/`: `cli.py` defines the Typer interface, `collect.py` retrieves data, `spec.py` defines Pydantic configuration models, `generate.py` renders output, and `stats.py` computes statistics. `action.py` supports the root `action.yml` GitHub Action. Backend adapters and HTTP caching live in `forge/`; `report_data.py` supports offline replay. Jinja2/LaTeX templates live in `src/mtng/template/`.
 
 Tests live in `tests/`, with JSON fixtures and the LaTeX snapshot in `tests/ref/`. `tests/acts_spec.yml` is an example configuration; `screen.png` illustrates output. CI workflows are in `.github/workflows/`.
 

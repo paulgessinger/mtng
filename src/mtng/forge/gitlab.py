@@ -10,7 +10,7 @@ import aiohttp
 from yarl import URL
 
 from mtng.forge.http import HttpTransport
-from mtng.forge.base import bounded_gather
+from mtng.forge.base import bounded_gather, FetchRequirements
 from mtng.models import Issue, Label, PullRequest, Review, User
 from mtng.spec import normalize_host
 
@@ -210,6 +210,7 @@ class GitLabForge:
         repo_name: str,
         with_labels: Sequence[str] = (),
         without_labels: Sequence[str] = (),
+        requirements: FetchRequirements = FetchRequirements(),
     ) -> list[PullRequest]:
         prs = await self.list_items(
             repo_name,
@@ -218,7 +219,7 @@ class GitLabForge:
             with_labels=with_labels,
             without_labels=without_labels,
         )
-        return await self.add_reviews(repo_name, prs)
+        return await self.add_reviews(repo_name, prs) if requirements.reviews else prs
 
     async def open_issues(
         self,

@@ -562,3 +562,30 @@ to each origin are serialized. Rate-limit headers control retry timing, with at
 most three attempts and a 60-second total wait budget. Longer limits produce an
 error with retry timing instead of retrying early. CI jobs are independent, so
 normal CI uses offline fixtures rather than relying on shared private caches.
+
+### Save once, render offline
+
+Save normalized collection results alongside the first rendered report:
+
+```console
+mtng generate report.toml --since "1 week ago" --save-data report-data.json --tex report.tex
+mtng render report-data.json --full --pdf report.pdf
+mtng render report-data.json --config presentation.toml --tex revised.tex
+```
+
+`render` uses no credentials, keychain or HTTP session. Snapshots contain a
+versioned JSON schema, the original configuration/time window, normalized query
+results and optional Indico contributions. They contain no API credentials or
+HTTP headers, but can contain private report content; share them accordingly.
+Unknown schema versions are rejected.
+
+The optional configuration override can change titles, grouping, display names
+and presentation flags or omit sections. Requesting new repositories, filters,
+sections or enrichment that were not collected fails with instructions to collect
+a new snapshot. Rendering cannot silently fetch missing data or invent it.
+
+Open PRs/MRs fetch reviews only when their review summary is displayed. GitHub
+also skips per-PR detail requests when neither reviews nor details are needed.
+Merged/release data still fetches the information needed for the statistics tiles.
+This separates collection requirements from presentation without changing report
+modes or adding more mode flags.

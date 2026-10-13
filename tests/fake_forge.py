@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from mtng.forge.base import FetchRequirements
 from mtng.models import Issue, PullRequest
 
 
@@ -57,6 +58,7 @@ class FakeForge:
         repo_name: str,
         with_labels: list[str] = [],
         without_labels: list[str] = [],
+        requirements: FetchRequirements = FetchRequirements(),
     ) -> list[PullRequest]:
         self.calls.append("open_prs")
         return list(self._open_prs)
