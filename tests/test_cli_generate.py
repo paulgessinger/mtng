@@ -53,7 +53,9 @@ def test_generate_accepts_human_readable_datetime(monkeypatch, tmp_path):
         captured["now"] = kwargs["now"]
         return {}
 
-    monkeypatch.setattr("mtng.cli.resolve_github_token", lambda token: "token")
+    monkeypatch.setattr(
+        "mtng.cli.resolve_token", lambda token, target, **kwargs: ("token", "--token")
+    )
     monkeypatch.setattr("mtng.cli.collect_repositories", fake_collect_repositories)
     monkeypatch.setattr("mtng.cli.generate_latex", lambda *args, **kwargs: "")
 
@@ -82,7 +84,9 @@ def test_generate_rejects_unparseable_datetime(monkeypatch, tmp_path):
     spec = tmp_path / "spec.yml"
     spec.write_text("repos: []\n")
 
-    monkeypatch.setattr("mtng.cli.resolve_github_token", lambda token: "token")
+    monkeypatch.setattr(
+        "mtng.cli.resolve_token", lambda token, target, **kwargs: ("token", "--token")
+    )
 
     result = runner.invoke(
         mtng.cli.cli,
@@ -128,7 +132,9 @@ def test_generate_accepts_preamble_with_pdf(monkeypatch, tmp_path):
         (source.parent / "source.pdf").write_bytes(b"%PDF-1.7\n")
         return FakeProc()
 
-    monkeypatch.setattr("mtng.cli.resolve_github_token", lambda token: "token")
+    monkeypatch.setattr(
+        "mtng.cli.resolve_token", lambda token, target, **kwargs: ("token", "--token")
+    )
     monkeypatch.setattr("mtng.cli.collect_repositories", fake_collect_repositories)
     monkeypatch.setattr("mtng.cli.find_latexmk", lambda: Path("/usr/bin/latexmk"))
     monkeypatch.setattr("mtng.cli.have_lualatex", lambda: False)
@@ -200,7 +206,9 @@ def test_generate_rejects_full_document_as_preamble_with_pdf(monkeypatch, tmp_pa
         (source.parent / "source.pdf").write_bytes(b"%PDF-1.7\n")
         return FakeProc()
 
-    monkeypatch.setattr("mtng.cli.resolve_github_token", lambda token: "token")
+    monkeypatch.setattr(
+        "mtng.cli.resolve_token", lambda token, target, **kwargs: ("token", "--token")
+    )
     monkeypatch.setattr("mtng.cli.collect_repositories", fake_collect_repositories)
     monkeypatch.setattr("mtng.cli.find_latexmk", lambda: Path("/usr/bin/latexmk"))
     monkeypatch.setattr("mtng.cli.have_lualatex", lambda: False)

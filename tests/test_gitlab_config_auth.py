@@ -4,7 +4,7 @@ import pytest
 from typer.testing import CliRunner
 
 import mtng.cli
-from mtng.auth import resolve_gitlab_token
+from mtng.auth import AuthTarget, resolve_token
 from mtng.spec import Repository, Spec
 
 
@@ -54,12 +54,17 @@ def test_gitlab_credential_precedence_and_host_scoping(monkeypatch):
         return "host-token"
 
     monkeypatch.setattr("mtng.auth.keyring.get_password", get)
-    assert resolve_gitlab_token(" explicit ", "gitlab.cern.ch") == (
+    assert resolve_token(" explicit ", AuthTarget("gitlab", "gitlab.cern.ch")) == (
         "explicit",
         "--token",
     )
-    assert resolve_gitlab_token(None, "gitlab.cern.ch") == ("env-token", "GITLAB_TOKEN")
-    assert resolve_gitlab_token(None, "gitlab.cern.ch", allow_env=False) == (
+    assert resolve_token(None, AuthTarget("gitlab", "gitlab.cern.ch")) == (
+        "env-token",
+        "GITLAB_TOKEN",
+    )
+    assert resolve_token(
+        None, AuthTarget("gitlab", "gitlab.cern.ch"), allow_env=False
+    ) == (
         "host-token",
         "system keychain",
     )
@@ -69,13 +74,13 @@ def test_gitlab_credential_precedence_and_host_scoping(monkeypatch):
 def test_gitlab_login_check_status(monkeypatch):
     stored = {}
     monkeypatch.setattr(
-        "mtng.cli.keyring.set_password",
+        "mtng.auth.keyring.set_password",
         lambda service, user, token: stored.update(
             service=service, user=user, token=token
         ),
     )
     validate = AsyncMock(return_value="alice")
-    monkeypatch.setattr("mtng.cli.validate_gitlab_token", validate)
+    monkeypatch.setattr("mtng.cli.validate_token", validate)
     runner = CliRunner()
     result = runner.invoke(
         mtng.cli.cli, ["auth", "login", "--host", "gitlab.cern.ch", "--token", "secret"]

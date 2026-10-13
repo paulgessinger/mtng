@@ -1,131 +1,173 @@
+from unittest.mock import AsyncMock, Mock
+
+import aiohttp
+import gidgethub
+from keyring.errors import KeyringError
 import pytest
 import typer
 from typer.testing import CliRunner
 
+import mtng.auth as auth
 import mtng.cli
+from mtng.forge.gitlab import GitLabError
 
 
-class DummyGitHubError(Exception):
-    def __init__(self, status_code: int, text: str):
-        super().__init__(text)
-        self.status_code = status_code
+@pytest.fixture(params=[("github", "github.com"), ("gitlab", "gitlab.cern.ch")])
+def target(request):
+    return auth.AuthTarget(*request.param)
 
 
-def test_resolve_github_token_prefers_cli_token(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("GH_TOKEN", "env-token")
-    monkeypatch.setattr("mtng.cli.get_keyring_token", lambda: "keyring-token")
-
-    assert mtng.cli.resolve_github_token("cli-token") == "cli-token"
-
-
-def test_resolve_github_token_prefers_env_over_keyring(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setenv("GH_TOKEN", "env-token")
-    monkeypatch.setattr("mtng.cli.get_keyring_token", lambda: "keyring-token")
-
-    assert mtng.cli.resolve_github_token(None) == "env-token"
-
-
-def test_resolve_github_token_uses_keyring(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.delenv("GH_TOKEN", raising=False)
-    monkeypatch.setattr("mtng.cli.get_keyring_token", lambda: "keyring-token")
-
-    assert mtng.cli.resolve_github_token(None) == "keyring-token"
-
-
-def test_resolve_github_token_with_source(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.delenv("GH_TOKEN", raising=False)
-    monkeypatch.setattr("mtng.cli.get_keyring_token", lambda: "keyring-token")
-
-    token, source = mtng.cli.resolve_github_token_with_source(None)
-    assert token == "keyring-token"
-    assert source == "system keychain"
-
-
-def test_resolve_github_token_requires_token(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.delenv("GH_TOKEN", raising=False)
-    monkeypatch.setattr("mtng.cli.get_keyring_token", lambda: None)
-
-    with pytest.raises(typer.BadParameter):
-        mtng.cli.resolve_github_token(None)
-
-
-def test_login_stores_token(monkeypatch: pytest.MonkeyPatch):
-    runner = CliRunner()
-    stored = {}
-
-    def fake_set_password(service: str, username: str, token: str):
-        stored["service"] = service
-        stored["username"] = username
-        stored["token"] = token
-
-    monkeypatch.setattr("mtng.cli.validate_github_token_sync", lambda token: "octocat")
-    monkeypatch.setattr("mtng.cli.keyring.set_password", fake_set_password)
-
-    result = runner.invoke(mtng.cli.cli, ["auth", "login", "--token", "abc123"])
-
-    assert result.exit_code == 0
-    assert stored == {
-        "service": mtng.cli.KEYRING_SERVICE,
-        "username": mtng.cli.KEYRING_USERNAME,
-        "token": "abc123",
-    }
-    assert "Stored GitHub token for @octocat" in result.stdout
-
-
-def test_login_without_validation(monkeypatch: pytest.MonkeyPatch):
-    runner = CliRunner()
-    stored = {}
-
-    def fake_set_password(service: str, username: str, token: str):
-        stored["service"] = service
-        stored["username"] = username
-        stored["token"] = token
-
-    def fail_validation(_token: str):
-        raise AssertionError("validation should be skipped")
-
-    monkeypatch.setattr("mtng.cli.validate_github_token_sync", fail_validation)
-    monkeypatch.setattr("mtng.cli.keyring.set_password", fake_set_password)
-
-    result = runner.invoke(
-        mtng.cli.cli,
-        ["auth", "login", "--token", "abc123", "--no-validate"],
+def test_resolution_precedence_and_existing_keyring(monkeypatch, target):
+    monkeypatch.setenv("GH_TOKEN", " github-env ")
+    monkeypatch.setenv("GITLAB_TOKEN", " gitlab-env ")
+    get = Mock(return_value=" stored-token ")
+    monkeypatch.setattr(auth.keyring, "get_password", get)
+    assert auth.resolve_token(" explicit ", target) == ("explicit", "--token")
+    get.assert_not_called()
+    assert auth.resolve_token(" ", target) == (f"{target.forge}-env", target.env_var)
+    get.assert_not_called()
+    monkeypatch.setenv(target.env_var, " ")
+    assert auth.resolve_token(None, target) == ("stored-token", "system keychain")
+    username = (
+        "github-token" if target.forge == "github" else "gitlab:gitlab.cern.ch:token"
+    )
+    get.assert_called_once_with("mtng", username)
+    monkeypatch.setenv(target.env_var, "ignored")
+    assert auth.resolve_token(None, target, allow_env=False) == (
+        "stored-token",
+        "system keychain",
     )
 
-    assert result.exit_code == 0
-    assert stored["token"] == "abc123"
-    assert "Stored GitHub token in your system keychain." in result.stdout
+
+@pytest.mark.parametrize("stored", [None, "", " "])
+def test_missing_token(monkeypatch, target, stored):
+    monkeypatch.delenv(target.env_var, raising=False)
+    monkeypatch.setattr(auth.keyring, "get_password", Mock(return_value=stored))
+    with pytest.raises(typer.BadParameter, match="No .* token provided"):
+        auth.resolve_token(None, target)
 
 
-def test_auth_check(monkeypatch: pytest.MonkeyPatch):
-    runner = CliRunner()
-
-    monkeypatch.setattr("mtng.cli.resolve_github_token", lambda token: "resolved-token")
-    monkeypatch.setattr("mtng.cli.validate_github_token_sync", lambda token: "octocat")
-
-    result = runner.invoke(mtng.cli.cli, ["auth", "check"])
-
-    assert result.exit_code == 0
-    assert "GitHub token is valid for @octocat." in result.stdout
-
-
-def test_format_github_request_error_with_status_code():
-    err = DummyGitHubError(401, "Bad credentials")
-    assert mtng.cli.format_github_request_error(err) == "401 Bad credentials"
-
-
-def test_auth_status(monkeypatch: pytest.MonkeyPatch):
-    runner = CliRunner()
-
+@pytest.mark.parametrize("operation", ["read", "write"])
+def test_keyring_failure(monkeypatch, target, operation):
+    monkeypatch.delenv(target.env_var, raising=False)
     monkeypatch.setattr(
-        "mtng.cli.resolve_github_token_with_source",
-        lambda token: ("resolved-token", "GH_TOKEN"),
+        auth.keyring, "get_password", Mock(side_effect=KeyringError("unavailable"))
     )
-    monkeypatch.setattr("mtng.cli.resolve_github_token", lambda token: "resolved-token")
-    monkeypatch.setattr("mtng.cli.validate_github_token_sync", lambda token: "octocat")
+    monkeypatch.setattr(
+        auth.keyring, "set_password", Mock(side_effect=KeyringError("unavailable"))
+    )
+    with pytest.raises(typer.BadParameter, match="system keychain"):
+        if operation == "read":
+            auth.resolve_token(None, target)
+        else:
+            auth.store_token("secret", target)
 
-    result = runner.invoke(mtng.cli.cli, ["auth", "status", "--validate"])
 
-    assert result.exit_code == 0
-    assert "GitHub token is configured (source: GH_TOKEN)." in result.stdout
-    assert "GitHub token is valid for @octocat." in result.stdout
+@pytest.mark.parametrize("validate", [True, False])
+def test_login_preserves_credentials(monkeypatch, target, validate):
+    store = Mock()
+    validator = AsyncMock(return_value="alice")
+    monkeypatch.setattr(auth.keyring, "set_password", store)
+    monkeypatch.setattr(mtng.cli, "validate_token", validator)
+    result = CliRunner().invoke(
+        mtng.cli.cli,
+        [
+            "auth",
+            "login",
+            "--host",
+            target.host,
+            "--token",
+            " secret ",
+            "--validate" if validate else "--no-validate",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    username = (
+        "github-token" if target.forge == "github" else "gitlab:gitlab.cern.ch:token"
+    )
+    store.assert_called_once_with("mtng", username, "secret")
+    if validate:
+        validator.assert_awaited_once_with("secret", target)
+    else:
+        validator.assert_not_called()
+    assert "secret" not in result.output
+
+
+@pytest.mark.parametrize("command", ["check", "status"])
+def test_check_and_status_resolve_once(monkeypatch, target, command):
+    resolver = Mock(return_value=("secret", target.env_var))
+    validator = AsyncMock(return_value="alice")
+    monkeypatch.setattr(mtng.cli, "resolve_token", resolver)
+    monkeypatch.setattr(mtng.cli, "validate_token", validator)
+    args = ["auth", command, "--host", target.host]
+    if command == "status":
+        args.append("--validate")
+    result = CliRunner().invoke(mtng.cli.cli, args)
+    assert result.exit_code == 0, result.output
+    resolver.assert_called_once_with(None, target)
+    validator.assert_awaited_once_with("secret", target)
+    assert f"{target.label} token is valid for @alice." in result.output
+    assert "secret" not in result.output
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("failure", ["network", "timeout", "api"])
+async def test_validation_errors_are_consistent(monkeypatch, target, failure):
+    errors = {
+        "network": aiohttp.ClientConnectionError("offline"),
+        "timeout": TimeoutError(),
+        "api": (
+            gidgethub.BadRequest(401, "Bad credentials")
+            if target.forge == "github"
+            else GitLabError(401, "/user")
+        ),
+    }
+    method = (
+        "mtng.auth.GitHubAPI.getitem"
+        if target.forge == "github"
+        else "mtng.auth.GitLabForge.request"
+    )
+    monkeypatch.setattr(method, AsyncMock(side_effect=errors[failure]))
+    with pytest.raises(typer.BadParameter, match="token validation failed"):
+        await auth.validate_token("secret", target)
+
+
+@pytest.mark.asyncio
+async def test_validation_provider_response(monkeypatch, target):
+    github = AsyncMock(return_value={"login": "octocat"})
+    gitlab = AsyncMock(return_value=({"username": "alice"}, {}))
+    monkeypatch.setattr("mtng.auth.GitHubAPI.getitem", github)
+    monkeypatch.setattr("mtng.auth.GitLabForge.request", gitlab)
+    assert await auth.validate_token("secret", target) == (
+        "octocat" if target.forge == "github" else "alice"
+    )
+    used, unused = (github, gitlab) if target.forge == "github" else (gitlab, github)
+    used.assert_awaited_once_with("/user")
+    unused.assert_not_called()
+
+
+def test_host_normalization_and_unsupported_targets():
+    assert auth.AuthTarget.from_host("https://GITHUB.COM:443/") == auth.AuthTarget(
+        "github", "github.com"
+    )
+    assert (
+        auth.AuthTarget("gitlab", "https://GITLAB.CERN.CH:443/").keyring_username
+        == "gitlab:gitlab.cern.ch:token"
+    )
+    with pytest.raises(ValueError, match="Enterprise"):
+        auth.AuthTarget("github", "github.example")
+
+
+def test_failed_login_does_not_store(monkeypatch, target):
+    store = Mock()
+    monkeypatch.setattr(auth.keyring, "set_password", store)
+    monkeypatch.setattr(
+        mtng.cli,
+        "validate_token",
+        AsyncMock(side_effect=typer.BadParameter("Invalid token")),
+    )
+    result = CliRunner().invoke(
+        mtng.cli.cli, ["auth", "login", "--host", target.host, "--token", "secret"]
+    )
+    assert result.exit_code != 0
+    store.assert_not_called()
