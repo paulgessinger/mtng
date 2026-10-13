@@ -25,8 +25,8 @@ compatible. GitHub-shaped model names are retained to avoid unrelated churn.
 - GitLab transport preserves encoded project/tag paths, paginates, sets a timeout
   and retries rate-limit/502/503/504 responses up to three total attempts.
 - Cache keys include backend, origin and a credential digest, never raw tokens.
-  Cache version 5 accounts for the new review-availability field. GitHub review
-  fetching now follows pagination instead of returning only its first page.
+  The HTTP cache stores JSON responses and validators, not pickled models. GitHub
+  review fetching follows pagination instead of returning only its first page.
 - GitLab supports merged/open MRs, open issues, label filters and release
   descriptions containing local `!123` references or full MR URLs. Release
   collection resolves data only; it does not select report sections or layout.

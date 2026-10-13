@@ -1,6 +1,5 @@
 """GitLab REST adapter. Report layout and section selection live elsewhere."""
 
-import asyncio
 import hashlib
 import re
 from datetime import datetime
@@ -10,7 +9,8 @@ from urllib.parse import quote, unquote, urlsplit
 import aiohttp
 from yarl import URL
 
-from mtng.forge.base import bounded_gather, memoize
+from mtng.forge.http import HttpTransport
+from mtng.forge.base import bounded_gather
 from mtng.models import Issue, Label, PullRequest, Review, User
 from mtng.spec import normalize_host
 
@@ -59,8 +59,11 @@ def extract_release_numbers(body: str, repo: str, host: str) -> list[int]:
 
 
 class GitLabForge:
-    def __init__(self, session: aiohttp.ClientSession, host: str, token: str):
+    def __init__(
+        self, session: aiohttp.ClientSession, host: str, token: str, *, transport=None
+    ):
         self.session = session
+        self.transport = transport or HttpTransport(session)
         self.host = normalize_host(host)
         self.token = token
         self.base_url = f"https://{self.host}/api/v4"
@@ -75,26 +78,17 @@ class GitLabForge:
             raise ValueError("Expected a relative GitLab API path")
         # encoded=True preserves encoded slashes in project IDs and release tags.
         url = URL(self.base_url + path, encoded=True)
-        for attempt in range(3):
-            async with self.session.get(
-                url,
-                params=params,
-                headers={"PRIVATE-TOKEN": self.token},
-                allow_redirects=False,
-                timeout=aiohttp.ClientTimeout(total=60),
-            ) as response:
-                if response.status == 429 or response.status in (502, 503, 504):
-                    if attempt < 2:
-                        retry = response.headers.get("Retry-After", "")
-                        delay = min(float(retry), 30) if retry.isdigit() else 2**attempt
-                        await asyncio.sleep(delay)
-                        continue
-                if not 200 <= response.status < 300:
-                    raise GitLabError(response.status, path)
-                return await response.json(), response.headers
-        raise AssertionError("unreachable")
+        if params:
+            url = url.extend_query(params)
+        status, headers, body = await self.transport.request(
+            "GET", url, {"PRIVATE-TOKEN": self.token}
+        )
+        if not 200 <= status < 300:
+            raise GitLabError(status, path)
+        import json
 
-    @memoize(expire=300)
+        return json.loads(body), headers
+
     async def getitem(self, path: str):
         data, _ = await self.request(path)
         return data
@@ -105,7 +99,7 @@ class GitLabForge:
             data, headers = await self.request(path, dict(params))
             for item in data:
                 yield item
-            next_page = headers.get("X-Next-Page")
+            next_page = headers.get("x-next-page", headers.get("X-Next-Page"))
             if next_page == "":
                 break
             if next_page is None:
@@ -185,7 +179,6 @@ class GitLabForge:
                 result.append(item)
         return result
 
-    @memoize(expire=300)
     async def merged_prs(
         self,
         repo_name: str,
@@ -212,7 +205,6 @@ class GitLabForge:
         ]
         return await self.add_reviews(repo_name, prs)
 
-    @memoize(expire=300)
     async def open_prs(
         self,
         repo_name: str,
@@ -228,7 +220,6 @@ class GitLabForge:
         )
         return await self.add_reviews(repo_name, prs)
 
-    @memoize(expire=300)
     async def open_issues(
         self,
         repo_name: str,
@@ -268,7 +259,6 @@ class GitLabForge:
             and (end is None or item.created_at <= end)
         ]
 
-    @memoize(expire=300)
     async def release_prs(
         self,
         repo_name: str,

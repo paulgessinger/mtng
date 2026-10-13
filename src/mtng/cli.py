@@ -28,6 +28,7 @@ from mtng.generate import generate_latex
 from mtng.spec import Spec
 from mtng.collect import collect_repositories
 from mtng.forge import GitHubForge
+from mtng.forge.http import CachedGitHubAPI, HttpTransport, RateLimitError
 from mtng.forge.gitlab import GitLabForge, GitLabError
 from mtng.auth import AuthTarget, resolve_token, store_token, validate_token
 from mtng.generate import env
@@ -162,6 +163,15 @@ async def handle_event(event: str, session):
 @make_sync
 async def generate(
     config: typer.FileText,
+    cache_stats: Annotated[
+        bool, typer.Option(help="Print HTTP cache and request counters")
+    ] = False,
+    refresh: Annotated[
+        bool, typer.Option(help="Revalidate cached API responses immediately")
+    ] = False,
+    no_cache: Annotated[
+        bool, typer.Option(help="Disable persistent API response caching")
+    ] = False,
     token: Annotated[
         str | None,
         typer.Option(
@@ -277,9 +287,25 @@ async def generate(
 
         forge = {
             (kind, host): (
-                GitHubForge(GitHubAPI(session, __name__, oauth_token=value))
+                GitHubForge(
+                    CachedGitHubAPI(
+                        session,
+                        __name__,
+                        oauth_token=value,
+                        transport=HttpTransport(
+                            session, max_age=0 if refresh else 300, enabled=not no_cache
+                        ),
+                    )
+                )
                 if kind == "github"
-                else GitLabForge(session, host, value)
+                else GitLabForge(
+                    session,
+                    host,
+                    value,
+                    transport=HttpTransport(
+                        session, max_age=0 if refresh else 300, enabled=not no_cache
+                    ),
+                )
             )
             for (kind, host), value in tokens.items()
         }
@@ -289,12 +315,23 @@ async def generate(
             data = await collect_repositories(
                 spec.repos, forge=forge, since=since, now=now, release=release
             )
-        except (GitLabError, aiohttp.ClientError, TimeoutError) as error:
+        except (
+            GitLabError,
+            RateLimitError,
+            aiohttp.ClientError,
+            TimeoutError,
+        ) as error:
             raise typer.BadParameter(
                 f"Repository collection failed: {error}"
             ) from error
 
         contributions = await contributions if event is not None else []
+        if cache_stats:
+            for (kind, host), backend in forge.items():
+                transport = (
+                    backend.gh.transport if kind == "github" else backend.transport
+                )
+                console.print(f"{kind} {host}: {transport.stats}")
 
     with Status("Generating LaTeX"):
         latex = generate_latex(

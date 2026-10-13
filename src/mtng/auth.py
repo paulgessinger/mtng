@@ -11,6 +11,7 @@ import keyring
 from keyring.errors import KeyringError
 import typer
 
+from mtng.forge.http import HttpTransport, RateLimitError
 from mtng.forge.gitlab import GitLabForge, GitLabError
 from mtng.spec import normalize_host
 
@@ -99,11 +100,18 @@ async def validate_token(token: str, target: AuthTarget) -> str:
                     "/user"
                 )
                 return data["login"]
-            data, _ = await GitLabForge(session, target.host, token).request("/user")
+            # Validation deliberately bypasses the cache.
+            data, _ = await GitLabForge(
+                session,
+                target.host,
+                token,
+                transport=HttpTransport(session, enabled=False),
+            ).request("/user")
             return data["username"]
     except (
         gidgethub.GitHubException,
         GitLabError,
+        RateLimitError,
         aiohttp.ClientError,
         TimeoutError,
     ) as error:

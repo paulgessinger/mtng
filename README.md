@@ -541,3 +541,24 @@ three GitHub requests against this repository. To run it locally, set `GH_TOKEN`
 and `MTNG_GITHUB_TEST_PROJECT=owner/repo`, then run
 `uv run --group dev pytest tests/test_live_github.py -m integration -n 1`.
 Live checks bypass the application cache; cached success is not API validation.
+
+### API response cache
+
+GitHub and GitLab use a persistent JSON HTTP cache under the platform's mtng
+cache directory (`http-v1/`). Keys isolate origins, query parameters, credentials
+and representation headers. Fresh responses are reused for up to five minutes,
+subject to the server's cache directives. Expired responses are revalidated using
+ETag or Last-Modified when available; validators and bodies are retained for up
+to 30 days. Errors never substitute stale successful data. Old model caches are
+no longer read.
+
+Use `generate --refresh` to revalidate immediately, `--no-cache` to bypass disk
+reads/writes, and `--cache-stats` to print hit, request, revalidation, retry and
+shared-request counts. Authentication checks bypass the cache. Cached data may
+include private repository content; it stays scoped to the requesting credentials.
+
+Within one process, identical simultaneous requests share a response and requests
+to each origin are serialized. Rate-limit headers control retry timing, with at
+most three attempts and a 60-second total wait budget. Longer limits produce an
+error with retry timing instead of retrying early. CI jobs are independent, so
+normal CI uses offline fixtures rather than relying on shared private caches.
