@@ -1,5 +1,5 @@
 import pydantic
-from typing import Literal
+from typing import Annotated, Literal
 from urllib.parse import urlsplit
 import re
 from pydantic import ConfigDict
@@ -300,6 +300,84 @@ class Repository(BaseModel):
         return self.stale_label is not None
 
 
+class LabelFilter(BaseModel):
+    include: list[str] = pydantic.Field(default_factory=list)
+    exclude: list[str] = pydantic.Field(default_factory=list)
+
+
+class RepositorySection(BaseModel):
+    repositories: list[str] = pydantic.Field(min_length=1)
+    title: str | None = None
+    labels: LabelFilter = pydantic.Field(default_factory=LabelFilter)
+
+    @pydantic.field_validator("repositories")
+    @classmethod
+    def unique_repositories(cls, value):
+        if len(value) != len(set(value)):
+            raise ValueError("A section cannot list the same repository twice")
+        return value
+
+
+class ChangesSection(RepositorySection):
+    type: Literal["changes"] = "changes"
+    state: Literal["merged", "open"] = "merged"
+    release: str | None = None
+    group_by: Literal["none", "category"] = "none"
+    drafts: Literal["include", "exclude", "only"] | None = None
+    summary: bool = True
+
+    @pydantic.model_validator(mode="after")
+    def check_release(self):
+        if self.release is not None and self.state != "merged":
+            raise ValueError("release is only supported for merged changes")
+        if self.state != "open" and self.drafts is not None:
+            raise ValueError("drafts is only supported for open changes")
+        return self
+
+
+class StatisticsSection(RepositorySection):
+    type: Literal["statistics"] = "statistics"
+    release: str | None = None
+
+
+class IssuesSection(RepositorySection):
+    type: Literal["issues"] = "issues"
+
+
+class StaleSection(RepositorySection):
+    type: Literal["stale"] = "stale"
+    label: str = pydantic.Field(min_length=1)
+
+
+class DiscussionSection(RepositorySection):
+    type: Literal["discussion"] = "discussion"
+    label: str = pydantic.Field(min_length=1)
+
+
+class IndicoSection(BaseModel):
+    type: Literal["indico"] = "indico"
+    event: str
+    title: str = "Contributions today"
+
+    @pydantic.field_validator("event")
+    @classmethod
+    def check_event(cls, value):
+        if not re.fullmatch(r"https://[^/?#]+/event/\d+/?", value):
+            raise ValueError("event must be an HTTPS Indico event URL")
+        return value
+
+
+Section = Annotated[
+    ChangesSection
+    | StatisticsSection
+    | IssuesSection
+    | StaleSection
+    | DiscussionSection
+    | IndicoSection,
+    pydantic.Field(discriminator="type"),
+]
+
+
 class Spec(BaseModel):
     title: str | None = pydantic.Field(
         None,
@@ -309,7 +387,62 @@ class Spec(BaseModel):
         None,
         description="Left-side text shown in the footline. Supports the {release}, {repos}, {since} and {date} placeholders. If omitted, mtng is used.",
     )
-    repos: list[Repository]
+    repos: list[Repository] = pydantic.Field(default_factory=list)
+    repositories: dict[str, Repository] = pydantic.Field(default_factory=dict)
+    sections: list[Section] | None = None
+
+    @pydantic.model_validator(mode="after")
+    def check_sections(self):
+        if self.sections is None:
+            if self.repositories:
+                raise ValueError("repositories requires an explicit sections list")
+            return self
+        if self.repos:
+            raise ValueError(
+                "Use either legacy repos or repositories/sections, not both"
+            )
+        for section in self.sections:
+            if isinstance(section, IndicoSection):
+                continue
+            unknown = set(section.repositories) - self.repositories.keys()
+            if unknown:
+                raise ValueError(
+                    f"Unknown repository aliases: {', '.join(sorted(unknown))}"
+                )
+        names = [repo.display_name or repo.name for repo in self.source_repositories]
+        if len(names) != len(set(names)):
+            raise ValueError(
+                "Set unique display_name values for distinct repository aliases"
+            )
+        return self
+
+    @property
+    def source_repositories(self) -> list[Repository]:
+        if self.sections is None:
+            return self.repos
+        aliases = dict.fromkeys(
+            alias
+            for section in self.sections
+            if not isinstance(section, IndicoSection)
+            for alias in section.repositories
+        )
+        return [self.repositories[alias] for alias in aliases]
+
+    def needs_since(self, release: str | None) -> bool:
+        if self.sections is None:
+            return release is None
+        return any(
+            isinstance(section, IssuesSection | StaleSection)
+            or (
+                isinstance(section, StatisticsSection | ChangesSection)
+                and (
+                    not isinstance(section, ChangesSection) or section.state == "merged"
+                )
+                and section.release is None
+                and release is None
+            )
+            for section in self.sections
+        )
 
     @pydantic.model_validator(mode="after")
     def check_display_keys(self) -> "Spec":

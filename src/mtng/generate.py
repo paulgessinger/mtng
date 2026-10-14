@@ -63,7 +63,9 @@ def build_placeholders(data, since: datetime, now: datetime) -> dict:
     return {
         "release": ", ".join(tags),
         "repos": ", ".join(
-            repo["spec"].display_name or name for name, repo in data.items()
+            dict.fromkeys(
+                repo["spec"].display_name or repo["spec"].name for repo in data.values()
+            )
         ),
         "since": since.strftime("%Y-%m-%d") if since is not None else "",
         "date": now.strftime("%Y-%m-%d"),
@@ -148,23 +150,36 @@ env.globals["include_raw"] = lambda q: Markup(env.loader.get_source(env, q)[0])
 
 
 def generate_latex(
-    spec: Spec, data, since: datetime, now: datetime, contributions, full_tex: bool
+    spec: Spec,
+    data,
+    since: datetime,
+    now: datetime,
+    contributions,
+    full_tex: bool,
+    events=None,
 ) -> str:
-    tpl = env.get_template("main.tex")
+    tpl = env.get_template("main.tex" if spec.sections is None else "sections.tex")
 
     placeholders = build_placeholders(data, since, now)
 
     return tpl.render(
         request_label=(
             "Merge request"
-            if spec.repos and all(repo.forge == "gitlab" for repo in spec.repos)
+            if spec.source_repositories
+            and all(repo.forge == "gitlab" for repo in spec.source_repositories)
             else (
                 "Pull/merge request"
-                if any(repo.forge == "gitlab" for repo in spec.repos)
+                if any(repo.forge == "gitlab" for repo in spec.source_repositories)
                 else "Pull request"
             )
         ),
+        title_repositories=list(
+            dict.fromkeys(
+                repo["spec"].display_name or repo["spec"].name for repo in data.values()
+            )
+        ),
         repos=data,
+        events=events or {},
         spec=spec,
         deck_title=expand_placeholders(spec.title, placeholders),
         footline_left=expand_placeholders(spec.footline_left, placeholders),

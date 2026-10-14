@@ -25,8 +25,9 @@ from rich.panel import Panel
 import rich.rule
 
 from mtng.generate import generate_latex
-from mtng.spec import Spec
+from mtng.spec import Spec, IndicoSection
 from mtng.collect import collect_repositories
+from mtng.sections import collect_sections
 from mtng.report_data import RecordingForge, ReportData
 from mtng.forge import GitHubForge
 from mtng.forge.http import CachedGitHubAPI, HttpTransport, RateLimitError
@@ -243,11 +244,16 @@ async def generate(
             param_hint="--preamble",
         )
 
+    spec = load_spec(config)
+    if spec.sections is not None and event is not None:
+        raise typer.BadParameter(
+            "Use an indico section instead of --event with explicit sections"
+        )
     now = normalize_local_datetime(parse_datetime_option(now, "--now"))
     if since is None:
-        if release is None:
+        if spec.needs_since(release):
             raise typer.BadParameter(
-                "--since is required unless --release is provided.",
+                "--since is required by the configured report sections.",
                 param_hint="--since",
             )
         since = now
@@ -264,10 +270,9 @@ async def generate(
         if latexmk is None:
             raise ValueError("latexmk could not be found, cannot compile using --pdf")
 
-    spec = load_spec(config)
     if since > now:
         raise typer.BadParameter("--since must not be after --now")
-    keys = {repo.forge_key for repo in spec.repos}
+    keys = {repo.forge_key for repo in spec.source_repositories}
     if token and token.strip() and len(keys) != 1:
         raise typer.BadParameter(
             "--token requires exactly one forge/host in the configuration"
@@ -286,8 +291,8 @@ async def generate(
         )[0]
 
     async with aiohttp.ClientSession() as session:
-        if event is not None:
-            contributions = handle_event(event, session)
+        events = {}
+        contributions = []
 
         forge = {
             (kind, host): (
@@ -321,13 +326,18 @@ async def generate(
         )
         print(Panel("Collecting repository data"))
         try:
-            data = await collect_repositories(
-                spec.repos,
-                forge=recorders if recorders is not None else forge,
-                since=since,
-                now=now,
-                release=release,
-            )
+            backends = recorders if recorders is not None else forge
+            if spec.sections is None:
+                data = await collect_repositories(
+                    spec.repos, forge=backends, since=since, now=now, release=release
+                )
+            else:
+                data = await collect_sections(spec, since, now, backends, release)
+            if event is not None:
+                contributions = await handle_event(event, session)
+            for section in spec.sections or []:
+                if isinstance(section, IndicoSection) and section.event not in events:
+                    events[section.event] = await handle_event(section.event, session)
         except (
             GitLabError,
             RateLimitError,
@@ -338,7 +348,6 @@ async def generate(
                 f"Repository collection failed: {error}"
             ) from error
 
-        contributions = await contributions if event is not None else []
         if cache_stats:
             for (kind, host), backend in forge.items():
                 transport = (
@@ -353,10 +362,13 @@ async def generate(
             now=now,
             release=release,
             contributions=contributions,
+            events=events,
             backends=[recorder.data for recorder in recorders.values()],
         )
         save_data.write_text(snapshot.model_dump_json(indent=2) + "\n")
-    output_report(spec, data, since, now, contributions, full_tex, preamble, pdf, tex)
+    output_report(
+        spec, data, since, now, contributions, full_tex, preamble, pdf, tex, events
+    )
 
 
 def output_report(
@@ -369,6 +381,7 @@ def output_report(
     preamble=None,
     pdf=None,
     tex=None,
+    events=None,
 ):
     if preamble is not None and full_tex:
         raise typer.BadParameter("--preamble cannot be used with --full.")
@@ -385,6 +398,7 @@ def output_report(
             now=now,
             contributions=contributions,
             full_tex=full_tex,
+            **({"events": events} if spec.sections is not None else {}),
         )
 
     if preamble is not None:
@@ -462,9 +476,27 @@ async def render(
         if config is not None:
             with config.open() as stream:
                 spec = load_spec(stream)
-        data = await collect_repositories(
-            spec.repos, saved.since, saved.now, saved.forges(), release=saved.release
-        )
+        events = {
+            url: [item.model_dump() for item in items]
+            for url, items in saved.events.items()
+        }
+        for section in spec.sections or []:
+            if isinstance(section, IndicoSection) and section.event not in events:
+                raise ValueError(
+                    f"Saved data does not contain event {section.event}; collect a new snapshot"
+                )
+        if spec.sections is None:
+            data = await collect_repositories(
+                spec.repos,
+                saved.since,
+                saved.now,
+                saved.forges(),
+                release=saved.release,
+            )
+        else:
+            data = await collect_sections(
+                spec, saved.since, saved.now, saved.forges(), saved.release
+            )
     except (ValueError, KeyError) as error:
         raise typer.BadParameter(str(error)) from error
     output_report(
@@ -477,6 +509,7 @@ async def render(
         preamble,
         pdf,
         tex,
+        events,
     )
 
 

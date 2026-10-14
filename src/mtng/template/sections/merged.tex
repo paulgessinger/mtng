@@ -1,0 +1,59 @@
+{% if repo["merged_prs"]|length > 0 %}
+
+{% if not repo["spec"].group_prs_by_category and repo["merged_prs_listed"]|length > 0 %}
+\section{ \reponame{} \\ {% if repo["release_tag"] is not none %}Release {{ repo["release_tag"]|sanitize }}{% else %}Merged {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}{% endif %}}
+{% endif %}
+
+{% if show_statistics | default(true) %}{% include "sections/statistics.tex" %}{% endif %}
+
+{% if repo["spec"].show_breaking_changes and repo["breaking_prs"]|length > 0 %}
+\section{ \protect\cusemoji{warning}{} Breaking changes}
+{{- render_pr_frame(
+  frame_title("breaking_changes", repo),
+  repo["breaking_prs"],
+  "MERGED",
+  "merged on"
+) -}}
+{% endif %}
+
+{% if repo["spec"].group_prs_by_category and repo["merged_prs_by_category"]|length > 0 %}
+{% for group in repo["merged_prs_by_category"] %}
+\section{ {% if group.get("emoji") %}\protect\cusemoji{ {{- group["emoji"] -}} }{} {% endif %}{{ group["title"]|sanitize }}}
+{{- render_pr_frame(
+  frame_title(
+    "release_prs" if repo["release_tag"] is not none else "merged_prs",
+    repo,
+    group["title"]
+  ),
+  group["items"],
+  "MERGED",
+  "merged on"
+) -}}
+{% endfor %}
+{% elif repo["merged_prs_listed"]|length > 0 %}
+{{- render_pr_frame(
+  frame_title(
+    "release_prs" if repo["release_tag"] is not none else "merged_prs",
+    repo
+  ),
+  repo["merged_prs_listed"],
+  "MERGED",
+  "merged on"
+) -}}
+{% endif %}
+
+{% else %}
+\begin{frame}[c]{}
+  \begin{center}
+    \Large
+    \color{shivablue}
+    \sffamily
+    {% if repo["release_tag"] is not none %}
+    No {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }} found in release \textbf{ {{ repo["release_tag"]|sanitize }} } for\\
+    {% else %}
+    No merged {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }} since \textbf{ {{ since.strftime('%Y-%m-%d') }} } in\\
+    {% endif %}
+    \textbf{ \reponame{} }
+  \end{center}
+\end{frame}
+{% endif %}

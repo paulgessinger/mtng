@@ -1,0 +1,24 @@
+{% if repo["needs_discussion"]|length > 0 %}
+{% for item in repo["needs_discussion"] %}
+\begin{frame}[allowframebreaks,t]{ {{- frame_title("needs_discussion", repo) -}} }
+
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+  \begin{itemize}
+    \footnotesize
+    \setlength{\itemsep}{0.2em}
+    \setlength{\parsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\topsep}{0pt}
+    {%- call show_item(item, repo["spec"], mode) -%}
+    {%- endcall %}
+  \end{itemize}
+
+  \vspace{1em}
+  {% if item.body is not none %}
+    {{ item.body | sanitize }}
+  {% endif %}
+
+\end{frame}
+{%- endfor %}
+
+{% endif %}
