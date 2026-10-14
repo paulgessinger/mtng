@@ -1,6 +1,6 @@
 {% from "macros.tex" import show_item %}
 {% macro render_pr_frame(title, prs, mode, date_prefix) %}
-\begin{frame}[allowframebreaks,t]{ {{- title -}} }
+\begin{frame}[allowframebreaks=0.9,t]{ {{- title -}} }
 
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
@@ -12,8 +12,10 @@
     {% if mode == "OPEN" %}
     {% for wip in ["false", "true"] %}
     {% for pr in prs|selectattr("is_wip", wip)|sort(reverse=True, attribute="updated_at") %}
-    {%- call show_item(pr, repo["spec"], mode=mode) -%}
-    , {{ date_prefix }} {{ pr.updated_at.strftime('%Y-%m-%d') }}
+    {%- call show_item(pr, repo["spec"], mode=mode, is_new=since is not none and since <= pr.created_at <= now) -%}
+    {%- set age = pr.created_at|age_days(now) -%}
+    {%- set inactivity = pr.updated_at|age_days(now) -%}
+    , {% if age == 0 %}opened today{% else %}open for {{ age|human_days }}{% endif %}{% if inactivity > 0 %}, inactive for {{ inactivity|human_days }}{% endif %}
     {%- endcall %}
     {%- endfor %}
     {%- endfor %}

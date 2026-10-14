@@ -7,6 +7,12 @@
 \providecolor{alertred}{HTML}{EF5D60}
 
 \usepackage{iftex}
+% PDFLaTeX needs scalable text/symbol fonts for microtype expansion. Minimal
+% TeX installations can otherwise fall back to bitmap Computer Modern fonts.
+\ifPDFTeX
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\fi
 \usepackage{microtype}
 \usepackage{calc}
 \usepackage{etoolbox}
@@ -51,7 +57,7 @@ BoldItalicFont=* Bold Oblique]%
 \setbeamerfont*{block title}{family=\avenir,series=\bfseries\addheight}
 }{%
 \setbeamerfont{title}{size=\fontsize{24pt}{26pt},series=\bfseries}
-\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamerfont{frametitle}{size=\large,series=\bfseries}
 }
 % emoji.sty only warns when no emoji font is installed, but \emoji then errors
 % out where it is used. Check for the same fonts it probes for, and fall back to
@@ -95,7 +101,7 @@ BoldItalicFont=* Bold Oblique]%
 \setbeamercolor{section title}{fg=shivablue}
 \setbeamercolor{footline}{fg=white,bg=shivablue}
 \setbeamerfont{section title}{size=\huge,series=\bfseries}
-\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamerfont{frametitle}{size=\large,series=\bfseries}
 \setbeamerfont{page number in head/foot}{size=\tiny}
 \setbeamerfont{footline}{size=\tiny}
 \setbeamertemplate{blocks}[rounded][shadow=false]
@@ -124,7 +130,7 @@ BoldItalicFont=* Bold Oblique]%
 \def\insertframetitle{}
 \setbeamertemplate{frametitle}{
   \begin{beamercolorbox}[wd=\textwidth]{frametitle}
-    \usebeamerfont{frametitle}\insertframetitle
+    \usebeamerfont{frametitle}\raggedright\insertframetitle\par
   \end{beamercolorbox}
 }
 \defbeamertemplate{frame numbering}{none}{}
@@ -156,85 +162,107 @@ BoldItalicFont=* Bold Oblique]%
 \providecommand{\prstr}[1]{\##1}
 \providecommand{\issstr}[1]{\##1}
 
-\providecommand{\prmerged}{
-  \normalsize
-  \tikzsetnextfilename{prmerged}
+% Fixed text metrics keep every pill the same height, including labels with
+% descenders and emoji. Keep all dimensions in the same footnotesize font.
+\tikzset{prpill/.style={rectangle,rounded corners=0.35em,
+  font=\footnotesize,text height=0.85em,text depth=0.2em,
+  inner xsep=0.3em,inner ysep=0.2em}}
+
+\providecommand{\prmerged}{%
+  \begingroup\footnotesize%
+  \tikzsetnextfilename{prmerged}%
   \raisebox{-0.15\height}{%
-  \begin{tikzpicture}[line width=1pt]
-    \begin{scope}[color=Purple,scale=0.9]
-      \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};
-      \node[draw,circle,inner sep=0,minimum width=0.27em] (mr) at (0.9em,0.4em) {};
-      \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};
-      \draw[shorten <=-0.1pt,shorten >=-0.1pt] (mr) to[in=-90,out=180] (tl);
-      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
-    \end{scope}
+  \begin{tikzpicture}[line width=1pt]%
+    \begin{scope}[color=Purple,scale=0.9]%
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};%
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (mr) at (0.9em,0.4em) {};%
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};%
+      \draw[shorten <=-0.1pt,shorten >=-0.1pt] (mr) to[in=-90,out=180] (tl);%
+      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);%
+    \end{scope}%
   \end{tikzpicture}%
   }%
   \hspace*{0.2em}%
-}
+  \endgroup%
+}%
 
 
-\providecommand{\propen}{
-  \normalsize
-  \tikzsetnextfilename{propen}
-  \hspace*{-0.2em}
-  \raisebox{-0.3\height}{
-  \begin{tikzpicture}[line width=1pt]
-    \node[fill=LimeGreen,text=white,rounded corners=0.5em, inner sep=0.3em] (f) at (0,0) {\hspace{1.3em}\small Open};
-    \begin{scope}[color=white,shift={($(f.west) + (0.7em,-0.3em)$)},scale=0.7]
-      \tikzset{>={Triangle[angle=35:2pt 2]}}
-      \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};
-      \node[draw,circle,inner sep=0,minimum width=0.27em] (br) at (0.9em,0) {};
-      \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};
-      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br)
-        --++(0,0.7em)
-        to[out=90,in=0] (tl);
-      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);
-    \end{scope}
-  \end{tikzpicture}
+\providecommand{\propen}[1][LimeGreen]{%
+  \begingroup\footnotesize%
+  \tikzsetnextfilename{propen}%
+  \raisebox{-0.15\height}{%
+  \begin{tikzpicture}[line width=1pt]%
+    \begin{scope}[color=#1,scale=0.9]%
+      \tikzset{>={Triangle[angle=35:2pt 2]}}%
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (bl) at (0,0) {};%
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (br) at (0.9em,0) {};%
+      \node[draw,circle,inner sep=0,minimum width=0.27em] (tl) at (0,1em) {};%
+      \draw[->,shorten <=-0.1pt,shorten >=-0.1pt] (br)%
+        --++(0,0.7em)%
+        to[out=90,in=0] (tl);%
+      \draw[shorten >=-0.1pt,shorten <=-0.1pt] (bl) -- (tl);%
+    \end{scope}%
+  \end{tikzpicture}%
+}%
+  \hspace*{0.2em}%
+  \endgroup%
+}%
+
+% Keep the new-PR marker compact, with text when emoji fonts are unavailable.
+\providecommand{\prnew}{%
+  \begingroup\footnotesize%
+  \ifmtngemoji\cusemoji{new-button}%
+  \else{\scriptsize\textcolor{blue!65!black}{\textbf{NEW}}}\fi%
+  \hspace{0.2em}\endgroup%
 }
+
+\providecommand{\prbreaking}[1]{%
+  \begingroup\footnotesize%
+  \ifmtngemoji\cusemoji{police-car-light}%
+  \else{\scriptsize\textcolor{#1}{\textbf{!}}}\fi%
+  \hspace{0.2em}\endgroup%
 }
+
+\providecommand{\prdraft}{\propen[black!45]}
 
 \providecommand{\prwip}{
-  \normalsize
+  \begingroup\footnotesize
   \tikzsetnextfilename{prwip}
-  \hspace*{-1.1em}
   \raisebox{-0.3\height}{
   \begin{tikzpicture}[]
-    \node[rectangle,fill=Yellow,rounded corners=0.5em,
-          minimum height=1.55em,minimum width=2.9em] (t) {\small\emojispace{construction}WIP};
+    \node[prpill,fill=Yellow] (t) {\footnotesize\emojispace{construction}WIP};
   \end{tikzpicture}
-  \hspace*{-0.8em}
+  \hspace*{0.2em}
 }
+  \endgroup
 }
 
 \providecommand{\prstale}{
-  \normalsize
+  \begingroup\footnotesize
   \tikzsetnextfilename{prstale}
-  \hspace*{-1.1em}
   \raisebox{-0.3\height}{
   \begin{tikzpicture}[]
-    \node[rectangle,fill=beige,rounded corners=0.5em,
-          minimum height=1.55em] (t) {\small{}Stale};
+    \node[prpill,fill=beige] (t) {\footnotesize{}Stale};
   \end{tikzpicture}
-  \hspace*{-0.8em}
+  \hspace*{0.2em}
 }
+  \endgroup
 }
 
 % Gap between the category pill and the PR title, overridable by the host deck.
-\providecommand{\prcategorysep}{0.35em}
+\providecommand{\prcategorysep}{0.25em}
 % Extra indent for PR/issue lists, so the bullet and the status symbol do not sit
 % flush against the text margin.
-\providecommand{\prlistindent}{0.8em}
+\providecommand{\prlistindent}{0.5em}
 \providecommand{\prcategory}[2]{%
-  \normalsize
+  \begingroup\footnotesize
   \raisebox{-0.3\height}{%
   \begin{tikzpicture}[]
-    \node[rectangle,fill=#2,text=white,rounded corners=0.5em,
-          minimum height=1.55em,inner xsep=0.5em] (t) {\small{}#1};
+    \node[prpill,fill=#2,text=white] (t) {\footnotesize{}#1};
   \end{tikzpicture}%
   }%
   \hspace*{\prcategorysep}%
+  \endgroup
 }
 
 %% ---- bento statistics tiles ----------------------------------------------
@@ -305,9 +333,10 @@ BoldItalicFont=* Bold Oblique]%
 }
 
 \providecommand{\iss}{
+  \begingroup
   % \tikzset{external/export next=false}
   \tikzsetnextfilename{iss}
-  \normalsize
+  \footnotesize
   \hspace*{-0.7em}
   \raisebox{-0.3\height}{
   \begin{tikzpicture}[line width=1pt,color=LimeGreen]
@@ -321,4 +350,5 @@ BoldItalicFont=* Bold Oblique]%
   \end{tikzpicture}
   \hspace*{-0.9em}
 }
+  \endgroup
 }

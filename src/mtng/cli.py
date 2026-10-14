@@ -211,12 +211,12 @@ async def generate(
         bool, typer.Option(help="Print HTTP cache and request counters")
     ] = False,
     cache_max_age: Annotated[
-        int,
+        int | None,
         typer.Option(
             min=0,
-            help="Reuse local API data for this many seconds, overriding server freshness",
+            help="Override config cache_max_age (seconds; default 300), overriding server freshness",
         ),
-    ] = 300,
+    ] = None,
     refresh: Annotated[
         bool, typer.Option(help="Revalidate cached API responses immediately")
     ] = False,
@@ -297,6 +297,8 @@ async def generate(
         spec = load_spec(*([config] if config is not None else []), *(configs or []))
     except ValueError as error:
         raise typer.BadParameter(str(error)) from error
+    if cache_max_age is None:
+        cache_max_age = spec.cache_max_age
     if spec.sections is not None and event is not None:
         raise typer.BadParameter(
             "Use an indico section instead of --event with explicit sections"

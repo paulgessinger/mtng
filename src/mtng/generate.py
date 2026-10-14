@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import re
+import humanize
 from markupsafe import Markup
 from jinja2 import Environment, FileSystemLoader
 
@@ -137,7 +138,59 @@ env = Environment(
     loader=FileSystemLoader(Path(__file__).parent / "template"),
 )
 
+
+def title_characters(value: str) -> Markup:
+    """Group escaped characters so TeX truncation cannot split escape commands."""
+    return Markup("".join("{" + str(sanitize(char)) + "}" for char in value))
+
+
+def title_units(value: str) -> Markup:
+    """Prefer whole words; retain character truncation for short/token-only titles."""
+    words = re.findall(r"\S+\s*", value)
+    if len(words) < 3:
+        return title_characters(value)
+    return Markup("".join("{" + str(sanitize(word)) + "}" for word in words))
+
+
+def age_days(value: datetime, now: datetime) -> int:
+    # Compare calendar days in the report timezone, independent of render time.
+    if value.tzinfo is not None and now.tzinfo is not None:
+        value = value.astimezone(now.tzinfo)
+    return max(0, (now.date() - value.date()).days)
+
+
+def human_days(days: int) -> str:
+    """Readable ages without rounding a few weeks up to a whole month."""
+    return humanize.naturaldelta(timedelta(days=days), months=False)
+
+
+def review_status(item) -> tuple[str, str]:
+    if not getattr(item, "reviews_available", False):
+        return "review unavailable", "black!55"
+    latest = {}
+    reviews = sorted(
+        enumerate(item.reviews),
+        key=lambda pair: (
+            pair[1].submitted_at.timestamp() if pair[1].submitted_at else float("-inf"),
+            pair[0],
+        ),
+    )
+    for _, review in reviews:
+        if review.state in {"APPROVED", "CHANGES_REQUESTED", "DISMISSED"}:
+            latest[review.user.login] = review.state
+    if "CHANGES_REQUESTED" in latest.values():
+        return "changes requested", "red!75!black"
+    if "APPROVED" in latest.values():
+        return "approved", "green!50!black"
+    return "awaiting review", "black!55"
+
+
 env.filters["sanitize"] = sanitize
+env.filters["title_characters"] = title_characters
+env.filters["title_units"] = title_units
+env.filters["age_days"] = age_days
+env.filters["human_days"] = human_days
+env.filters["review_status"] = review_status
 env.filters["human_int"] = human_int
 
 # Comparison tests missing from Jinja2 defaults

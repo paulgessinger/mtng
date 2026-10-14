@@ -57,13 +57,7 @@ def category_order(category: str, order: list[str] | None = None) -> int:
     return index.get(category, len(index))
 
 
-def resolve_category_color(
-    category: str, is_breaking: bool, category_colors: dict[str, str]
-) -> str:
-    if is_breaking:
-        return category_colors.get(
-            "breaking", DEFAULT_PR_CATEGORY_COLORS.get("breaking", "alertred")
-        )
+def resolve_category_color(category: str, category_colors: dict[str, str]) -> str:
     return category_colors.get(
         category,
         DEFAULT_PR_CATEGORY_COLORS.get(
@@ -104,9 +98,7 @@ def enrich_item(item: IssueBase, repo: Repository) -> None:
     item.pr_category = category
     item.pr_category_breaking = is_breaking
     item.pr_category_label = resolve_category_label(category, repo.pr_category_labels)
-    item.pr_category_color = resolve_category_color(
-        category, is_breaking, repo.pr_category_colors
-    )
+    item.pr_category_color = resolve_category_color(category, repo.pr_category_colors)
     item.pr_category_order = category_order(category, repo.pr_category_order)
     if parsed:
         item.pr_title_display = display_title
@@ -222,7 +214,7 @@ async def collect_repositories(
                 without_labels=repo.without_labels,
                 requirements=FetchRequirements(
                     reviews=repo.do_reviewers and repo.show_review_summary,
-                    details=False,
+                    details=True,
                 ),
             )
 

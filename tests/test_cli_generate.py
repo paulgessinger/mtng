@@ -293,3 +293,57 @@ def test_generate_plain_latex_output(monkeypatch, tmp_path, full, to_file):
         assert "Wrote LaTeX:" in result.stderr
     else:
         assert result.stdout == source
+
+
+@pytest.mark.parametrize("forge", ["github", "gitlab"])
+@pytest.mark.parametrize(
+    "configured,options,expected,enabled",
+    [
+        (None, [], 300, True),
+        (900, [], 900, True),
+        (0, [], 0, True),
+        (900, ["--cache-max-age", "60"], 60, True),
+        (900, ["--cache-max-age", "0"], 0, True),
+        (900, ["--cache-max-age", "60", "--refresh"], 0, True),
+        (900, ["--no-cache"], 900, False),
+    ],
+)
+def test_generate_cache_age_precedence(
+    monkeypatch, tmp_path, forge, configured, options, expected, enabled
+):
+    spec = tmp_path / "spec.json"
+    config = {"repos": [{"name": "owner/repo", "forge": forge}]}
+    if configured is not None:
+        config["cache_max_age"] = configured
+    spec.write_text(json.dumps(config))
+    captured = []
+    transport = mtng.cli.HttpTransport
+
+    def capture_transport(*args, **kwargs):
+        captured.append(kwargs)
+        return transport(*args, **kwargs)
+
+    async def collect(*args, **kwargs):
+        return {}
+
+    monkeypatch.setattr(mtng.cli, "HttpTransport", capture_transport)
+    monkeypatch.setattr(mtng.cli, "collect_repositories", collect)
+    monkeypatch.setattr(mtng.cli, "generate_latex", lambda *args, **kwargs: "")
+    monkeypatch.setattr(
+        mtng.cli, "resolve_token", lambda *args, **kwargs: ("token", "test")
+    )
+    result = CliRunner().invoke(
+        mtng.cli.cli,
+        ["generate", str(spec), "--since", "2024-01-01", *options],
+    )
+    assert result.exit_code == 0, result.output
+    assert captured == [{"max_age": expected, "enabled": enabled}]
+
+
+def test_generate_rejects_negative_config_cache_age(tmp_path):
+    spec = tmp_path / "spec.toml"
+    spec.write_text("cache_max_age = -1\nrepos = []\n")
+    result = CliRunner().invoke(mtng.cli.cli, ["generate", str(spec)])
+    assert result.exit_code != 0
+    assert "cache_max_age" in _plain(result.output)
+    assert "greater than or equal to 0" in _plain(result.output)

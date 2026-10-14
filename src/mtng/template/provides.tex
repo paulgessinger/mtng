@@ -1,5 +1,8 @@
 \providecommand{\prmerged}{MERGED }
 \providecommand{\propen}{OPEN }
+\providecommand{\prdraft}{}
+\providecommand{\prbreaking}[1]{ {\scriptsize\textcolor{ #1}{\textbf{!}}}\hspace{0.2em}}
+\providecommand{\prnew}{ {\scriptsize\textcolor{blue!65!black}{\textbf{NEW}}}\hspace{0.2em}}
 \providecommand{\prwip}{WIP }
 \providecommand{\prstale}{STALE }
 \providecommand{\prcategory}[2]{[#1] }
@@ -8,6 +11,7 @@
 
 \providecolor{shivablue}{rgb}{0.6,0.86,0.99}
 \providecolor{Red}{rgb}{1.0,0.18,0.09}
+\providecolor{alertred}{HTML}{EF5D60}
 
 \providecommand{\cusemoji}[1]{}
 \providecommand{\emojispace}[1]{}
@@ -30,3 +34,5 @@
 % directly by a hash or another brace -- hence the spacing and \bfseries below.
 \providecommand{\bentotile}[7]{ {\bfseries #6}~{\footnotesize #7}\hspace{1.5em}}
 \providecommand{\bentolisttile}[7]{ #6~{\footnotesize #7}\hspace{1.5em}}
+
+{{ include_raw("truncate.tex") }}
