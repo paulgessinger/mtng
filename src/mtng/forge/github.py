@@ -5,7 +5,7 @@ import re
 import hashlib
 
 from gidgethub.abc import GitHubAPI
-from rich.status import Status
+from mtng.progress import collect_items
 
 from mtng.forge.base import bounded_gather, FetchRequirements
 from mtng.models import Issue, PullRequest, Review
@@ -86,8 +86,9 @@ class GitHubForge:
     async def pull_details(self, urls: list[str]) -> list[PullRequest]:
         """Fetch full PR payloads. Search results lack the line and commit
         counts, and the reviews are a separate request on top."""
-        with Status("Getting PR details"):
-            prs = await bounded_gather(urls, self.getitem)
+        prs = await bounded_gather(
+            urls, self.getitem, description="Fetching PR details"
+        )
         return [PullRequest.model_validate(pr) for pr in prs]
 
     async def add_reviews(self, prs: list[PullRequest]) -> list[PullRequest]:
@@ -95,8 +96,9 @@ class GitHubForge:
             pr.reviews = await self.get_reviews(f"{pr.url}/reviews")
             return pr
 
-        with Status("Getting PR reviews"):
-            return await bounded_gather(prs, enrich_reviews)
+        return await bounded_gather(
+            prs, enrich_reviews, description="Fetching PR reviews"
+        )
 
     async def merged_prs(
         self,
@@ -109,10 +111,9 @@ class GitHubForge:
         url = f"/search/issues?q=repo:{repo_name}+is:pull-request+merged:{start:%Y-%m-%d}..{end:%Y-%m-%d}"
         url += label_query(with_labels, without_labels)
 
-        with Status("Getting merged PR list"):
-            items = [
-                Issue.model_validate(issue) async for issue in self.gh.getiter(url)
-            ]
+        items = await collect_items(
+            self.gh.getiter(url), Issue.model_validate, "Finding merged PRs"
+        )
 
         prs = await self.pull_details([item.pull_request["url"] for item in items])
         return await self.add_reviews(prs)
@@ -135,10 +136,9 @@ class GitHubForge:
                 f"No PR links for '{repo_name}' were found in release '{release_tag}' description."
             )
 
-        with Status(f"Fetching PRs from release {release_tag}"):
-            prs = await self.pull_details(
-                [f"/repos/{repo_name}/pulls/{n}" for n in pr_numbers]
-            )
+        prs = await self.pull_details(
+            [f"/repos/{repo_name}/pulls/{n}" for n in pr_numbers]
+        )
         # PRs come from the release body rather than a search, so the label
         # filters have to be applied here.
         prs = [
@@ -163,8 +163,7 @@ class GitHubForge:
         without_labels: list[str] = [],
         requirements: FetchRequirements = FetchRequirements(),
     ) -> list[PullRequest]:
-        with Status("Getting open PR list"):
-            items = await self.search_open(repo_name, "pr", with_labels, without_labels)
+        items = await self.search_open(repo_name, "pr", with_labels, without_labels)
 
         if requirements.details or requirements.reviews:
             prs = await self.pull_details([item.pull_request["url"] for item in items])
@@ -223,4 +222,6 @@ class GitHubForge:
         elif end is not None:
             url += f"+created:*..{end:%Y-%m-%d}"
         url += label_query(with_labels, without_labels)
-        return [Issue.model_validate(issue) async for issue in self.gh.getiter(url)]
+        return await collect_items(
+            self.gh.getiter(url), Issue.model_validate, f"Finding open {kind}s"
+        )

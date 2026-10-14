@@ -677,3 +677,13 @@ also skips per-PR detail requests when neither reviews nor details are needed.
 Merged/release data still fetches the information needed for the statistics tiles.
 This separates collection requirements from presentation without changing report
 modes or adding more mode flags.
+
+### Collection progress
+
+Interactive terminals show section/repository progress and completed/total counts
+for PR/MR details and reviews. Searches count discovered items as pages arrive,
+without guessing the final total. API retry waits identify the host and wait time.
+LaTeX rendering and compilation retain a status indicator because their total work
+is not known. Progress goes to stderr; redirected and CI runs receive plain stage
+and completion messages instead of animated bars. Failed work is marked stopped,
+not complete.

@@ -1,6 +1,7 @@
 """Collect ordered report sections while retaining the legacy repository collector."""
 
 from copy import deepcopy
+from mtng.progress import progress_items
 
 from mtng.collect import collect_repositories, group_prs_by_category
 from mtng.spec import (
@@ -16,9 +17,16 @@ from mtng.spec import (
 
 async def collect_sections(spec, since, now, forges, release=None):
     data = {}
-    for index, section in enumerate(spec.sections):
-        if isinstance(section, IndicoSection):
-            continue
+    for index, section in progress_items(
+        [
+            (i, s)
+            for i, s in enumerate(spec.sections)
+            if not isinstance(s, IndicoSection)
+        ],
+        "Collecting repository sections",
+        unit="sections",
+        item_label=lambda item: item[1].title or item[1].type,
+    ):
         for alias in section.repositories:
             source = spec.repositories[alias]
             values = source.model_dump()
