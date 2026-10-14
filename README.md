@@ -150,6 +150,48 @@ are not introduced by this configuration refactor.
 Indico events. Sections can be reordered, restyled, or omitted offline. A new query
 or event missing from the snapshot fails rather than accessing the network.
 
+### Shared configs and overlays
+
+Pass `--config` (or `-c`) multiple times to share repository definitions between
+meetings:
+
+```toml
+# repositories.toml
+[repositories.acts]
+name = "acts-project/acts"
+display_name = "ACTS"
+```
+
+```toml
+# meeting.toml
+title = "Weekly development update"
+
+[[sections]]
+type = "changes"
+state = "open"
+repositories = ["acts"]
+```
+
+```bash
+mtng generate --config repositories.toml --config meeting.toml --full --tex report.tex
+# The existing positional config is also supported and is applied first:
+mtng generate repositories.toml -c meeting.toml --full --tex report.tex
+mtng render report-data.json -c repositories.toml -c meeting.toml --tex report.tex
+```
+
+Files may mix TOML, YAML, and JSON. Mappings merge recursively; later values
+win. Lists (including `sections`, legacy `repos`, and label filters) are replaced,
+not concatenated. An empty list clears an inherited list; an explicit YAML/JSON
+`null` replaces the earlier value where the schema permits it. For example,
+`[repositories.acts]` in a later TOML file can override only `display_name`, keeping
+the shared `name` and other settings. Omitted values remain inherited.
+
+Validation runs after all files have been merged, so a shared repository file
+needs no sections of its own. Only repositories referenced by the final sections
+are collected. Saved report data contains the merged configuration. On `render`,
+the merged config files replace the saved config, just as a single `--config` did;
+the existing restrictions against requesting uncollected data still apply.
+
 ### Existing configurations
 
 Existing `repos` configurations remain supported without migration, in TOML,
