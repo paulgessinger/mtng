@@ -7,7 +7,7 @@ import hashlib
 from gidgethub.abc import GitHubAPI
 from rich.status import Status
 
-from mtng.forge.base import bounded_gather, memoize
+from mtng.forge.base import bounded_gather
 from mtng.models import Issue, PullRequest, Review
 
 
@@ -77,11 +77,9 @@ class GitHubForge:
         credential = hashlib.sha256((self.gh.oauth_token or "").encode()).hexdigest()
         return f"github:{self.gh.base_url}:{credential}"
 
-    @memoize(expire=300)
     async def getitem(self, url: str) -> Any:
         return await self.gh.getitem(url)
 
-    @memoize(expire=300)
     async def get_reviews(self, url: str) -> list[Review]:
         return [Review.model_validate(r) async for r in self.gh.getiter(url)]
 
@@ -119,7 +117,6 @@ class GitHubForge:
         prs = await self.pull_details([item.pull_request["url"] for item in items])
         return await self.add_reviews(prs)
 
-    @memoize(expire=300)
     async def release_prs(
         self,
         repo_name: str,
@@ -159,7 +156,6 @@ class GitHubForge:
 
         return release_tag, await self.add_reviews(prs)
 
-    @memoize(expire=300)
     async def open_prs(
         self,
         repo_name: str,
@@ -172,7 +168,6 @@ class GitHubForge:
         prs = await self.pull_details([item.pull_request["url"] for item in items])
         return await self.add_reviews(prs)
 
-    @memoize(expire=300)
     async def open_issues(
         self,
         repo_name: str,

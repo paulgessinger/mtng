@@ -5,10 +5,8 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
 import aiohttp
-import diskcache
 import pytest
 
-from mtng.forge import base
 from mtng.forge.gitlab import (
     GitLabError,
     GitLabForge,
@@ -50,13 +48,6 @@ def payload(iid=1, **kwargs):
         },
         **kwargs,
     )
-
-
-@pytest.fixture(autouse=True)
-def isolated_cache(monkeypatch, tmp_path):
-    with diskcache.Cache(str(tmp_path / "cache")) as cache:
-        monkeypatch.setattr(base, "cache", cache)
-        yield
 
 
 @pytest.fixture
@@ -187,15 +178,17 @@ class Response:
     async def __aexit__(self, *args):
         pass
 
-    async def json(self):
-        return self.data
+    async def read(self):
+        import json
+
+        return json.dumps(self.data).encode()
 
 
 class Session:
     def __init__(self, responses):
         self.responses, self.calls = iter(responses), []
 
-    def get(self, url, **kwargs):
+    def request(self, method, url, **kwargs):
         self.calls.append((url, kwargs))
         return next(self.responses)
 
@@ -215,14 +208,15 @@ async def test_transport_preserves_encoded_paths_and_refuses_redirects():
 @pytest.mark.asyncio
 async def test_transport_retries_rate_limit(monkeypatch):
     sleep = AsyncMock()
-    monkeypatch.setattr("mtng.forge.gitlab.asyncio.sleep", sleep)
+    monkeypatch.setattr("mtng.forge.http.asyncio.sleep", sleep)
     session = Session(
         [Response(429, headers={"Retry-After": "1"}), Response(200, {"ok": True})]
     )
     assert await GitLabForge(session, "gitlab.example", "secret").getitem("/user") == {
         "ok": True
     }
-    sleep.assert_awaited_once_with(1)
+    assert sleep.await_count == 1
+    assert sleep.call_args.args[0] == pytest.approx(1, abs=0.1)
 
 
 def test_cache_identity():
@@ -320,7 +314,7 @@ async def test_transport_does_not_retry_authentication_errors():
 @pytest.mark.asyncio
 async def test_transport_retries_are_bounded(monkeypatch):
     sleep = AsyncMock()
-    monkeypatch.setattr("mtng.forge.gitlab.asyncio.sleep", sleep)
+    monkeypatch.setattr("mtng.forge.http.asyncio.sleep", sleep)
     session = Session([Response(503), Response(503), Response(503)])
     with pytest.raises(GitLabError, match="503"):
         await GitLabForge(session, "gitlab.example", "secret").getitem("/user")
