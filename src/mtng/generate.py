@@ -113,6 +113,10 @@ def make_frame_title(placeholders: dict):
     def frame_title(kind: str, repo, category: str | None = None) -> str:
         spec = repo["spec"]
         template = spec.frame_titles.get(kind, DEFAULT_FRAME_TITLES[kind])
+        if spec.forge == "gitlab" and (
+            "frame_titles" not in spec.model_fields_set or kind not in spec.frame_titles
+        ):
+            template = template.replace("PRs", "MRs")
         values = dict(placeholders)
         values.update(
             {
@@ -151,6 +155,15 @@ def generate_latex(
     placeholders = build_placeholders(data, since, now)
 
     return tpl.render(
+        request_label=(
+            "Merge request"
+            if spec.repos and all(repo.forge == "gitlab" for repo in spec.repos)
+            else (
+                "Pull/merge request"
+                if any(repo.forge == "gitlab" for repo in spec.repos)
+                else "Pull request"
+            )
+        ),
         repos=data,
         spec=spec,
         deck_title=expand_placeholders(spec.title, placeholders),

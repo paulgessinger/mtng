@@ -1,9 +1,33 @@
 import pydantic
+from typing import Literal
+from urllib.parse import urlsplit
+import re
 from pydantic import ConfigDict
 
 
 class BaseModel(pydantic.BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+def normalize_host(host: str) -> str:
+    """Accept an HTTPS origin or hostname, returning a canonical authority."""
+    value = host.strip().lower()
+    parsed = urlsplit(value if "://" in value else f"https://{value}")
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.path not in ("", "/")
+        or parsed.query
+        or parsed.fragment
+        or not re.fullmatch(r"[a-z0-9.-]+(?::[0-9]+)?", parsed.netloc)
+    ):
+        raise ValueError(
+            "host must be an HTTPS hostname, without a path or credentials"
+        )
+    port = parsed.port  # Also validate the port range.
+    return parsed.hostname + (f":{port}" if port and port != 443 else "")
 
 
 DEFAULT_PR_CATEGORY_COLORS = {
@@ -85,6 +109,12 @@ DEFAULT_PR_CATEGORY_ORDER = [
 
 
 class Repository(BaseModel):
+    forge: Literal["github", "gitlab"] = pydantic.Field(
+        "github", description="Code hosting backend. Defaults to GitHub."
+    )
+    host: str | None = pydantic.Field(
+        None, description="HTTPS host; defaults to github.com or gitlab.com."
+    )
     name: str = pydantic.Field(
         ...,
         description="Name of the repository, e.g. 'acts-project/acts'.",
@@ -204,7 +234,38 @@ class Repository(BaseModel):
     )
 
     @pydantic.model_validator(mode="after")
+    def check_forge(self) -> "Repository":
+        if self.host is not None:
+            self.host = normalize_host(self.host)
+        if self.forge == "github" and self.resolved_host != "github.com":
+            raise ValueError("GitHub Enterprise hosts are not supported yet")
+        parts = self.name.split("/")
+        if len(parts) < 2 or any(
+            not re.fullmatch(r"[A-Za-z0-9_.-]+", part) or part in (".", "..")
+            for part in parts
+        ):
+            raise ValueError(
+                "name must be a project path such as group/subgroup/project"
+            )
+        if self.forge == "github" and len(parts) != 2:
+            raise ValueError("GitHub repository names must use owner/repo")
+        return self
+
+    @property
+    def resolved_host(self) -> str:
+        return self.host or f"{self.forge}.com"
+
+    @property
+    def forge_key(self) -> tuple[str, str]:
+        return self.forge, self.resolved_host
+
+    @pydantic.model_validator(mode="after")
     def check_frame_titles(self) -> "Repository":
+        if self.forge == "gitlab" and "frame_titles" not in self.model_fields_set:
+            self.frame_titles = {
+                key: value.replace("PRs", "MRs")
+                for key, value in DEFAULT_FRAME_TITLES.items()
+            }
         # A bare string is shorthand for "this title, on every frame".
         if isinstance(self.frame_titles, str):
             self.frame_titles = {key: self.frame_titles for key in DEFAULT_FRAME_TITLES}
@@ -249,3 +310,12 @@ class Spec(BaseModel):
         description="Left-side text shown in the footline. Supports the {release}, {repos}, {since} and {date} placeholders. If omitted, mtng is used.",
     )
     repos: list[Repository]
+
+    @pydantic.model_validator(mode="after")
+    def check_display_keys(self) -> "Spec":
+        keys = [repo.display_name or repo.name for repo in self.repos]
+        if len(keys) != len(set(keys)):
+            raise ValueError(
+                "Duplicate repository display names; set unique display_name values"
+            )
+        return self

@@ -1,21 +1,14 @@
-import functools
-from typing import Any, Literal
+from typing import Any
+from collections.abc import Mapping
 from datetime import datetime
-import urllib.parse
-import asyncio
-import dateutil.parser
 import re
 
-import pickle
-
-from gidgethub.abc import GitHubAPI
-import pydantic
-import diskcache
-import appdirs
 from rich import print
 from rich.rule import Rule
 from rich.status import Status
 
+from mtng.forge import Forge
+from mtng.models import IssueBase
 from mtng.spec import (
     DEFAULT_PR_CATEGORY_COLORS,
     DEFAULT_PR_CATEGORY_EMOJI,
@@ -26,346 +19,12 @@ from mtng.spec import (
 from mtng.stats import compute_release_stats
 
 
-class Label(pydantic.BaseModel):
-    name: str
-
-
-class User(pydantic.BaseModel):
-    login: str
-    html_url: str
-
-
-class Review(pydantic.BaseModel):
-    user: User
-    state: Literal["APPROVED", "COMMENTED", "CHANGES_REQUESTED", "DISMISSED", "PENDING"]
-    body: str | None = None
-
-    submitted_at: datetime | None = None
-
-
-class IssueBase(pydantic.BaseModel):
-    title: str
-    user: User
-    labels: list[Label]
-    html_url: str
-    number: int
-    assignee: User | None = None
-
-    body: str | None = None
-    url: str
-
-    updated_at: datetime
-    created_at: datetime
-    closed_at: datetime | None = None
-
-    is_wip: bool = False
-    is_stale: bool = False
-    pr_title_display: str | None = None
-    pr_category: str | None = None
-    pr_category_label: str | None = None
-    pr_category_breaking: bool = False
-    pr_category_color: str | None = None
-    pr_category_order: int = 999
-
-    draft: bool | None = None
-
-
-class Issue(IssueBase):
-    pull_request: Any | None = None
-
-    @property
-    def is_pr(self) -> bool:
-        return self.pull_request is not None
-
-
-class PullRequest(IssueBase):
-    requested_reviewers: list[User] = pydantic.Field(default_factory=list)
-    reviews: list[Review] = pydantic.Field(default_factory=list)
-
-    # Only populated by GET /repos/{repo}/pulls/{n}. The /search/issues endpoint
-    # never returns these, so anything sourced from a search stays None.
-    additions: int | None = None
-    deletions: int | None = None
-    changed_files: int | None = None
-    commits: int | None = None
-    merged_at: datetime | None = None
-
-    @property
-    def is_pr(self) -> bool:
-        return True
-
-
-cache = diskcache.Cache(appdirs.user_cache_dir("mtng"))
-
-_CACHE_MISS = object()
-FETCH_CONCURRENCY = 8
-
-# Bump whenever a model stored in the cache gains or loses fields. Entries are
-# pickled pydantic instances, so an old entry restored into a new class is
-# missing the new attributes entirely and raises AttributeError on access.
-CACHE_VERSION = 3
-
 CONVENTIONAL_TITLE_RE = re.compile(
     r"^(?P<kind>[a-z][a-z0-9-]*)(?:\([^)]+\))?(?P<breaking>!)?:\s*(?P<subject>.+)$",
     re.IGNORECASE,
 )
 CATEGORY_ORDER = tuple(DEFAULT_PR_CATEGORY_ORDER)
 CATEGORY_ORDER_INDEX = {name: index for index, name in enumerate(CATEGORY_ORDER)}
-
-
-def memoize(expire=0, key_func=None):
-    def decorator(fn):
-        @functools.wraps(fn)
-        async def wrapped(*args, **kwargs):
-            if key_func is None:
-                _args, _kwargs = args, kwargs
-            else:
-                _args, _kwargs = key_func(args, kwargs)
-            key = (
-                fn.__name__.encode("utf-8")
-                + b"_v"
-                + str(CACHE_VERSION).encode("utf-8")
-                + b"_"
-                + pickle.dumps(_args)
-                + b"_"
-                + pickle.dumps(_kwargs)
-            )
-
-            hit = cache.get(key, default=_CACHE_MISS)
-            if hit is not _CACHE_MISS:
-                return hit
-
-            result = await fn(*args, **kwargs)
-            cache.set(key, result, expire=expire)
-            return result
-
-        return wrapped
-
-    return decorator
-
-
-async def bounded_gather(items, fn, concurrency: int = FETCH_CONCURRENCY):
-    sem = asyncio.Semaphore(concurrency)
-
-    async def wrapped(item):
-        async with sem:
-            return await fn(item)
-
-    return await asyncio.gather(*(wrapped(item) for item in items))
-
-
-def strip_github_api(args, kwargs):
-    kwargs.pop("gh", None)
-    args = list(filter(lambda o: not isinstance(o, GitHubAPI), args))
-    return args, kwargs
-
-
-@memoize(expire=300, key_func=strip_github_api)
-async def getitem(gh: GitHubAPI, url: str, *args: Any, **kwargs: Any) -> Any:
-    return await gh.getitem(url, *args, **kwargs)
-
-
-#  @memoize(expire=300, key_func=strip_github_api)
-async def get_merged_pulls(
-    gh: GitHubAPI,
-    repo_name: str,
-    start: datetime,
-    end: datetime,
-    with_labels: list[str] = [],
-    without_labels: list[str] = [],
-) -> list[PullRequest]:
-    url = f"/search/issues?q=repo:{repo_name}+is:pull-request+merged:{start:%Y-%m-%d}..{end:%Y-%m-%d}"
-    for label in without_labels:
-        url += f'+-label:"{urllib.parse.quote(label)}"'
-    for label in with_labels:
-        url += f'+label:"{urllib.parse.quote(label)}"'
-
-    with Status("Getting merged PR list"):
-        items = [Issue.model_validate(issue) async for issue in gh.getiter(url)]
-
-    with Status("Getting PR details"):
-        prs = await bounded_gather(
-            items,
-            lambda item: getitem(gh, item.pull_request["url"]),
-        )
-    prs = [PullRequest.model_validate(pr) for pr in prs]
-
-    async def enrich_reviews(pr: PullRequest) -> PullRequest:
-        pr.reviews = [
-            Review.model_validate(r) for r in await getitem(gh, f"{pr.url}/reviews")
-        ]
-        return pr
-
-    with Status("Getting PR reviews"):
-        prs = await bounded_gather(prs, enrich_reviews)
-
-    return prs
-
-
-def extract_release_pull_numbers(
-    release_body: str, repo_name: str, max_results: int | None = None
-) -> list[int]:
-    url_pattern = re.compile(
-        rf"https://github\.com/{re.escape(repo_name)}/pull/(\d+)\b", re.IGNORECASE
-    )
-    generated_notes_pattern = re.compile(r"\(#(\d+)\)")
-
-    numbers = []
-    seen = set()
-
-    def add_number(number: int) -> bool:
-        if number in seen:
-            return False
-        seen.add(number)
-        numbers.append(number)
-        return max_results is not None and len(numbers) >= max_results
-
-    for m in url_pattern.finditer(release_body):
-        if add_number(int(m.group(1))):
-            return numbers
-
-    for m in generated_notes_pattern.finditer(release_body):
-        if add_number(int(m.group(1))):
-            return numbers
-
-    return numbers
-
-
-def parse_release_tag(release_ref: str, repo_name: str) -> str:
-    release_ref = release_ref.strip()
-    release_url = re.match(
-        r"^https://github\.com/(?P<owner_repo>[^/]+/[^/]+)/releases/tag/(?P<tag>[^/?#]+)",
-        release_ref,
-    )
-    if release_url is None:
-        return release_ref
-
-    owner_repo = release_url.group("owner_repo")
-    if owner_repo.lower() != repo_name.lower():
-        raise ValueError(
-            f"Release URL repository '{owner_repo}' does not match configured repository '{repo_name}'."
-        )
-    return urllib.parse.unquote(release_url.group("tag"))
-
-
-@memoize(expire=300, key_func=strip_github_api)
-async def get_release_pulls(
-    gh: GitHubAPI,
-    repo_name: str,
-    release_ref: str,
-    with_labels: list[str] = [],
-    without_labels: list[str] = [],
-) -> tuple[str, list[PullRequest]]:
-    release_tag = parse_release_tag(release_ref, repo_name)
-    release = await getitem(
-        gh,
-        f"/repos/{repo_name}/releases/tags/{urllib.parse.quote(release_tag, safe='')}",
-    )
-    release_body = release.get("body") or ""
-    pr_numbers = extract_release_pull_numbers(release_body, repo_name)
-    if len(pr_numbers) == 0:
-        raise ValueError(
-            f"No PR links for '{repo_name}' were found in release '{release_tag}' description."
-        )
-
-    with Status(f"Fetching PRs from release {release_tag}"):
-        prs = await bounded_gather(
-            pr_numbers,
-            lambda pr_number: getitem(gh, f"/repos/{repo_name}/pulls/{pr_number}"),
-        )
-    prs = [PullRequest.model_validate(pr) for pr in prs]
-    prs = [
-        pr
-        for pr in prs
-        if not with_labels
-        or all(label in [l.name for l in pr.labels] for label in with_labels)
-    ]
-    prs = [
-        pr
-        for pr in prs
-        if not without_labels
-        or all(label not in [l.name for l in pr.labels] for label in without_labels)
-    ]
-
-    async def enrich_reviews(pr: PullRequest) -> PullRequest:
-        pr.reviews = [
-            Review.model_validate(r) for r in await getitem(gh, f"{pr.url}/reviews")
-        ]
-        return pr
-
-    with Status("Getting PR reviews"):
-        prs = await bounded_gather(prs, enrich_reviews)
-
-    return release_tag, prs
-
-
-@memoize(expire=300, key_func=strip_github_api)
-async def get_open_issues(
-    gh: GitHubAPI,
-    repo_name: str,
-    with_labels: list[str] = [],
-    without_labels: list[str] = [],
-    start: datetime | None = None,
-    end: datetime | None = None,
-    type: Literal["pr", "issue", "any"] = "issue",
-) -> list[Issue]:
-    def build_url(kind: Literal["issue", "pr"]) -> str:
-        mapped_kind = "pull-request" if kind == "pr" else "issue"
-        url = f"/search/issues?q=repo:{repo_name}+is:open+is:{mapped_kind}"
-        if start is not None and end is not None:
-            url += f"+created:{start:%Y-%m-%d}..{end:%Y-%m-%d}"
-        elif start is not None:
-            url += f"+created:{start:%Y-%m-%d}..*"
-        elif end is not None:
-            url += f"+created:*..{end:%Y-%m-%d}"
-        for label in without_labels:
-            url += f'+-label:"{urllib.parse.quote(label)}"'
-        for label in with_labels:
-            url += f'+label:"{urllib.parse.quote(label)}"'
-        return url
-
-    if type in ("issue", "pr"):
-        return [
-            Issue.model_validate(issue) async for issue in gh.getiter(build_url(type))
-        ]
-
-    issues = [
-        Issue.model_validate(issue) async for issue in gh.getiter(build_url("issue"))
-    ]
-    prs = [Issue.model_validate(issue) async for issue in gh.getiter(build_url("pr"))]
-    # Keep deterministic ordering and prevent accidental duplicates.
-    merged: dict[str, Issue] = {issue.url: issue for issue in issues}
-    for pr in prs:
-        merged.setdefault(pr.url, pr)
-    return list(merged.values())
-
-
-@memoize(expire=300, key_func=strip_github_api)
-async def get_open_pulls(
-    gh: GitHubAPI,
-    *args: Any,
-    **kwargs: Any,
-) -> list[PullRequest]:
-    with Status("Getting open PR list"):
-        items = await get_open_issues(gh, *args, type="pr", **kwargs)
-
-    with Status("Getting PR details"):
-        prs = await bounded_gather(
-            items,
-            lambda item: getitem(gh, item.pull_request["url"]),
-        )
-    prs = [PullRequest.model_validate(pr) for pr in prs]
-
-    async def enrich_reviews(pr: PullRequest) -> PullRequest:
-        pr.reviews = [
-            Review.model_validate(r) for r in await getitem(gh, f"{pr.url}/reviews")
-        ]
-        return pr
-
-    with Status("Getting PR reviews"):
-        prs = await bounded_gather(prs, enrich_reviews)
-
-    return prs
 
 
 def parse_pr_metadata(title: str) -> tuple[str, bool, str, bool]:
@@ -481,14 +140,20 @@ async def collect_repositories(
     repos: list[Repository],
     since: datetime,
     now: datetime,
-    gh: GitHubAPI,
+    forge: Forge | Mapping[tuple[str, str], Forge],
     release: str | None = None,
 ):
     data = {}
+    forges = forge
 
     for repo in repos:
+        forge = forges[repo.forge_key] if isinstance(forges, Mapping) else forges
         print(Rule(f"Collecting data for {repo.name}"))
         key = repo.display_name or repo.name
+        if key in data:
+            raise ValueError(
+                "Duplicate repository display names; set unique display_name values"
+            )
         data[key] = {}
         data[key]["merged_prs"] = []
         data[key]["merged_prs_listed"] = []
@@ -506,8 +171,7 @@ async def collect_repositories(
         if repo.do_merged_prs:
             print(Rule("Fetching merged PRs", align="left"))
             if release is not None:
-                release_tag, merged_prs = await get_release_pulls(
-                    gh,
+                release_tag, merged_prs = await forge.release_prs(
                     repo.name,
                     release,
                     with_labels=repo.with_labels,
@@ -515,8 +179,7 @@ async def collect_repositories(
                 )
                 data[key]["release_tag"] = release_tag
             else:
-                merged_prs = await get_merged_pulls(
-                    gh,
+                merged_prs = await forge.merged_prs(
                     repo.name,
                     since,
                     now,
@@ -553,8 +216,7 @@ async def collect_repositories(
 
         if repo.do_open_prs:
             print(Rule("Fetching open PRs", align="left"))
-            open_prs = await get_open_pulls(
-                gh,
+            open_prs = await forge.open_prs(
                 repo.name,
                 with_labels=repo.with_labels,
                 without_labels=repo.without_labels,
@@ -573,20 +235,18 @@ async def collect_repositories(
             if repo.stale_label is None:
                 raise ValueError("Provide stale label if do_stale=True")
             with Status("Getting stale issues"):
-                stale = await get_open_issues(
-                    gh,
+                stale = await forge.open_issues(
                     repo.name,
                     with_labels=[repo.stale_label] + repo.with_labels,
                     without_labels=repo.without_labels,
-                    type="any",
+                    include_prs=True,
                 )
 
                 data[key]["stale"] = stale
 
         if repo.do_recent_issues:
             with Status("Getting recent issues"):
-                recent_issues = await get_open_issues(
-                    gh,
+                recent_issues = await forge.open_issues(
                     repo.name,
                     start=since,
                     end=now,
@@ -603,8 +263,7 @@ async def collect_repositories(
 
         if repo.needs_discussion_label is not None:
             with Status("Getting items that need discussion"):
-                needs_discussion = await get_open_issues(
-                    gh,
+                needs_discussion = await forge.open_issues(
                     repo.name,
                     with_labels=[repo.needs_discussion_label] + repo.with_labels,
                     without_labels=repo.without_labels,

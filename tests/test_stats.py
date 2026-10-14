@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from mtng.collect import Label, PullRequest, Review, User
+from mtng.models import Label, PullRequest, Review, User
 from mtng.stats import compute_release_stats
 
 
