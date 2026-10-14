@@ -12,19 +12,6 @@
 
 {% endfor %}
 
-{% if contributions|length > 0 %}
-\begin{frame}[allowframebreaks]{Contributions today}
-  \begin{itemize}
-    {% for contrib in contributions %}
-
-      \item
-      \href{ {{- contrib["url"] -}} }{ \textbf{ {{- contrib["title"] -}} } } \\
-      {% if contrib["speakers"]|length > 0 %}
-      by {{ contrib["speakers"]|join(", ") }}
-      {% endif %}
-    {% endfor %}
-  \end{itemize}
-\end{frame}
-{% endif %}
+{% include "sections/indico.tex" %}
 
 {% endblock %}

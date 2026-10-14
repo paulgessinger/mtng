@@ -1,0 +1,23 @@
+{%- if repo["release_tag"] is none %}
+{% if repo["open_prs"]| length > 0 %}
+{% if repo["spec"].group_prs_by_category and repo["open_prs_by_category"]|length > 0 %}
+{% for group in repo["open_prs_by_category"] %}
+\section{ {% if group.get("emoji") %}\protect\cusemoji{ {{- group["emoji"] -}} }{} {% endif %}{{ group["title"]|sanitize }}}
+{{- render_pr_frame(
+  frame_title("open_prs", repo, group["title"]),
+  group["items"],
+  "OPEN",
+  "updated on"
+) -}}
+{% endfor %}
+{% else %}
+\section{ \reponame{} \\ Open {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
+{{- render_pr_frame(
+  frame_title("open_prs", repo),
+  repo["open_prs"],
+  "OPEN",
+  "updated on"
+) -}}
+{% endif %}
+{% endif %}
+{%- endif %}

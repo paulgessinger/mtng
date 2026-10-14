@@ -31,7 +31,13 @@ REPOSITORY_INPUT = "repository"
 REPOSITORY_FIELDS = [
     name for name in Repository.model_fields if name not in ("name", "forge", "host")
 ]
-SPEC_FIELDS = [name for name in Spec.model_fields if name != "repos"]
+# Structured section configuration is supplied through the config file, not
+# flattened into Action inputs. Preserve the existing inline input interface.
+SPEC_FIELDS = [
+    name
+    for name in Spec.model_fields
+    if name not in {"repos", "repositories", "sections"}
+]
 
 TRUE_VALUES = {"true", "1", "yes", "on"}
 FALSE_VALUES = {"false", "0", "no", "off"}
@@ -189,7 +195,7 @@ def resolve_config(inputs: Mapping[str, str], generated: Path) -> Path:
                 spec = load_spec(stream)
         except (ValueError, yaml.YAMLError) as error:
             raise ActionInputError(f"Invalid configuration: {error}") from error
-        if any(repo.forge != "github" for repo in spec.repos):
+        if any(repo.forge != "github" for repo in spec.source_repositories):
             raise ActionInputError(
                 "The GitHub Action only supports GitHub repositories; use the CLI for GitLab"
             )

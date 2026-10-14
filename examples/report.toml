@@ -1,0 +1,36 @@
+title = "Development update"
+footline_left = "Core team"
+
+[repositories.acts]
+forge = "github"
+name = "acts-project/acts"
+display_name = "ACTS"
+
+[[sections]]
+type = "statistics"
+repositories = ["acts"]
+
+[sections.labels]
+exclude = ["backport"]
+
+[[sections]]
+type = "changes"
+repositories = ["acts"]
+state = "merged"
+group_by = "category"
+summary = false # The statistics section above already shows the summary.
+
+[sections.labels]
+exclude = ["backport"]
+
+[[sections]]
+type = "changes"
+repositories = ["acts"]
+state = "open"
+drafts = "exclude"
+
+# Uncomment and supply your public event URL to position an agenda here.
+# [[sections]]
+# type = "indico"
+# event = "https://indico.example/event/123/"
+# title = "Meeting agenda"
