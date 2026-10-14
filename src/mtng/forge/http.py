@@ -16,6 +16,8 @@ import diskcache
 from gidgethub.aiohttp import GitHubAPI
 from yarl import URL
 
+from mtng.progress import progress_step
+
 # Only JSON strings are persisted, never Python models or authorization headers.
 cache = diskcache.Cache(str(Path(appdirs.user_cache_dir("mtng")) / "http-v1"))
 RETAIN_SECONDS = 30 * 24 * 3600
@@ -143,7 +145,13 @@ class HttpTransport:
                         f"API at {url.host} is rate limited; retry in {wait:.0f}s (wait budget {self.max_wait}s)"
                     )
                 if wait:
-                    await asyncio.sleep(wait)
+                    with progress_step(
+                        f"Waiting {wait:.0f}s before retrying {url.host}",
+                        total=1,
+                        unit="waits",
+                    ) as step:
+                        await asyncio.sleep(wait)
+                        step.advance()
                     waited += wait
                 self.stats["requests"] += 1
                 async with self.session.request(

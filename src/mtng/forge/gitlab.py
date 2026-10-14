@@ -13,6 +13,7 @@ from mtng.forge.http import HttpTransport
 from mtng.forge.base import bounded_gather, FetchRequirements
 from mtng.models import Issue, Label, PullRequest, Review, User
 from mtng.spec import normalize_host
+from mtng.progress import collect_items
 
 
 class GitLabError(ValueError):
@@ -167,17 +168,19 @@ class GitLabForge:
             pr.reviews_available = True
             return pr
 
-        return await bounded_gather(prs, enrich)
+        return await bounded_gather(prs, enrich, description="Fetching MR approvals")
 
     async def list_items(self, repo, *, mr, params, with_labels=(), without_labels=()):
         kind = "merge_requests" if mr else "issues"
         # Local filtering also handles commas and GitLab's reserved label names.
-        result = []
-        async for payload in self.getiter(f"{self.project_path(repo)}/{kind}", params):
-            item = self.item(payload, repo, mr=mr)
-            if self.matches(item, with_labels, without_labels):
-                result.append(item)
-        return result
+        items = await collect_items(
+            self.getiter(f"{self.project_path(repo)}/{kind}", params),
+            lambda payload: self.item(payload, repo, mr=mr),
+            "Finding MRs" if mr else "Finding issues",
+        )
+        return [
+            item for item in items if self.matches(item, with_labels, without_labels)
+        ]
 
     async def merged_prs(
         self,
@@ -279,7 +282,9 @@ class GitLabForge:
         async def fetch(number):
             return await self.getitem(f"{root}/merge_requests/{number}")
 
-        payloads = await bounded_gather(numbers, fetch)
+        payloads = await bounded_gather(
+            numbers, fetch, description="Fetching release MRs"
+        )
         prs = [
             self.item(payload, repo_name, mr=True)
             for payload in payloads

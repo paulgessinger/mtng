@@ -1,0 +1,17 @@
+{%- if repo["release_tag"] is none and repo["spec"].do_recent_issues %}
+{% if repo["recent_issues"] | length > 0 %}
+  \section{ \reponame{} \\ Issues opened since {{ since.strftime('%Y-%m-%d') }} }
+  \begin{frame}[allowframebreaks]{ {{- frame_title("recent_issues", repo) -}} }
+    \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+    \begin{itemize}
+      {% for item in repo["recent_issues"]|sort(reverse=True, attribute="updated_at") %}
+      {%- call show_item(item, repo["spec"]) -%}
+          , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
+      {%- endcall %}
+      {%- endfor %}
+      \end{itemize}
+  \end{frame}
+{% else %}
+  \section{ \reponame{} \\ No issues opened since {{ since.strftime('%Y-%m-%d') }} }
+{% endif %}
+{%- endif %}

@@ -11,7 +11,7 @@
 {% if deck_title %}
 \title{ {{ deck_title|sanitize }} }
 {% else %}
-\title{ {{- request_label }} and issue summary for \\{%- for repo_name, repo in repos.items() -%}{{ repo_name }}{% if not loop.last %}\\{% endif %}{%- endfor -%}}
+\title{ {{- request_label }} and issue summary for \\{%- for repo_name in title_repositories -%}{{ repo_name }}{% if not loop.last %}\\{% endif %}{%- endfor -%}}
 {% endif %}
 {% if footline_left %}
 \author{ {{ footline_left|sanitize }} }

@@ -3,9 +3,7 @@ from collections.abc import Mapping
 from datetime import datetime
 import re
 
-from rich import print
-from rich.rule import Rule
-from rich.status import Status
+from mtng.progress import progress_items, progress_step
 
 from mtng.forge import Forge
 from mtng.forge.base import FetchRequirements
@@ -146,9 +144,13 @@ async def collect_repositories(
     data = {}
     forges = forge
 
-    for repo in repos:
+    for repo in progress_items(
+        repos,
+        "Collecting repositories",
+        unit="repositories",
+        item_label=lambda repo: repo.display_name or repo.name,
+    ):
         forge = forges[repo.forge_key] if isinstance(forges, Mapping) else forges
-        print(Rule(f"Collecting data for {repo.name}"))
         key = repo.display_name or repo.name
         if key in data:
             raise ValueError(
@@ -169,7 +171,6 @@ async def collect_repositories(
         data[key]["spec"] = repo
 
         if repo.do_merged_prs:
-            print(Rule("Fetching merged PRs", align="left"))
             if release is not None:
                 release_tag, merged_prs = await forge.release_prs(
                     repo.name,
@@ -215,7 +216,6 @@ async def collect_repositories(
             continue
 
         if repo.do_open_prs:
-            print(Rule("Fetching open PRs", align="left"))
             open_prs = await forge.open_prs(
                 repo.name,
                 with_labels=repo.with_labels,
@@ -238,7 +238,7 @@ async def collect_repositories(
         if repo.do_stale:
             if repo.stale_label is None:
                 raise ValueError("Provide stale label if do_stale=True")
-            with Status("Getting stale issues"):
+            with progress_step("Finding stale items") as step:
                 stale = await forge.open_issues(
                     repo.name,
                     with_labels=[repo.stale_label] + repo.with_labels,
@@ -247,9 +247,10 @@ async def collect_repositories(
                 )
 
                 data[key]["stale"] = stale
+                step.advance(len(stale))
 
         if repo.do_recent_issues:
-            with Status("Getting recent issues"):
+            with progress_step("Finding recent issues") as step:
                 recent_issues = await forge.open_issues(
                     repo.name,
                     start=since,
@@ -259,6 +260,7 @@ async def collect_repositories(
                 )
 
                 data[key]["recent_issues"] = recent_issues
+                step.advance(len(recent_issues))
 
         for item_type in "open_prs", "stale", "recent_issues":
             for item in data[key][item_type]:
@@ -266,13 +268,14 @@ async def collect_repositories(
         data[key]["open_prs_by_category"] = group_prs_by_category(data[key]["open_prs"])
 
         if repo.needs_discussion_label is not None:
-            with Status("Getting items that need discussion"):
+            with progress_step("Finding discussion items") as step:
                 needs_discussion = await forge.open_issues(
                     repo.name,
                     with_labels=[repo.needs_discussion_label] + repo.with_labels,
                     without_labels=repo.without_labels,
                 )
                 data[key]["needs_discussion"] = needs_discussion
+                step.advance(len(needs_discussion))
                 for item in data[key]["needs_discussion"]:
                     enrich_item(item, repo)
 

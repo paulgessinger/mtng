@@ -70,7 +70,95 @@ Options:
 
 ## Configuration
 
-`mtng` consumes a configuration file to specify which GitHub repositories to ingest. YAML (`.yml` / `.yaml`), TOML (`.toml`) and JSON (`.json`) are all supported.
+`mtng` consumes a configuration file to specify repositories and report sections. YAML (`.yml` / `.yaml`), TOML (`.toml`) and JSON (`.json`) are all supported.
+
+### Ordered sections (TOML first)
+
+TOML is the recommended format for new configurations. Define repository aliases
+once, then list sections in report order. YAML and JSON accept the same schema.
+See [`examples/report.toml`](examples/report.toml) for a complete example.
+
+```toml
+title = "Development update"
+
+[repositories.acts]
+name = "acts-project/acts"
+display_name = "ACTS"
+
+[[sections]]
+type = "changes"
+repositories = ["acts"]
+state = "merged"
+group_by = "category"
+
+[sections.labels]
+exclude = ["backport"]
+
+[[sections]]
+type = "changes"
+repositories = ["acts"]
+state = "open"
+drafts = "exclude"
+
+[[sections]]
+type = "indico"
+event = "https://indico.example/event/123/"
+title = "Meeting agenda"
+```
+
+Run with `mtng generate report.toml --since "1 week ago" --tex report.tex`.
+Replace the example event URL with a public event, or omit the Indico section.
+
+| Section type | Content and options |
+| --- | --- |
+| `changes` | PRs/MRs; `state = "merged"` (default) or `"open"`. `group_by = "category"` or `"none"` (default). Merged sections include existing statistics and breaking-change slides; `summary = false` hides the statistics. |
+| `statistics` | Existing statistics slide for merged PRs/MRs, without the item list. |
+| `issues` | Open issues created during the reporting window. |
+| `stale` | Open issues/PRs/MRs with the required `label`; existing new/all-stale slides. |
+| `discussion` | Open issues with the required `label`, using existing discussion slides. |
+| `indico` | Contributions from a public `event` URL, placed here in the report. |
+
+Repository sections require `repositories = ["alias", ...]`; each repository is
+rendered separately in the listed order. Optional `title` overrides their frame
+titles using existing placeholders. Indico `title` is literal text. Repository
+aliases refer to the existing repository settings (`name`, `forge`, `host`,
+`display_name`, category styling, assignee/review display, etc.). Only referenced
+repositories require credentials.
+
+Section-local `[sections.labels]` supports `include` (all labels must match) and
+`exclude` (any matching label excludes the item). These replace repository-level
+label filters for that section. Section types control which data is collected;
+legacy `do_*` content switches and stale/discussion labels on a repository do not
+create additional sections. `group_by` controls category grouping locally.
+
+For open changes, `drafts = "include"`, `"exclude"` (effective default), or `"only"`
+uses both native draft state and the repository's optional `wip_label`. Legacy
+`show_wip` does not override this explicit selection.
+
+Merged changes and statistics can set `release = "v1.2.3"` locally. CLI `--release`
+is their fallback; it does not suppress other explicit sections. `--since` is
+required for period-based merged/statistics sections and for issues/stale sections.
+It is optional for open-only, discussion-only, Indico-only, and release-only reports.
+Use explicit Indico sections instead of `--event` in this configuration format.
+
+Section ordering changes composition, not slide styling. Statistics, grouping,
+breaking-change treatment, item layout, and LaTeX/PDF output otherwise retain
+existing behavior. Contributors, changed-path filters, and revised review reporting
+are not introduced by this configuration refactor.
+
+`--save-data` and `render --config` support explicit sections, including saved
+Indico events. Sections can be reordered, restyled, or omitted offline. A new query
+or event missing from the snapshot fails rather than accessing the network.
+
+### Existing configurations
+
+Existing `repos` configurations remain supported without migration, in TOML,
+YAML, and JSON. They retain their default sections, ordering, CLI `--release` /
+`--event` behavior, and output. Do not mix `repos` with explicit `sections`.
+To migrate, move repository entries to `[repositories.<alias>]`, add the desired
+`[[sections]]`, and move selection filters into those sections. Presentation
+settings can stay on the repository. The GitHub Action accepts section configs via
+its `config` input; its existing inline inputs continue to produce legacy configs.
 
 An example YAML configuration could look like this:
 
@@ -589,3 +677,13 @@ also skips per-PR detail requests when neither reviews nor details are needed.
 Merged/release data still fetches the information needed for the statistics tiles.
 This separates collection requirements from presentation without changing report
 modes or adding more mode flags.
+
+### Collection progress
+
+Interactive terminals show section/repository progress and completed/total counts
+for PR/MR details and reviews. Searches count discovered items as pages arrive,
+without guessing the final total. API retry waits identify the host and wait time.
+LaTeX rendering and compilation retain a status indicator because their total work
+is not known. Progress goes to stderr; redirected and CI runs receive plain stage
+and completion messages instead of animated bars. Failed work is marked stopped,
+not complete.

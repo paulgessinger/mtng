@@ -1,0 +1,32 @@
+{%- if repo["release_tag"] is none and repo["spec"].do_stale %}
+{% set newly_stale = repo["stale"] | selectattr("updated_at", "gt", since) | list %}
+{% if newly_stale | length > 0 %}
+\section{ \reponame{} \\ Stale Issues and {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
+\begin{frame}[allowframebreaks]{ {{- frame_title("new_stale", repo) -}} }
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+  \begin{itemize}
+    {% for item in newly_stale %}
+    {%- call show_item(item, repo["spec"], mode="OPEN") -%}
+        , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+  \end{itemize}
+\end{frame}
+{% else %}
+\section{ \reponame{} \\ No new stale issues or {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }} since {{ since.strftime('%Y-%m-%d') }} }
+{% endif %}
+
+{% if repo["stale"]|length > 0 %}
+\section{ \reponame{} \\ All stale Issues and {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
+\begin{frame}[allowframebreaks]{ {{- frame_title("all_stale", repo) -}} }
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+  \begin{itemize}
+    {% for item in repo["stale"]|sort(reverse=True, attribute="updated_at") %}
+    {%- call show_item(item, repo["spec"], mode="OPEN") -%}
+        , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+  \end{itemize}
+\end{frame}
+{% endif %}
+{%- endif %}

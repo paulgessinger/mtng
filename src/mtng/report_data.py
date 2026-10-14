@@ -55,6 +55,7 @@ class ReportData(Model):
     now: AwareDatetime
     release: str | None = None
     contributions: list[Contribution] = Field(default_factory=list)
+    events: dict[str, list[Contribution]] = Field(default_factory=dict)
     backends: list[BackendData]
 
     def forges(self):

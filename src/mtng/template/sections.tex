@@ -1,0 +1,29 @@
+{% extends "main.tex" %}
+{% block body %}
+{% include "provides.tex" %}
+{% for section in spec.sections %}
+{% set section_index = loop.index0 %}
+{% if section.type == "indico" %}
+{% set contributions = events[section.event] %}
+{% set agenda_title = section.title %}
+{% include "sections/indico.tex" %}
+{% else %}
+{% for repo in repos.values() if repo.section_index == section_index %}
+{% set repo_name = repo.spec.display_name or repo.spec.name %}
+\def\reponame{ {{ repo_name }} }
+{% from "macros.tex" import show_item %}
+{% from "sections/pr_frame.tex" import render_pr_frame with context %}
+{% if section.type == "changes" %}
+{% if section.state == "open" %}
+{% include "sections/open.tex" %}
+{% else %}
+{% set show_statistics = section.summary %}
+{% include "sections/merged.tex" %}
+{% endif %}
+{% else %}
+{% include "sections/" + section.type + ".tex" %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endblock %}

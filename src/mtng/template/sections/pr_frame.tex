@@ -1,0 +1,30 @@
+{% from "macros.tex" import show_item %}
+{% macro render_pr_frame(title, prs, mode, date_prefix) %}
+\begin{frame}[allowframebreaks,t]{ {{- title -}} }
+
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+  \begin{itemize}
+    \footnotesize
+    \setlength{\itemsep}{0.2em}
+    \setlength{\parsep}{0pt}
+    \setlength{\parskip}{0pt}
+    \setlength{\topsep}{0pt}
+    {% if mode == "OPEN" %}
+    {% for wip in ["false", "true"] %}
+    {% for pr in prs|selectattr("is_wip", wip)|sort(reverse=True, attribute="updated_at") %}
+    {%- call show_item(pr, repo["spec"], mode=mode) -%}
+    , {{ date_prefix }} {{ pr.updated_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+    {%- endfor %}
+    {% else %}
+    {% for pr in prs|sort(attribute="closed_at") %}
+    {%- call show_item(pr, repo["spec"], mode=mode) -%}
+    , {{ date_prefix }} {{ pr.closed_at.strftime('%Y-%m-%d') }}
+    {%- endcall %}
+    {%- endfor %}
+    {% endif %}
+  \end{itemize}
+
+\end{frame}
+{% endmacro %}
