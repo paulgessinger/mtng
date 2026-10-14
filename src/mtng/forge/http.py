@@ -32,6 +32,62 @@ class Coordinator:
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     pending: dict = field(default_factory=dict)
     not_before: float = 0
+    slots: asyncio.Semaphore = field(default_factory=lambda: asyncio.Semaphore(4))
+    next_start: dict = field(default_factory=dict)
+    budgets: dict = field(default_factory=dict)
+    interval: float = 0.2
+
+    async def admit(self, bucket, max_wait):
+        # Only admission is serialized; responses and unrelated buckets can
+        # proceed while a caller sleeps. Recheck after every wait because an
+        # in-flight response may have extended the shared cooldown.
+        started = time.time()
+        while True:
+            async with self.lock:
+                now = time.time()
+                remaining, reset = self.budgets.get(bucket, (None, 0))
+                deadline = max(
+                    self.not_before,
+                    self.next_start.get("all", 0),
+                    self.next_start.get(bucket, 0),
+                )
+                if remaining is not None and remaining <= 4 and reset > now:
+                    deadline = max(deadline, reset + 1)
+                wait = max(0, deadline - now)
+                if now - started + wait > max_wait:
+                    raise RateLimitError(
+                        f"API is rate limited; retry in {wait:.0f}s (wait budget {max_wait}s)"
+                    )
+                if not wait:
+                    self.next_start["all"] = now + self.interval
+                    if bucket[1] == "search":
+                        self.next_start[bucket] = now + 2.1
+                    if remaining is not None and reset > now:
+                        self.budgets[bucket] = (remaining - 1, reset)
+                    return time.time() - started
+            if wait >= 5:
+                with progress_step(
+                    f"Waiting {wait:.0f}s for GitHub API quota", total=1, unit="waits"
+                ) as step:
+                    await asyncio.sleep(wait)
+                    step.advance()
+            else:
+                await asyncio.sleep(wait)
+
+    def observe(self, bucket, headers):
+        try:
+            remaining = int(headers["x-ratelimit-remaining"])
+            reset = float(headers["x-ratelimit-reset"])
+        except (KeyError, ValueError):
+            return
+        bucket = (bucket[0], headers.get("x-ratelimit-resource", bucket[1]))
+        old_remaining, old_reset = self.budgets.get(bucket, (remaining, reset))
+        # Out-of-order responses must not replenish already reserved quota.
+        if reset < old_reset:
+            return
+        if reset == old_reset:
+            remaining = min(remaining, old_remaining)
+        self.budgets[bucket] = (remaining, reset)
 
 
 _coordinators = weakref.WeakKeyDictionary()
@@ -81,8 +137,11 @@ def retry_delay(headers, attempt):
 
 
 class HttpTransport:
-    def __init__(self, session, *, max_age=300, enabled=True, max_wait=60):
+    def __init__(
+        self, session, *, max_age=300, enabled=True, max_wait=60, github=False
+    ):
         self.session = session
+        self.github = github
         self.max_age = max_age
         self.enabled = enabled
         self.max_wait = max_wait
@@ -123,7 +182,7 @@ class HttpTransport:
             if raw is not None:
                 try:
                     stored = json.loads(raw)
-                    fresh = min(self.max_age, stored["max_age"])
+                    fresh = self.max_age
                     if time.time() - stored["stored_at"] < fresh:
                         self.stats["hits"] += 1
                         return 200, stored["headers"], stored["body"].encode()
@@ -136,10 +195,18 @@ class HttpTransport:
             elif stored["headers"].get("last-modified"):
                 headers["If-Modified-Since"] = stored["headers"]["last-modified"]
 
-        async with scope.lock:
+        credential = hashlib.sha256(
+            next(
+                (v for k, v in headers.items() if k.lower() == "authorization"), ""
+            ).encode()
+        ).hexdigest()
+        bucket = (credential, "search" if url.path.startswith("/search/") else "core")
+        async with scope.slots if self.github else scope.lock:
             waited = 0
             for attempt in range(3):
-                wait = max(0, scope.not_before - time.time())
+                if self.github:
+                    waited += await scope.admit(bucket, self.max_wait - waited)
+                wait = 0 if self.github else max(0, scope.not_before - time.time())
                 if waited + wait > self.max_wait:
                     raise RateLimitError(
                         f"API at {url.host} is rate limited; retry in {wait:.0f}s (wait budget {self.max_wait}s)"
@@ -167,6 +234,8 @@ class HttpTransport:
                         k.lower(): v for k, v in response.headers.items()
                     }
                     data = await response.read()
+                if self.github:
+                    scope.observe(bucket, response_headers)
                 limited = status == 429 or (
                     status == 403
                     and (
@@ -176,13 +245,18 @@ class HttpTransport:
                     )
                 )
                 if limited:
+                    if self.github:
+                        scope.interval = min(2.0, scope.interval * 2)
                     delay = retry_delay(response_headers, attempt)
-                    scope.not_before = time.time() + delay
+                    scope.not_before = max(scope.not_before, time.time() + delay)
                 elif status in (502, 503, 504):
                     delay = 2**attempt
-                    scope.not_before = time.time() + delay
+                    scope.not_before = max(scope.not_before, time.time() + delay)
                 else:
-                    if response_headers.get("x-ratelimit-remaining") == "0":
+                    if (
+                        not self.github
+                        and response_headers.get("x-ratelimit-remaining") == "0"
+                    ):
                         scope.not_before = time.time() + retry_delay(
                             response_headers, attempt
                         )
@@ -262,6 +336,7 @@ class CachedGitHubAPI(GitHubAPI):
     def __init__(self, session, *args, transport=None, **kwargs):
         super().__init__(session, *args, **kwargs)
         self.transport = transport or HttpTransport(session)
+        self.transport.github = True
 
     async def _request(self, method, url, headers, body=b""):
         if URL(url).origin() != URL(self.base_url).origin():

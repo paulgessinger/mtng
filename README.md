@@ -150,6 +150,48 @@ are not introduced by this configuration refactor.
 Indico events. Sections can be reordered, restyled, or omitted offline. A new query
 or event missing from the snapshot fails rather than accessing the network.
 
+### Shared configs and overlays
+
+Pass `--config` (or `-c`) multiple times to share repository definitions between
+meetings:
+
+```toml
+# repositories.toml
+[repositories.acts]
+name = "acts-project/acts"
+display_name = "ACTS"
+```
+
+```toml
+# meeting.toml
+title = "Weekly development update"
+
+[[sections]]
+type = "changes"
+state = "open"
+repositories = ["acts"]
+```
+
+```bash
+mtng generate --config repositories.toml --config meeting.toml --full --tex report.tex
+# The existing positional config is also supported and is applied first:
+mtng generate repositories.toml -c meeting.toml --full --tex report.tex
+mtng render report-data.json -c repositories.toml -c meeting.toml --tex report.tex
+```
+
+Files may mix TOML, YAML, and JSON. Mappings merge recursively; later values
+win. Lists (including `sections`, legacy `repos`, and label filters) are replaced,
+not concatenated. An empty list clears an inherited list; an explicit YAML/JSON
+`null` replaces the earlier value where the schema permits it. For example,
+`[repositories.acts]` in a later TOML file can override only `display_name`, keeping
+the shared `name` and other settings. Omitted values remain inherited.
+
+Validation runs after all files have been merged, so a shared repository file
+needs no sections of its own. Only repositories referenced by the final sections
+are collected. Saved report data contains the merged configuration. On `render`,
+the merged config files replace the saved config, just as a single `--config` did;
+the existing restrictions against requesting uncollected data still apply.
+
 ### Existing configurations
 
 Existing `repos` configurations remain supported without migration, in TOML,
@@ -464,7 +506,16 @@ with a LaTeX file like
 % Rest of slides
 ```
 
-Alternatively, you can generate a fully compileable LaTex document, by using the `--full` option.
+Both `generate` and `render` write plain LaTeX to stdout, without panels, markup
+interpretation, or line wrapping, whether stdout is a terminal or redirected.
+Progress, compiler logs, and file confirmations go to stderr.
+Use `--tex report.tex` to write the source to a file instead of stdout, or
+`--pdf report.pdf` to compile a PDF without dumping the source. Combine `--tex`
+and `--pdf` to save both files.
+
+`--full` controls only the document structure: it produces a standalone LaTeX
+document instead of a fragment. PDF compilation automatically selects a complete
+document when no custom preamble is supplied.
 
 ```console
 $ mtng generate spec.yml --full > gen.tex
@@ -634,8 +685,11 @@ Live checks bypass the application cache; cached success is not API validation.
 
 GitHub and GitLab use a persistent JSON HTTP cache under the platform's mtng
 cache directory (`http-v1/`). Keys isolate origins, query parameters, credentials
-and representation headers. Fresh responses are reused for up to five minutes,
-subject to the server's cache directives. Expired responses are revalidated using
+and representation headers. Responses are reused locally for five minutes by
+default, even when the server specifies a shorter lifetime or `no-cache`.
+This deliberate local snapshot can be stale for that window; `no-store` responses
+are never persisted. Set `--cache-max-age SECONDS` to change the window (zero
+revalidates every time). Expired responses are revalidated using
 ETag or Last-Modified when available; validators and bodies are retained for up
 to 30 days. Errors never substitute stale successful data. Old model caches are
 no longer read.
@@ -646,7 +700,13 @@ shared-request counts. Authentication checks bypass the cache. Cached data may
 include private repository content; it stays scoped to the requesting credentials.
 
 Within one process, identical simultaneous requests share a response and requests
-to each origin are serialized. Rate-limit headers control retry timing, with at
+to GitHub overlap with at most four in flight per origin. Starts are spaced at
+least 0.2 seconds apart, with search requests spaced at least 2.1 seconds apart.
+Credential-scoped search/core budgets reserve quota before dispatch, leaving a
+small safety margin. Throttling pauses the origin and reduces its request rate;
+GitLab requests remain serialized. Coordination is local to one process, so other
+clients sharing a token and undisclosed secondary limits can still cause throttling.
+Rate-limit headers control retry timing, with at
 most three attempts and a 60-second total wait budget. Longer limits produce an
 error with retry timing instead of retrying early. CI jobs are independent, so
 normal CI uses offline fixtures rather than relying on shared private caches.

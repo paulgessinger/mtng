@@ -21,7 +21,6 @@ from dateutil.tz import tzlocal
 from rich.console import Console
 from rich.status import Status
 from rich import print
-from rich.panel import Panel
 import rich.rule
 
 from mtng.generate import generate_latex
@@ -68,17 +67,41 @@ def have_lualatex() -> bool:
     return True
 
 
-def load_spec(config: typer.FileText) -> Spec:
-    suffix = Path(config.name).suffix.lower()
-    content = config.read()
+def merge_config(base: dict, overlay: dict) -> dict:
+    """Merge mappings recursively; later scalar and list values replace earlier ones."""
+    result = dict(base)
+    for key, value in overlay.items():
+        if isinstance(result.get(key), dict) and isinstance(value, dict):
+            result[key] = merge_config(result[key], value)
+        else:
+            result[key] = value
+    return result
 
-    if suffix == ".toml":
-        return Spec.model_validate(tomllib.loads(content))
 
-    if suffix == ".json":
-        return Spec.model_validate(json.loads(content))
-
-    return Spec.model_validate(yaml.safe_load(content))
+def load_spec(*configs) -> Spec:
+    if not configs:
+        raise ValueError("Provide a config argument or at least one --config file.")
+    merged = {}
+    for config in configs:
+        name = str(config) if isinstance(config, Path) else config.name
+        content = config.read_text() if isinstance(config, Path) else config.read()
+        suffix = Path(name).suffix.lower()
+        try:
+            if suffix == ".toml":
+                data = tomllib.loads(content)
+            elif suffix == ".json":
+                data = json.loads(content)
+            else:
+                data = yaml.safe_load(content)
+        except (ValueError, yaml.YAMLError) as error:
+            raise ValueError(f"Invalid config {name}: {error}") from error
+        if not isinstance(data, dict):
+            raise ValueError(f"Config {name} must contain a mapping at the top level.")
+        merged = merge_config(merged, data)
+    try:
+        return Spec.model_validate(merged)
+    except ValueError as error:
+        raise ValueError(f"Invalid merged config: {error}") from error
 
 
 def make_sync(fn):
@@ -165,13 +188,35 @@ async def handle_event(event: str, session):
 )
 @make_sync
 async def generate(
-    config: typer.FileText,
+    config: Annotated[
+        typer.FileText | None,
+        typer.Argument(
+            help="Base config (or - for stdin); applied before --config files"
+        ),
+    ] = None,
+    configs: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--config",
+            "-c",
+            exists=True,
+            dir_okay=False,
+            help="Config overlay; repeat in order, with later values taking precedence",
+        ),
+    ] = None,
     save_data: Annotated[
         Path | None, typer.Option(help="Save normalized data for offline rendering")
     ] = None,
     cache_stats: Annotated[
         bool, typer.Option(help="Print HTTP cache and request counters")
     ] = False,
+    cache_max_age: Annotated[
+        int,
+        typer.Option(
+            min=0,
+            help="Reuse local API data for this many seconds, overriding server freshness",
+        ),
+    ] = 300,
     refresh: Annotated[
         bool, typer.Option(help="Revalidate cached API responses immediately")
     ] = False,
@@ -214,7 +259,7 @@ async def generate(
     full_tex: Annotated[
         bool,
         typer.Option(
-            "--full", help="Write a full LaTeX file that is compileable on it's own"
+            "--full", help="Generate a standalone LaTeX document instead of a fragment"
         ),
     ] = False,
     preamble: Annotated[
@@ -236,7 +281,10 @@ async def generate(
     ] = None,
     tex: Annotated[
         Path | None,
-        typer.Option(dir_okay=False, help="Write LaTex output to this file"),
+        typer.Option(
+            dir_okay=False,
+            help="Write LaTeX to this file instead of stdout (also usable with --pdf)",
+        ),
     ] = None,
 ):
     if preamble is not None and full_tex:
@@ -245,7 +293,10 @@ async def generate(
             param_hint="--preamble",
         )
 
-    spec = load_spec(config)
+    try:
+        spec = load_spec(*([config] if config is not None else []), *(configs or []))
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
     if spec.sections is not None and event is not None:
         raise typer.BadParameter(
             "Use an indico section instead of --event with explicit sections"
@@ -303,7 +354,9 @@ async def generate(
                         __name__,
                         oauth_token=value,
                         transport=HttpTransport(
-                            session, max_age=0 if refresh else 300, enabled=not no_cache
+                            session,
+                            max_age=0 if refresh else cache_max_age,
+                            enabled=not no_cache,
                         ),
                     )
                 )
@@ -313,7 +366,9 @@ async def generate(
                     host,
                     value,
                     transport=HttpTransport(
-                        session, max_age=0 if refresh else 300, enabled=not no_cache
+                        session,
+                        max_age=0 if refresh else cache_max_age,
+                        enabled=not no_cache,
                     ),
                 )
             )
@@ -361,7 +416,13 @@ async def generate(
                 transport = (
                     backend.gh.transport if kind == "github" else backend.transport
                 )
-                console.print(f"{kind} {host}: {transport.stats}")
+                stats = transport.stats
+                console.print(
+                    f"{kind} {host}: {stats['hits']} local cache hits, "
+                    f"{stats['requests']} HTTP requests "
+                    f"({stats['revalidated']} unchanged), "
+                    f"{stats['retries']} retries, {stats['shared']} shared requests"
+                )
 
     if save_data is not None:
         snapshot = ReportData(
@@ -427,10 +488,13 @@ def output_report(
         else:
             latex = f"{preamble_content}\n\n{latex}"
 
+    if tex is not None:
+        tex.write_text(latex)
+        console.print(f"Wrote LaTeX: {tex}", markup=False, highlight=False)
+
     if pdf is None:
-        if tex is not None:
-            tex.write_text(latex)
-        print(Panel(latex, title="LaTeX Output"))
+        if tex is None:
+            typer.echo(latex, nl=False)
     else:
         with TemporaryDirectory() as d:
             d = Path(d)
@@ -459,6 +523,7 @@ def output_report(
                 if proc.returncode != 0:
                     raise subprocess.CalledProcessError(proc.returncode, args)
             shutil.copy(d / "source.pdf", pdf)
+        console.print(f"Wrote PDF: {pdf}", markup=False, highlight=False)
 
 
 @cli.command(help="Render saved report data without API calls or credentials")
@@ -466,14 +531,21 @@ def output_report(
 async def render(
     snapshot: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
     config: Annotated[
-        Path | None,
+        list[Path] | None,
         typer.Option(
+            "--config",
+            "-c",
             exists=True,
             dir_okay=False,
-            help="Override presentation settings; new data requires recollection",
+            help="Override config; repeat to merge files in order. New data requires recollection",
         ),
     ] = None,
-    full_tex: Annotated[bool, typer.Option("--full")] = False,
+    full_tex: Annotated[
+        bool,
+        typer.Option(
+            "--full", help="Generate a standalone LaTeX document instead of a fragment"
+        ),
+    ] = False,
     preamble: Annotated[Path | None, typer.Option(exists=True, dir_okay=False)] = None,
     pdf: Annotated[Path | None, typer.Option(dir_okay=False)] = None,
     tex: Annotated[Path | None, typer.Option(dir_okay=False)] = None,
@@ -481,9 +553,8 @@ async def render(
     try:
         saved = ReportData.model_validate_json(snapshot.read_text())
         spec = saved.spec
-        if config is not None:
-            with config.open() as stream:
-                spec = load_spec(stream)
+        if config:
+            spec = load_spec(*config)
         events = {
             url: [item.model_dump() for item in items]
             for url, items in saved.events.items()
