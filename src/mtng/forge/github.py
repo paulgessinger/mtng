@@ -7,7 +7,7 @@ import hashlib
 from gidgethub.abc import GitHubAPI
 from rich.status import Status
 
-from mtng.forge.base import bounded_gather
+from mtng.forge.base import bounded_gather, FetchRequirements
 from mtng.models import Issue, PullRequest, Review
 
 
@@ -161,12 +161,25 @@ class GitHubForge:
         repo_name: str,
         with_labels: list[str] = [],
         without_labels: list[str] = [],
+        requirements: FetchRequirements = FetchRequirements(),
     ) -> list[PullRequest]:
         with Status("Getting open PR list"):
             items = await self.search_open(repo_name, "pr", with_labels, without_labels)
 
-        prs = await self.pull_details([item.pull_request["url"] for item in items])
-        return await self.add_reviews(prs)
+        if requirements.details or requirements.reviews:
+            prs = await self.pull_details([item.pull_request["url"] for item in items])
+        else:
+            prs = [
+                PullRequest.model_validate(
+                    item.model_dump() | {"url": item.pull_request["url"]}
+                )
+                for item in items
+            ]
+        if requirements.reviews:
+            return await self.add_reviews(prs)
+        for pr in prs:
+            pr.reviews_available = False
+        return prs
 
     async def open_issues(
         self,

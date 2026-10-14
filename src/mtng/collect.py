@@ -8,6 +8,7 @@ from rich.rule import Rule
 from rich.status import Status
 
 from mtng.forge import Forge
+from mtng.forge.base import FetchRequirements
 from mtng.models import IssueBase
 from mtng.spec import (
     DEFAULT_PR_CATEGORY_COLORS,
@@ -220,6 +221,10 @@ async def collect_repositories(
                 repo.name,
                 with_labels=repo.with_labels,
                 without_labels=repo.without_labels,
+                requirements=FetchRequirements(
+                    reviews=repo.do_reviewers and repo.show_review_summary,
+                    details=False,
+                ),
             )
 
             if not repo.show_wip:

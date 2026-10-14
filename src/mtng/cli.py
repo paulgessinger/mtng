@@ -27,6 +27,7 @@ import rich.rule
 from mtng.generate import generate_latex
 from mtng.spec import Spec
 from mtng.collect import collect_repositories
+from mtng.report_data import RecordingForge, ReportData
 from mtng.forge import GitHubForge
 from mtng.forge.http import CachedGitHubAPI, HttpTransport, RateLimitError
 from mtng.forge.gitlab import GitLabForge, GitLabError
@@ -163,6 +164,9 @@ async def handle_event(event: str, session):
 @make_sync
 async def generate(
     config: typer.FileText,
+    save_data: Annotated[
+        Path | None, typer.Option(help="Save normalized data for offline rendering")
+    ] = None,
     cache_stats: Annotated[
         bool, typer.Option(help="Print HTTP cache and request counters")
     ] = False,
@@ -310,10 +314,19 @@ async def generate(
             for (kind, host), value in tokens.items()
         }
 
+        recorders = (
+            {key: RecordingForge(backend, *key) for key, backend in forge.items()}
+            if save_data
+            else None
+        )
         print(Panel("Collecting repository data"))
         try:
             data = await collect_repositories(
-                spec.repos, forge=forge, since=since, now=now, release=release
+                spec.repos,
+                forge=recorders if recorders is not None else forge,
+                since=since,
+                now=now,
+                release=release,
             )
         except (
             GitLabError,
@@ -333,6 +346,37 @@ async def generate(
                 )
                 console.print(f"{kind} {host}: {transport.stats}")
 
+    if save_data is not None:
+        snapshot = ReportData(
+            spec=spec,
+            since=since,
+            now=now,
+            release=release,
+            contributions=contributions,
+            backends=[recorder.data for recorder in recorders.values()],
+        )
+        save_data.write_text(snapshot.model_dump_json(indent=2) + "\n")
+    output_report(spec, data, since, now, contributions, full_tex, preamble, pdf, tex)
+
+
+def output_report(
+    spec,
+    data,
+    since,
+    now,
+    contributions,
+    full_tex=False,
+    preamble=None,
+    pdf=None,
+    tex=None,
+):
+    if preamble is not None and full_tex:
+        raise typer.BadParameter("--preamble cannot be used with --full.")
+    if pdf is not None:
+        full_tex = preamble is None
+        latexmk = find_latexmk()
+        if latexmk is None:
+            raise ValueError("latexmk could not be found, cannot compile using --pdf")
     with Status("Generating LaTeX"):
         latex = generate_latex(
             spec,
@@ -393,6 +437,47 @@ async def generate(
                 if proc.returncode != 0:
                     raise subprocess.CalledProcessError(proc.returncode, args)
             shutil.copy(d / "source.pdf", pdf)
+
+
+@cli.command(help="Render saved report data without API calls or credentials")
+@make_sync
+async def render(
+    snapshot: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
+    config: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            help="Override presentation settings; new data requires recollection",
+        ),
+    ] = None,
+    full_tex: Annotated[bool, typer.Option("--full")] = False,
+    preamble: Annotated[Path | None, typer.Option(exists=True, dir_okay=False)] = None,
+    pdf: Annotated[Path | None, typer.Option(dir_okay=False)] = None,
+    tex: Annotated[Path | None, typer.Option(dir_okay=False)] = None,
+):
+    try:
+        saved = ReportData.model_validate_json(snapshot.read_text())
+        spec = saved.spec
+        if config is not None:
+            with config.open() as stream:
+                spec = load_spec(stream)
+        data = await collect_repositories(
+            spec.repos, saved.since, saved.now, saved.forges(), release=saved.release
+        )
+    except (ValueError, KeyError) as error:
+        raise typer.BadParameter(str(error)) from error
+    output_report(
+        spec,
+        data,
+        saved.since,
+        saved.now,
+        [item.model_dump() for item in saved.contributions],
+        full_tex,
+        preamble,
+        pdf,
+        tex,
+    )
 
 
 @auth_cli.command("login", help="Store an API token in your system keychain")
