@@ -173,59 +173,6 @@ def test_placeholders_expand():
     assert expand_placeholders(None, values) is None
 
 
-needs_gh_token = pytest.mark.skipif(
-    "GH_TOKEN" not in os.environ, reason="GH_TOKEN environment variable not set"
-)
-
-
-@needs_gh_token
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_collect(tmp_path):
-    repo = Repository(
-        name="acts-project/acts",
-        stale_label="Stale",
-        wip_label=":construction: WIP",
-    )
-
-    async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
-        gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
-        result = await mtng.collect.collect_repositories(
-            [repo],
-            forge=GitHubForge(gh),
-            since=datetime(2022, 8, 1, tzinfo=tzlocal()),
-            now=datetime(2022, 8, 11, tzinfo=tzlocal()),
-        )
-
-    (repo,) = result.values()
-    for k in ["merged_prs", "open_prs", "stale", "recent_issues"]:
-        outf = tmp_path / f"{k}.json"
-        print(outf)
-        with outf.open("w") as fh:
-            json.dump([json.loads(o.model_dump_json()) for o in repo[k]], fh, indent=2)
-
-
-@needs_gh_token
-@pytest.mark.integration
-@pytest.mark.asyncio
-async def test_get_open_pulls():
-    repo = Repository(
-        name="acts-project/acts",
-        stale_label="Stale",
-        wip_label=":construction: WIP",
-    )
-
-    async with aiohttp.ClientSession(loop=asyncio.get_event_loop()) as session:
-        gh = GitHubAPI(session, __name__, oauth_token=os.environ["GH_TOKEN"])
-        open_prs = await GitHubForge(gh).open_prs(
-            repo.name,
-            without_labels=repo.filter_labels,
-        )
-
-        for pr in open_prs:
-            print(pr.model_dump_json(indent=2))
-
-
 # check if we have latexmk
 have_latexmk = False
 try:
