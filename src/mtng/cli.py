@@ -67,17 +67,41 @@ def have_lualatex() -> bool:
     return True
 
 
-def load_spec(config: typer.FileText) -> Spec:
-    suffix = Path(config.name).suffix.lower()
-    content = config.read()
+def merge_config(base: dict, overlay: dict) -> dict:
+    """Merge mappings recursively; later scalar and list values replace earlier ones."""
+    result = dict(base)
+    for key, value in overlay.items():
+        if isinstance(result.get(key), dict) and isinstance(value, dict):
+            result[key] = merge_config(result[key], value)
+        else:
+            result[key] = value
+    return result
 
-    if suffix == ".toml":
-        return Spec.model_validate(tomllib.loads(content))
 
-    if suffix == ".json":
-        return Spec.model_validate(json.loads(content))
-
-    return Spec.model_validate(yaml.safe_load(content))
+def load_spec(*configs) -> Spec:
+    if not configs:
+        raise ValueError("Provide a config argument or at least one --config file.")
+    merged = {}
+    for config in configs:
+        name = str(config) if isinstance(config, Path) else config.name
+        content = config.read_text() if isinstance(config, Path) else config.read()
+        suffix = Path(name).suffix.lower()
+        try:
+            if suffix == ".toml":
+                data = tomllib.loads(content)
+            elif suffix == ".json":
+                data = json.loads(content)
+            else:
+                data = yaml.safe_load(content)
+        except (ValueError, yaml.YAMLError) as error:
+            raise ValueError(f"Invalid config {name}: {error}") from error
+        if not isinstance(data, dict):
+            raise ValueError(f"Config {name} must contain a mapping at the top level.")
+        merged = merge_config(merged, data)
+    try:
+        return Spec.model_validate(merged)
+    except ValueError as error:
+        raise ValueError(f"Invalid merged config: {error}") from error
 
 
 def make_sync(fn):
@@ -164,7 +188,22 @@ async def handle_event(event: str, session):
 )
 @make_sync
 async def generate(
-    config: typer.FileText,
+    config: Annotated[
+        typer.FileText | None,
+        typer.Argument(
+            help="Base config (or - for stdin); applied before --config files"
+        ),
+    ] = None,
+    configs: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--config",
+            "-c",
+            exists=True,
+            dir_okay=False,
+            help="Config overlay; repeat in order, with later values taking precedence",
+        ),
+    ] = None,
     save_data: Annotated[
         Path | None, typer.Option(help="Save normalized data for offline rendering")
     ] = None,
@@ -254,7 +293,10 @@ async def generate(
             param_hint="--preamble",
         )
 
-    spec = load_spec(config)
+    try:
+        spec = load_spec(*([config] if config is not None else []), *(configs or []))
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
     if spec.sections is not None and event is not None:
         raise typer.BadParameter(
             "Use an indico section instead of --event with explicit sections"
@@ -489,11 +531,13 @@ def output_report(
 async def render(
     snapshot: Annotated[Path, typer.Argument(exists=True, dir_okay=False)],
     config: Annotated[
-        Path | None,
+        list[Path] | None,
         typer.Option(
+            "--config",
+            "-c",
             exists=True,
             dir_okay=False,
-            help="Override presentation settings; new data requires recollection",
+            help="Override config; repeat to merge files in order. New data requires recollection",
         ),
     ] = None,
     full_tex: Annotated[
@@ -509,9 +553,8 @@ async def render(
     try:
         saved = ReportData.model_validate_json(snapshot.read_text())
         spec = saved.spec
-        if config is not None:
-            with config.open() as stream:
-                spec = load_spec(stream)
+        if config:
+            spec = load_spec(*config)
         events = {
             url: [item.model_dump() for item in items]
             for url, items in saved.events.items()
