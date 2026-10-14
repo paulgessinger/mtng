@@ -1,4 +1,4 @@
-# mtng 
+# mtng
 Generate meeting notes from GitHub or GitLab + [Indico](https://getindico.io/). This tool generates
 LaTeX code that can be compiled into a PDF presentation. The result looks something like this:
 
@@ -93,7 +93,7 @@ repos:
     pr_category_order: [fix, feat]
     do_recent_issues: true
     no_assignee_attention: true
-    filter_labels: 
+    filter_labels:
       - backport
 ```
 
@@ -157,7 +157,7 @@ authentication and server failures remain errors. Line/commit counts are left
 unknown rather than reported as zero. Detailed diff statistics and report-mode
 redesign are follow-up work.
 
-### Schema 
+### Schema
 - **`Repository`** *(object)*: Cannot contain additional properties.
   - **`forge`** *(string)*: `github` (default) or `gitlab`.
   - **`host`** *(string or null)*: HTTPS host; defaults to github.com or gitlab.com.
@@ -211,7 +211,7 @@ no_assignee_attention = true
 filter_labels = ["backport"]
 ```
 
-This configuration will look up the `acts-project/acts` repository. The output will contain sections on 
+This configuration will look up the `acts-project/acts` repository. The output will contain sections on
 
 1. Stale PRs and issues. If this is turned on, the `stale_label` key must be given as well
 2. A list of open PRs, optionally filtered to not include the label given by `wip_label`

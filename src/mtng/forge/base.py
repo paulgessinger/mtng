@@ -5,7 +5,6 @@ from datetime import datetime
 
 from mtng.models import Issue, PullRequest
 
-
 FETCH_CONCURRENCY = 8
 
 
