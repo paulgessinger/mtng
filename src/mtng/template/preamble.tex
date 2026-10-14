@@ -7,6 +7,12 @@
 \providecolor{alertred}{HTML}{EF5D60}
 
 \usepackage{iftex}
+% PDFLaTeX needs scalable text/symbol fonts for microtype expansion. Minimal
+% TeX installations can otherwise fall back to bitmap Computer Modern fonts.
+\ifPDFTeX
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\fi
 \usepackage{microtype}
 \usepackage{calc}
 \usepackage{etoolbox}
