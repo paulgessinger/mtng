@@ -321,9 +321,11 @@ def test_item_render(try_render):
     assert "\\prstale" not in output
     assert "\\prcategory" not in output
     assert "EXTRA" in output
-    assert user_a.login in output
-    assert user_b.login in output
-    assert "reviewed by" in output
+    from mtng.generate import title_characters
+
+    assert str(title_characters("@" + user_a.login)) in output
+    assert str(title_characters("@" + user_b.login)) not in output
+    assert "approved" in output
     assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
 
     item.pr_category_label = "feat"
@@ -334,10 +336,11 @@ def test_item_render(try_render):
 
     item.pr_category_breaking = True
     output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
-    assert "police-car-light" in output
+    assert r"\prbreaking{alertred}" in output
 
     spec.show_review_summary = False
     output = tpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA")
+    assert "approved" not in output
     assert "reviewed by" not in output
     assert "comment by" not in output
     assert "changes requested by" not in output
@@ -380,8 +383,10 @@ def test_item_render(try_render):
 
     output = tpl.render(item=item, spec=spec, mode=None, extra="EXTRA")
     assert "\\iss" in output
-    assert user_a.login in output
-    assert user_b.login in output
+    from mtng.generate import title_characters
+
+    assert str(title_characters("@" + user_a.login)) in output
+    assert str(title_characters("@" + user_b.login)) in output
     assert "EXTRA" in output
     assert try_render(ctpl.render(item=item, spec=spec, mode="MERGED", extra="EXTRA"))
 
@@ -532,7 +537,7 @@ def test_grouped_pr_sections_render():
     )
     # Section pages are titled with the category alone.
     assert "\\section{ Feature}" in output
-    assert "police-car-light" in output
+    assert r"\prbreaking{alertred}" in output
 
 
 def test_grouped_pr_section_shows_category_emoji():
@@ -1023,19 +1028,22 @@ def test_bento_present_outside_release_mode():
 @pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
 @pytest.mark.parametrize("full_tex", [True, False], ids=["full", "fragment"])
 @pytest.mark.asyncio
-async def test_compile_release_bento(full_tex, tmp_path):
+@pytest.mark.parametrize("truncate", [False, True])
+async def test_compile_release_bento(full_tex, tmp_path, truncate):
     """Compile the bento frame for real.
 
     This is the only thing that catches pgfmath / \\dimexpr mistakes in
     \\bentogeom. The fragment case additionally exercises the provides.tex
     fallbacks, which must compile in a deck that never loaded tikz.
     """
-    repo = Repository(name="acts-project/acts", do_merged_prs=True)
+    repo = Repository(
+        name="acts-project/acts", do_merged_prs=True, truncate_pr_titles=truncate
+    )
 
     user = User(login="alice", html_url="https://example.com")
     merged = [
         PullRequest(
-            title="feat: something with a $ and a _ in it",
+            title="feat: " + "a long title with $ and _ and {braces} " * 8,
             user=user,
             labels=[Label(name="Feature"), Label(name="bug_report")],
             number=1234,
@@ -1117,3 +1125,261 @@ def test_human_int(value, expected):
     from mtng.generate import human_int
 
     assert str(human_int(value)) == expected
+
+
+def test_title_characters_preserves_escape_units():
+    from mtng.generate import title_characters
+
+    assert str(title_characters("a_$ {}")) == r"{a}{\_}{\$}{ }{\{}{\}}"
+
+
+def test_pr_title_truncation_is_optional():
+    repo = Repository(name="acts-project/acts", truncate_pr_titles=True)
+    output = _render(repo, _repo_data(repo, [_merged_pr("feat: Short title", repo)]))
+    assert "\\mtngprline{" in output
+    assert "{S}{h}{o}{r}{t}{ }{t}{i}{t}{l}{e}" in output
+    repo.truncate_pr_titles = False
+    output = _render(repo, _repo_data(repo, [_merged_pr("feat: Short title", repo)]))
+    assert "\\mtngprline{" not in output
+
+
+@pytest.mark.parametrize("truncate", [False, True])
+@pytest.mark.parametrize("additions,deletions", [(1234, 56), (0, 0), (None, None)])
+def test_pr_diff_size(truncate, additions, deletions):
+    repo = Repository(name="acts-project/acts", truncate_pr_titles=truncate)
+    pr = _merged_pr("feat: Diff size example", repo)
+    pr.additions, pr.deletions = additions, deletions
+    output = _render(repo, _repo_data(repo, [pr]))
+    if additions is None:
+        assert "green!50!black" not in output
+    else:
+        added = "1\\,234" if additions else "0"
+        assert rf"\textcolor{{green!50!black}}{{+{added}}}" in output
+        assert rf"\textcolor{{red!75!black}}{{\ensuremath{{-}}{deletions}}}" in output
+
+
+@pytest.mark.parametrize(
+    "states,expected",
+    [
+        ([], "awaiting review"),
+        (["APPROVED"], "approved"),
+        (["CHANGES_REQUESTED", "APPROVED"], "approved"),
+        (["APPROVED", "CHANGES_REQUESTED"], "changes requested"),
+        (["APPROVED", "COMMENTED"], "approved"),
+        (["APPROVED", "DISMISSED"], "awaiting review"),
+        (["PENDING"], "awaiting review"),
+    ],
+)
+def test_compact_review_latest_decisive_state(states, expected):
+    from mtng.generate import review_status
+
+    repo = Repository(name="acts-project/acts")
+    pr = _merged_pr("feat: review status", repo)
+    user = User(login="reviewer", html_url="https://example.com")
+    start = datetime(2026, 10, 1)
+    pr.reviews = [
+        Review(user=user, state=state, submitted_at=start + timedelta(days=i))
+        for i, state in enumerate(states)
+    ][
+        ::-1
+    ]  # Must not depend on API ordering.
+    assert review_status(pr)[0] == expected
+    pr.reviews_available = False
+    assert review_status(pr)[0] == "review unavailable"
+
+
+def test_compact_review_change_request_takes_precedence():
+    from mtng.generate import review_status
+
+    pr = _merged_pr("feat: review status", Repository(name="acts-project/acts"))
+    pr.reviews = [
+        Review(user=User(login=name, html_url="https://example.com"), state=state)
+        for name, state in [("alice", "CHANGES_REQUESTED"), ("bob", "APPROVED")]
+    ]
+    assert review_status(pr)[0] == "changes requested"
+
+
+def test_age_days_uses_report_timezone_and_clamps_future_dates():
+    from datetime import timezone
+    from mtng.generate import age_days
+
+    now = datetime(2026, 10, 14, 1, tzinfo=timezone(timedelta(hours=2)))
+    assert age_days(datetime(2026, 10, 13, 23, tzinfo=timezone.utc), now) == 0
+    assert age_days(now - timedelta(days=18), now) == 18
+    assert age_days(now + timedelta(days=1), now) == 0
+
+
+def test_word_truncation_units_keep_words_and_escapes_intact():
+    from mtng.generate import title_units, title_characters
+
+    assert str(title_units("preserve input order")) == "{preserve }{input }{order}"
+    assert str(title_units("handle $ and _")) == r"{handle }{\$ }{and }{\_}"
+    assert title_units("LongSingleIdentifier") == title_characters(
+        "LongSingleIdentifier"
+    )
+
+
+def test_draft_icon_and_file_count():
+    repo = Repository(name="acts-project/acts", do_reviewers=True)
+    pr = _merged_pr("feat: draft", repo)
+    pr.draft = True
+    pr.is_wip = True
+    pr.changed_files = 1
+    output = env.get_template("item.tex").render(
+        item=pr, spec=repo, mode="OPEN", extra=""
+    )
+    assert r"\prdraft" in output
+    assert r"\prcategory{Draft}{black!45}" in output
+    assert r"\prwip" not in output
+    assert "1 file" in output
+    assert "1 files" not in output
+    assert "awaiting review" in output
+    pr.changed_files = None
+    output = env.get_template("item.tex").render(
+        item=pr, spec=repo, mode="OPEN", extra=""
+    )
+    assert "1 file" not in output
+
+
+@pytest.mark.parametrize(
+    "day,new", [(0, False), (1, True), (5, True), (11, True), (12, False)]
+)
+def test_new_pr_badge_uses_inclusive_report_window(day, new):
+    repo = Repository(name="acts-project/acts")
+    pr = _merged_pr("feat: new PR", repo)
+    pr.created_at = datetime(2022, 8, 1, tzinfo=tzlocal()) + timedelta(days=day - 1)
+    data = _repo_data(repo, [])
+    data[repo.name]["open_prs"] = [pr]
+    output = _render(repo, data)
+    assert (r"\prnew\prcategory" in output) is new
+
+
+@pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
+@pytest.mark.asyncio
+async def test_busy_pr_rows_wrap_without_overflow(tmp_path):
+    repo = Repository(
+        name="example/project",
+        do_merged_prs=False,
+        do_reviewers=True,
+        do_assignee=True,
+        show_wip=True,
+        truncate_pr_titles=True,
+    )
+    now = datetime(2026, 10, 14, tzinfo=tzlocal())
+    user = User(login="long-account-name-" * 4, html_url="https://example.com")
+    prs = [
+        PullRequest(
+            title="feat: " + "long title with words and escaped $ _ characters " * 5,
+            user=user,
+            assignee=user,
+            labels=[],
+            number=i,
+            url="https://example.com",
+            html_url="https://example.com",
+            created_at=now - timedelta(days=2),
+            updated_at=now,
+            draft=i % 2 == 0,
+            additions=98765,
+            deletions=54321,
+            changed_files=1234,
+            reviews=[Review(user=user, state="CHANGES_REQUESTED")],
+        )
+        for i in range(16)
+    ]
+    since = now - timedelta(days=7)
+    data = await collect_repositories([repo], since, now, FakeForge(open_prs=prs))
+    tex = generate_latex(Spec(repos=[repo]), data, since, now, [], True)
+    # Test PR pagination; exclude the independent title-page layout.
+    tex = tex.replace(r"\frame[plain]{\titlepage}", "")
+    source = tmp_path / "overflow.tex"
+    source.write_text(tex)
+    subprocess.check_output(
+        [
+            str(latexmk_path),
+            "-pdf",
+            "-halt-on-error",
+            f"-outdir={tmp_path}",
+            str(source),
+        ],
+        stderr=subprocess.STDOUT,
+    )
+    log = source.with_suffix(".log").read_text()
+    assert "Overfull" not in log
+    assert source.with_suffix(".pdf").exists()
+
+
+@pytest.mark.parametrize(
+    "days,expected", [(1, "a day"), (2, "2 days"), (18, "18 days"), (365, "a year")]
+)
+def test_human_readable_days(days, expected):
+    from mtng.generate import human_days
+
+    assert human_days(days) == expected
+
+
+@pytest.mark.parametrize(
+    "age,inactive,expected",
+    [
+        (0, 0, "opened today"),
+        (18, 0, "open for 18 days"),
+        (18, 1, "open for 18 days, inactive for a day"),
+        (365, 7, "open for a year, inactive for 7 days"),
+    ],
+)
+def test_open_pr_human_readable_age(age, inactive, expected):
+    repo = Repository(name="acts-project/acts")
+    pr = _merged_pr("feat: age display", repo)
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    pr.created_at = now - timedelta(days=age)
+    pr.updated_at = now - timedelta(days=inactive)
+    data = _repo_data(repo, [])
+    data[repo.name]["open_prs"] = [pr]
+    output = _render(repo, data)
+    assert expected in output
+    if inactive == 0:
+        assert "inactive" not in output
+
+
+@pytest.mark.parametrize("mode", ["OPEN", "MERGED"])
+@pytest.mark.parametrize(
+    "state,available,label,color",
+    [
+        ("APPROVED", True, "approved", "green!50!black"),
+        ("CHANGES_REQUESTED", True, "changes requested", "red!75!black"),
+        ("COMMENTED", True, "awaiting review", "black!55"),
+        ("APPROVED", False, "review unavailable", "black!55"),
+    ],
+)
+def test_review_status_presentation_is_uniform(mode, state, available, label, color):
+    repo = Repository(name="acts-project/acts", do_reviewers=True)
+    pr = _merged_pr("feat: uniform review status", repo)
+    pr.reviews = [
+        Review(
+            user=User(
+                login="hidden-reviewer", html_url="https://example.com/hidden-reviewer"
+            ),
+            state=state,
+        )
+    ]
+    pr.reviews_available = available
+    output = env.get_template("item.tex").render(
+        item=pr, spec=repo, mode=mode, extra=""
+    )
+    assert rf"\textcolor{{{color}}}{{{label}}}" in output
+    assert r"\mbox{\scriptsize\textcolor{black!55}{\ensuremath{\cdot}}" in output
+    assert "hidden-reviewer" not in output
+    assert "reviewed by" not in output
+
+
+@pytest.mark.parametrize("kind,color", [("feat", "LimeGreen"), ("fix", "Purple")])
+def test_breaking_marker_keeps_category_color(kind, color):
+    repo = Repository(name="acts-project/acts")
+    pr = _merged_pr(f"{kind}!: breaking title", repo)
+    assert pr.pr_category_color == color
+    rendered = env.from_string(
+        '{% from "macros.tex" import show_item %}'
+        '{% call show_item(item, spec, mode="OPEN", is_new=true) %}{% endcall %}'
+    ).render(item=pr, spec=repo)
+    assert r"\prnew\prbreaking{alertred}\prcategory{" in rendered
+    assert f"}}{{{color}}}" in rendered
+    assert r"\prcategory{\cusemoji" not in rendered

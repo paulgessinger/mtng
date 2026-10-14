@@ -1,5 +1,8 @@
 \providecommand{\prmerged}{MERGED }
 \providecommand{\propen}{OPEN }
+\providecommand{\prdraft}{}
+\providecommand{\prbreaking}[1]{ {\scriptsize\textcolor{ #1}{\textbf{!}}}\hspace{0.2em}}
+\providecommand{\prnew}{ {\scriptsize\textcolor{blue!65!black}{\textbf{NEW}}}\hspace{0.2em}}
 \providecommand{\prwip}{WIP }
 \providecommand{\prstale}{STALE }
 \providecommand{\prcategory}[2]{[#1] }
@@ -8,6 +11,7 @@
 
 \providecolor{shivablue}{rgb}{0.6,0.86,0.99}
 \providecolor{Red}{rgb}{1.0,0.18,0.09}
+\providecolor{alertred}{HTML}{EF5D60}
 
 \providecommand{\cusemoji}[1]{}
 \providecommand{\emojispace}[1]{}
@@ -30,6 +34,66 @@
 % directly by a hash or another brace -- hence the spacing and \bfseries below.
 \providecommand{\bentotile}[7]{ {\bfseries #6}~{\footnotesize #7}\hspace{1.5em}}
 \providecommand{\bentolisttile}[7]{ #6~{\footnotesize #7}\hspace{1.5em}}
+
+% Measure in the surrounding list font; word/character groups keep escaped TeX intact.
+\ExplSyntaxOn
+% Allow unusually long usernames to wrap without changing the link target.
+\cs_if_exist:NF \mtngusername {
+  \cs_new_protected:Npn \mtngusername #1
+    { \tl_map_inline:nn {#1} {##1\allowbreak} }
+}
+\cs_if_exist:NF \mtngprline {
+\seq_new:N \l_mtng_chars_seq
+\tl_new:N \l_mtng_title_tl
+\box_new:N \l_mtng_prefix_box
+\box_new:N \l_mtng_suffix_box
+\box_new:N \l_mtng_title_box
+\dim_new:N \l_mtng_available_dim
+\int_new:N \l_mtng_keep_int
+\int_new:N \l_mtng_left_int
+\cs_new_protected:Npn \mtng_measure_title:
+  { \hbox_set:Nn \l_mtng_title_box { \bfseries \tl_use:N \l_mtng_title_tl } }
+\providecommand{\mtngprline}[4]{
+  \leavevmode
+  \group_begin:
+  \hbox_set:Nn \l_mtng_prefix_box {\ignorespaces#1\unskip}
+  \hbox_set:Nn \l_mtng_suffix_box {#4}
+  \dim_set:Nn \l_mtng_available_dim
+    { \linewidth - \box_wd:N \l_mtng_prefix_box - \box_wd:N \l_mtng_suffix_box - 0.5em }
+  \seq_clear:N \l_mtng_chars_seq
+  \tl_map_inline:nn {#2} { \seq_put_right:Nn \l_mtng_chars_seq {##1} }
+  \tl_set:Nx \l_mtng_title_tl { \seq_use:Nn \l_mtng_chars_seq {} }
+  \mtng_measure_title:
+  \int_set:Nn \l_mtng_keep_int { \seq_count:N \l_mtng_chars_seq }
+  \bool_while_do:nn
+    { \dim_compare_p:n { \box_wd:N \l_mtng_title_box > \l_mtng_available_dim }
+      && \int_compare_p:n { \l_mtng_keep_int > 0 } }
+    {
+      \int_decr:N \l_mtng_keep_int
+      \int_set:Nn \l_mtng_left_int { \int_div_truncate:nn { \l_mtng_keep_int + 1 } {2} }
+      \tl_clear:N \l_mtng_title_tl
+      \int_step_inline:nn { \l_mtng_left_int }
+        { \tl_put_right:Nx \l_mtng_title_tl { \seq_item:Nn \l_mtng_chars_seq {##1} } }
+      \tl_put_right:Nn \l_mtng_title_tl {\,\textellipsis\,}
+      \int_step_inline:nn { \l_mtng_keep_int - \l_mtng_left_int }
+        { \tl_put_right:Nx \l_mtng_title_tl
+            { \seq_item:Nn \l_mtng_chars_seq
+                { \seq_count:N \l_mtng_chars_seq - \l_mtng_keep_int + \l_mtng_left_int + ##1 } } }
+      \mtng_measure_title:
+    }
+  % If badges alone exhaust the line, retain the ordinary wrapping behavior.
+  \dim_compare:nNnTF { \l_mtng_available_dim } < { \box_wd:N \l_mtng_title_box }
+    { \box_use:N \l_mtng_prefix_box
+      \href{#3}{\textcolor{black}{\bfseries\seq_use:Nn \l_mtng_chars_seq {}}}
+      \hspace{0.5em}\box_use:N \l_mtng_suffix_box }
+    { \hbox { \box_use:N \l_mtng_prefix_box
+      \href{#3}{\textcolor{black}{\box_use:N \l_mtng_title_box}}
+      \hspace{0.5em}\box_use:N \l_mtng_suffix_box } }
+  \group_end:
+}
+}
+\ExplSyntaxOff
+
 
 
 
@@ -69,7 +133,7 @@
 
 
 \section{ \protect\cusemoji{warning}{} Breaking changes}
-\begin{frame}[allowframebreaks,t]{\reponame{}: Breaking changes}
+\begin{frame}[allowframebreaks=0.9,t]{\reponame{}: Breaking changes}
 
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
@@ -80,13 +144,15 @@
     \setlength{\topsep}{0pt}
     
     
-    \item\prmerged\prcategory{\cusemoji{police-car-light} Refactor}{alertred}\textbf{\href{https://github.com/acts-project/acts/pull/1257}{\textcolor{black}{Build DD4hep geometry from hierarchy, use VariantParameters}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prbreaking{alertred}\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1257}{\textcolor{black}{Build DD4hep geometry from hierarchy, use VariantParameters}}}
     (\href{https://github.com/acts-project/acts/pull/1257}{\prstr{1257}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{\cusemoji{police-car-light} Feature}{alertred}\textbf{\href{https://github.com/acts-project/acts/pull/1262}{\textcolor{black}{MultiTrajectory backends}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prbreaking{alertred}\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1262}{\textcolor{black}{MultiTrajectory backends}}}
     (\href{https://github.com/acts-project/acts/pull/1262}{\prstr{1262}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
     
   \end{itemize}
@@ -95,7 +161,7 @@
 
 
 
-\begin{frame}[allowframebreaks,t]{\reponame{}: PRs merged between 2022-08-01 and 2022-08-11}
+\begin{frame}[allowframebreaks=0.9,t]{\reponame{}: PRs merged between 2022-08-01 and 2022-08-11}
 
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
@@ -106,205 +172,255 @@
     \setlength{\topsep}{0pt}
     
     
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1355}{\textcolor{black}{accumulating residual plots in boundParamResolution if only `predicted==true`}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1355}{\textcolor{black}{accumulating residual plots in boundParamResolution if only `predicted==true`}}}
     (\href{https://github.com/acts-project/acts/pull/1355}{\prstr{1355}}) \\
-    by \href{https://github.com/AJPfleger}{@AJPfleger}, merged on 2022-08-01
+    by \href{https://github.com/AJPfleger}{\mtngusername{{@}{A}{J}{P}{f}{l}{e}{g}{e}{r}}}, merged on 2022-08-01
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1349}{\textcolor{black}{Switch gitlab test job to needs instead of dependencies}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1349}{\textcolor{black}{Switch gitlab test job to needs instead of dependencies}}}
     (\href{https://github.com/acts-project/acts/pull/1349}{\prstr{1349}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-01
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-01
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1356}{\textcolor{black}{improve Python full-chain ITk example}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1356}{\textcolor{black}{improve Python full-chain ITk example}}}
     (\href{https://github.com/acts-project/acts/pull/1356}{\prstr{1356}}) \\
-    by \href{https://github.com/timadye}{@timadye}, merged on 2022-08-02
+    by \href{https://github.com/timadye}{\mtngusername{{@}{t}{i}{m}{a}{d}{y}{e}}}, merged on 2022-08-02
+    \end{minipage}
 
-    \item\prmerged\prcategory{Tests}{RoyalBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1334}{\textcolor{black}{geant4 python example}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Tests}{RoyalBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1334}{\textcolor{black}{geant4 python example}}}
     (\href{https://github.com/acts-project/acts/pull/1334}{\prstr{1334}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, merged on 2022-08-02
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, merged on 2022-08-02
+    \end{minipage}
 
-    \item\prmerged\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1347}{\textcolor{black}{Change ConstrainedStep to be explicit}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1347}{\textcolor{black}{Change ConstrainedStep to be explicit}}}
     (\href{https://github.com/acts-project/acts/pull/1347}{\prstr{1347}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, merged on 2022-08-02
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, merged on 2022-08-02
+    \end{minipage}
 
-    \item\prmerged\prcategory{Chore}{Gray}\textbf{\href{https://github.com/acts-project/acts/pull/1359}{\textcolor{black}{clang-tidy performance-move-const-arg}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Chore}{Gray}\textbf{\href{https://github.com/acts-project/acts/pull/1359}{\textcolor{black}{clang-tidy performance-move-const-arg}}}
     (\href{https://github.com/acts-project/acts/pull/1359}{\prstr{1359}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-02
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-02
+    \end{minipage}
 
-    \item\prmerged\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1352}{\textcolor{black}{CI checks for ITk seeding example}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1352}{\textcolor{black}{CI checks for ITk seeding example}}}
     (\href{https://github.com/acts-project/acts/pull/1352}{\prstr{1352}}) \\
-    by \href{https://github.com/LuisFelipeCoelho}{@LuisFelipeCoelho}, merged on 2022-08-03
+    by \href{https://github.com/LuisFelipeCoelho}{\mtngusername{{@}{L}{u}{i}{s}{F}{e}{l}{i}{p}{e}{C}{o}{e}{l}{h}{o}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1365}{\textcolor{black}{Set up backport action that reacts to labels}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1365}{\textcolor{black}{Set up backport action that reacts to labels}}}
     (\href{https://github.com/acts-project/acts/pull/1365}{\prstr{1365}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1366}{\textcolor{black}{CI checks for ITk seeding example [backport \#1352 to develop/v19.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1366}{\textcolor{black}{CI checks for ITk seeding example [backport \#1352 to develop/v19.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1366}{\prstr{1366}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-03
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{\cusemoji{police-car-light} Refactor}{alertred}\textbf{\href{https://github.com/acts-project/acts/pull/1257}{\textcolor{black}{Build DD4hep geometry from hierarchy, use VariantParameters}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prbreaking{alertred}\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1257}{\textcolor{black}{Build DD4hep geometry from hierarchy, use VariantParameters}}}
     (\href{https://github.com/acts-project/acts/pull/1257}{\prstr{1257}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1369}{\textcolor{black}{Fix documentation build in v9.1.x}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1369}{\textcolor{black}{Fix documentation build in v9.1.x}}}
     (\href{https://github.com/acts-project/acts/pull/1369}{\prstr{1369}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{\cusemoji{police-car-light} Feature}{alertred}\textbf{\href{https://github.com/acts-project/acts/pull/1262}{\textcolor{black}{MultiTrajectory backends}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prbreaking{alertred}\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1262}{\textcolor{black}{MultiTrajectory backends}}}
     (\href{https://github.com/acts-project/acts/pull/1262}{\prstr{1262}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{Chore}{Gray}\textbf{\href{https://github.com/acts-project/acts/pull/1358}{\textcolor{black}{clang-tidy modernize-use-nullptr}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Chore}{Gray}\textbf{\href{https://github.com/acts-project/acts/pull/1358}{\textcolor{black}{clang-tidy modernize-use-nullptr}}}
     (\href{https://github.com/acts-project/acts/pull/1358}{\prstr{1358}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1371}{\textcolor{black}{initialising world in GdmlDetectorConstruction}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1371}{\textcolor{black}{initialising world in GdmlDetectorConstruction}}}
     (\href{https://github.com/acts-project/acts/pull/1371}{\prstr{1371}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, merged on 2022-08-03
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1367}{\textcolor{black}{Trigger CI also on PRs to develop/* branches}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1367}{\textcolor{black}{Trigger CI also on PRs to develop/* branches}}}
     (\href{https://github.com/acts-project/acts/pull/1367}{\prstr{1367}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1372}{\textcolor{black}{Automatically remove automerge label when PRs are closed}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1372}{\textcolor{black}{Automatically remove automerge label when PRs are closed}}}
     (\href{https://github.com/acts-project/acts/pull/1372}{\prstr{1372}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1374}{\textcolor{black}{Disable macOS job in v9.1.x}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1374}{\textcolor{black}{Disable macOS job in v9.1.x}}}
     (\href{https://github.com/acts-project/acts/pull/1374}{\prstr{1374}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-03
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1375}{\textcolor{black}{initialising world in GdmlDetectorConstruction [backport \#1371 to develop/v19.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1375}{\textcolor{black}{initialising world in GdmlDetectorConstruction [backport \#1371 to develop/v19.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1375}{\prstr{1375}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-03
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-03
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1368}{\textcolor{black}{Warning in navigation when targeting perigee [backport \#1101 to develop/v9.1.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1368}{\textcolor{black}{Warning in navigation when targeting perigee [backport \#1101 to develop/v9.1.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1368}{\prstr{1368}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-04
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-04
+    \end{minipage}
 
-    \item\prmerged\prcategory{Chore}{Gray}\textbf{\href{https://github.com/acts-project/acts/pull/1376}{\textcolor{black}{clang-tidy modernize-use-nullptr [backport \#1358 to develop/v19.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Chore}{Gray}\textbf{\href{https://github.com/acts-project/acts/pull/1376}{\textcolor{black}{clang-tidy modernize-use-nullptr [backport \#1358 to develop/v19.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1376}{\prstr{1376}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-04
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-04
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1363}{\textcolor{black}{any direction for helical track linearizer}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1363}{\textcolor{black}{any direction for helical track linearizer}}}
     (\href{https://github.com/acts-project/acts/pull/1363}{\prstr{1363}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, merged on 2022-08-04
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, merged on 2022-08-04
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1353}{\textcolor{black}{spelling, delete unused figures, beautify}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1353}{\textcolor{black}{spelling, delete unused figures, beautify}}}
     (\href{https://github.com/acts-project/acts/pull/1353}{\prstr{1353}}) \\
-    by \href{https://github.com/AJPfleger}{@AJPfleger}, merged on 2022-08-04
+    by \href{https://github.com/AJPfleger}{\mtngusername{{@}{A}{J}{P}{f}{l}{e}{g}{e}{r}}}, merged on 2022-08-04
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1377}{\textcolor{black}{any direction for helical track linearizer [backport \#1363 to develop/v19.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1377}{\textcolor{black}{any direction for helical track linearizer [backport \#1363 to develop/v19.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1377}{\prstr{1377}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-04
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-04
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1379}{\textcolor{black}{spelling, delete unused figures, beautify [backport \#1353 to develop/v19.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1379}{\textcolor{black}{spelling, delete unused figures, beautify [backport \#1353 to develop/v19.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1379}{\prstr{1379}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-04
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-04
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1339}{\textcolor{black}{Multi-Stepper stepping error in multiple components + refactoring}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1339}{\textcolor{black}{Multi-Stepper stepping error in multiple components + refactoring}}}
     (\href{https://github.com/acts-project/acts/pull/1339}{\prstr{1339}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, merged on 2022-08-04
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, merged on 2022-08-04
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1380}{\textcolor{black}{Comparison bug in updateSingleSurfaceStatus [backport \#1107 to develop/v9.1.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1380}{\textcolor{black}{Comparison bug in updateSingleSurfaceStatus [backport \#1107 to develop/v9.1.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1380}{\prstr{1380}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-05
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-05
+    \end{minipage}
 
-    \item\prmerged\prcategory{Chore}{Gray}\textbf{\href{https://github.com/acts-project/acts/pull/1373}{\textcolor{black}{clang tidy check uninitialized members}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Chore}{Gray}\textbf{\href{https://github.com/acts-project/acts/pull/1373}{\textcolor{black}{clang tidy check uninitialized members}}}
     (\href{https://github.com/acts-project/acts/pull/1373}{\prstr{1373}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, merged on 2022-08-05
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, merged on 2022-08-05
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1384}{\textcolor{black}{Cleaned up the workflow files a little.}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1384}{\textcolor{black}{Cleaned up the workflow files a little.}}}
     (\href{https://github.com/acts-project/acts/pull/1384}{\prstr{1384}}) \\
-    by \href{https://github.com/wermos}{@wermos}, merged on 2022-08-08
+    by \href{https://github.com/wermos}{\mtngusername{{@}{w}{e}{r}{m}{o}{s}}}, merged on 2022-08-08
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1388}{\textcolor{black}{Do not run build jobs on docs-only changes}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1388}{\textcolor{black}{Do not run build jobs on docs-only changes}}}
     (\href{https://github.com/acts-project/acts/pull/1388}{\prstr{1388}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-08
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-08
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1389}{\textcolor{black}{Fix sentinel yml}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1389}{\textcolor{black}{Fix sentinel yml}}}
     (\href{https://github.com/acts-project/acts/pull/1389}{\prstr{1389}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-08
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-08
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1391}{\textcolor{black}{Docs job always runs}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1391}{\textcolor{black}{Docs job always runs}}}
     (\href{https://github.com/acts-project/acts/pull/1391}{\prstr{1391}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-08
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-08
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1390}{\textcolor{black}{correct affiliation in CITATION.cff}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1390}{\textcolor{black}{correct affiliation in CITATION.cff}}}
     (\href{https://github.com/acts-project/acts/pull/1390}{\prstr{1390}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, merged on 2022-08-08
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, merged on 2022-08-08
+    \end{minipage}
 
-    \item\prmerged\prwip\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1387}{\textcolor{black}{restructure docs tree}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prwip\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1387}{\textcolor{black}{restructure docs tree}}}
     (\href{https://github.com/acts-project/acts/pull/1387}{\prstr{1387}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, merged on 2022-08-08
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, merged on 2022-08-08
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1396}{\textcolor{black}{Propagation}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1396}{\textcolor{black}{Propagation}}}
     (\href{https://github.com/acts-project/acts/pull/1396}{\prstr{1396}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, merged on 2022-08-08
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, merged on 2022-08-08
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1400}{\textcolor{black}{Do not run analysis jobs on docs-only changes}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1400}{\textcolor{black}{Do not run analysis jobs on docs-only changes}}}
     (\href{https://github.com/acts-project/acts/pull/1400}{\prstr{1400}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-09
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-09
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1405}{\textcolor{black}{minor corrections}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1405}{\textcolor{black}{minor corrections}}}
     (\href{https://github.com/acts-project/acts/pull/1405}{\prstr{1405}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, merged on 2022-08-09
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, merged on 2022-08-09
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1408}{\textcolor{black}{Fix path-ignore for docs}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1408}{\textcolor{black}{Fix path-ignore for docs}}}
     (\href{https://github.com/acts-project/acts/pull/1408}{\prstr{1408}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-09
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-09
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1383}{\textcolor{black}{TrackingVolume intersection check didn't copy sign [backport \#1115 to develop/v9.1.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1383}{\textcolor{black}{TrackingVolume intersection check didn't copy sign [backport \#1115 to develop/v9.1.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1383}{\prstr{1383}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-09
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-09
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1299}{\textcolor{black}{full chain vertexing}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1299}{\textcolor{black}{full chain vertexing}}}
     (\href{https://github.com/acts-project/acts/pull/1299}{\prstr{1299}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, merged on 2022-08-09
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, merged on 2022-08-09
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1411}{\textcolor{black}{Move Analysis job from required pattern to explicit name}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1411}{\textcolor{black}{Move Analysis job from required pattern to explicit name}}}
     (\href{https://github.com/acts-project/acts/pull/1411}{\prstr{1411}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-09
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-09
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1407}{\textcolor{black}{minor corrections. followup to PR \#1405}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1407}{\textcolor{black}{minor corrections. followup to PR \#1405}}}
     (\href{https://github.com/acts-project/acts/pull/1407}{\prstr{1407}}) \\
-    by \href{https://github.com/AJPfleger}{@AJPfleger}, merged on 2022-08-09
+    by \href{https://github.com/AJPfleger}{\mtngusername{{@}{A}{J}{P}{f}{l}{e}{g}{e}{r}}}, merged on 2022-08-09
+    \end{minipage}
 
-    \item\prmerged\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1410}{\textcolor{black}{Enable Delegates to conveniently use stateful lambdas}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1410}{\textcolor{black}{Enable Delegates to conveniently use stateful lambdas}}}
     (\href{https://github.com/acts-project/acts/pull/1410}{\prstr{1410}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, merged on 2022-08-10
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, merged on 2022-08-10
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1393}{\textcolor{black}{Add docs clean target to cmake}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1393}{\textcolor{black}{Add docs clean target to cmake}}}
     (\href{https://github.com/acts-project/acts/pull/1393}{\prstr{1393}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-10
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-10
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1409}{\textcolor{black}{change typeid check to dynamic\_cast}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1409}{\textcolor{black}{change typeid check to dynamic\_cast}}}
     (\href{https://github.com/acts-project/acts/pull/1409}{\prstr{1409}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, merged on 2022-08-10
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, merged on 2022-08-10
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1382}{\textcolor{black}{Multi-Stepper stepping error in multiple components + refactoring [backport \#1339 to develop/v19.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1382}{\textcolor{black}{Multi-Stepper stepping error in multiple components + refactoring [backport \#1339 to develop/v19.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1382}{\prstr{1382}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-10
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-10
+    \end{minipage}
 
-    \item\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1415}{\textcolor{black}{Backport a number of CI / docs config updates}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{CI}{Orange}\textbf{\href{https://github.com/acts-project/acts/pull/1415}{\textcolor{black}{Backport a number of CI / docs config updates}}}
     (\href{https://github.com/acts-project/acts/pull/1415}{\prstr{1415}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, merged on 2022-08-10
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, merged on 2022-08-10
+    \end{minipage}
 
-    \item\prmerged\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1414}{\textcolor{black}{Enable Delegates to conveniently use stateful lambdas [backport \#1410 to develop/v19.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Feature}{LimeGreen}\textbf{\href{https://github.com/acts-project/acts/pull/1414}{\textcolor{black}{Enable Delegates to conveniently use stateful lambdas [backport \#1410 to develop/v19.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1414}{\prstr{1414}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-10
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-10
+    \end{minipage}
 
-    \item\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1392}{\textcolor{black}{adding acts project page}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Docs}{CornflowerBlue}\textbf{\href{https://github.com/acts-project/acts/pull/1392}{\textcolor{black}{adding acts project page}}}
     (\href{https://github.com/acts-project/acts/pull/1392}{\prstr{1392}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, merged on 2022-08-10
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, merged on 2022-08-10
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1413}{\textcolor{black}{change typeid check to dynamic\_cast [backport \#1409 to develop/v19.x]}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1413}{\textcolor{black}{change typeid check to dynamic\_cast [backport \#1409 to develop/v19.x]}}}
     (\href{https://github.com/acts-project/acts/pull/1413}{\prstr{1413}}) \\
-    by \href{https://github.com/acts-project-service}{@acts-project-service}, merged on 2022-08-10
+    by \href{https://github.com/acts-project-service}{\mtngusername{{@}{a}{c}{t}{s}{-}{p}{r}{o}{j}{e}{c}{t}{-}{s}{e}{r}{v}{i}{c}{e}}}, merged on 2022-08-10
+    \end{minipage}
 
-    \item\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1381}{\textcolor{black}{RootBFieldWriter incorrect output}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\prmerged\prcategory{Bugfix}{Purple}\textbf{\href{https://github.com/acts-project/acts/pull/1381}{\textcolor{black}{RootBFieldWriter incorrect output}}}
     (\href{https://github.com/acts-project/acts/pull/1381}{\prstr{1381}}) \\
-    by \href{https://github.com/timadye}{@timadye}, merged on 2022-08-10
+    by \href{https://github.com/timadye}{\mtngusername{{@}{t}{i}{m}{a}{d}{y}{e}}}, merged on 2022-08-10
+    \end{minipage}
 
     
   \end{itemize}
@@ -316,7 +432,7 @@
 
 
 \section{ \reponame{} \\ Open PRs}
-\begin{frame}[allowframebreaks,t]{\reponame{}: Open PRs}
+\begin{frame}[allowframebreaks=0.9,t]{\reponame{}: Open PRs}
 
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
@@ -328,85 +444,105 @@
     
     
     
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2288}{\textcolor{black}{feat: detector python infrastructure}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2288}{\textcolor{black}{feat: detector python infrastructure}}}
     (\href{https://github.com/acts-project/acts/pull/2288}{\issstr{2288}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2023-07-12
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2287}{\textcolor{black}{fix: Align `globalToLocal` and `intersection` in `LineSurface`}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2287}{\textcolor{black}{fix: Align `globalToLocal` and `intersection` in `LineSurface`}}}
     (\href{https://github.com/acts-project/acts/pull/2287}{\issstr{2287}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-07-12
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2292}{\textcolor{black}{refactor: Consistent surface tolerance for propagation}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2292}{\textcolor{black}{refactor: Consistent surface tolerance for propagation}}}
     (\href{https://github.com/acts-project/acts/pull/2292}{\issstr{2292}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-07-12
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2283}{\textcolor{black}{feat: adding json writing, reading infrastructure}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2283}{\textcolor{black}{feat: adding json writing, reading infrastructure}}}
     (\href{https://github.com/acts-project/acts/pull/2283}{\issstr{2283}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2023-07-12
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2196}{\textcolor{black}{refactor: revisit FullBilloirVertexFitter}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2196}{\textcolor{black}{refactor: revisit FullBilloirVertexFitter}}}
     (\href{https://github.com/acts-project/acts/pull/2196}{\issstr{2196}}) \\
-    by \href{https://github.com/felix-russo}{@felix-russo}, updated on 2023-07-12
+    by \href{https://github.com/felix-russo}{\mtngusername{{@}{f}{e}{l}{i}{x}{-}{r}{u}{s}{s}{o}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2086}{\textcolor{black}{fix: Improve full chain pulls towards standard normal distribution}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2086}{\textcolor{black}{fix: Improve full chain pulls towards standard normal distribution}}}
     (\href{https://github.com/acts-project/acts/pull/2086}{\issstr{2086}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-07-12
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2179}{\textcolor{black}{refactor: Adding time to HelicalTrackLinearizer}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2179}{\textcolor{black}{refactor: Adding time to HelicalTrackLinearizer}}}
     (\href{https://github.com/acts-project/acts/pull/2179}{\issstr{2179}}) \\
-    by \href{https://github.com/felix-russo}{@felix-russo}, updated on 2023-07-11
+    by \href{https://github.com/felix-russo}{\mtngusername{{@}{f}{e}{l}{i}{x}{-}{r}{u}{s}{s}{o}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2254}{\textcolor{black}{feat: Introduce particle hypothesis}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2254}{\textcolor{black}{feat: Introduce particle hypothesis}}}
     (\href{https://github.com/acts-project/acts/pull/2254}{\issstr{2254}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-07-10
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/1900}{\textcolor{black}{feat!: Space point implementation}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/1900}{\textcolor{black}{feat!: Space point implementation}}}
     (\href{https://github.com/acts-project/acts/pull/1900}{\issstr{1900}}) \\
-    by \href{https://github.com/CarloVarni}{@CarloVarni}, updated on 2023-07-07
+    by \href{https://github.com/CarloVarni}{\mtngusername{{@}{C}{a}{r}{l}{o}{V}{a}{r}{n}{i}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2103}{\textcolor{black}{refactor: Consistent naming of measurment\_id and writer-reader-roundtrip}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2103}{\textcolor{black}{refactor: Consistent naming of measurment\_id and writer-reader-roundtrip}}}
     (\href{https://github.com/acts-project/acts/pull/2103}{\issstr{2103}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, updated on 2023-07-07
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2234}{\textcolor{black}{refactor: Indexed surfaces generator }}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2234}{\textcolor{black}{refactor: Indexed surfaces generator }}}
     (\href{https://github.com/acts-project/acts/pull/2234}{\issstr{2234}}) \\
-    by \href{https://github.com/dimitra97}{@dimitra97}, updated on 2023-07-06
+    by \href{https://github.com/dimitra97}{\mtngusername{{@}{d}{i}{m}{i}{t}{r}{a}{9}{7}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2272}{\textcolor{black}{refactor!: move useBeamSpotConstraint to vertexingOptions}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2272}{\textcolor{black}{refactor!: move useBeamSpotConstraint to vertexingOptions}}}
     (\href{https://github.com/acts-project/acts/pull/2272}{\issstr{2272}}) \\
-    by \href{https://github.com/felix-russo}{@felix-russo}, updated on 2023-07-06
+    by \href{https://github.com/felix-russo}{\mtngusername{{@}{f}{e}{l}{i}{x}{-}{r}{u}{s}{s}{o}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2269}{\textcolor{black}{refactor!: Rename `Single*TrackParameters` to `Generic*TrackParameters`}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2269}{\textcolor{black}{refactor!: Rename `Single*TrackParameters` to `Generic*TrackParameters`}}}
     (\href{https://github.com/acts-project/acts/pull/2269}{\issstr{2269}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-07-05
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2221}{\textcolor{black}{ci: Add track momenta to physmon}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2221}{\textcolor{black}{ci: Add track momenta to physmon}}}
     (\href{https://github.com/acts-project/acts/pull/2221}{\issstr{2221}}) \\
-    by \href{https://github.com/felix-russo}{@felix-russo}, updated on 2023-07-03
+    by \href{https://github.com/felix-russo}{\mtngusername{{@}{f}{e}{l}{i}{x}{-}{r}{u}{s}{s}{o}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2228}{\textcolor{black}{feat: actsvg plugin for new detector infrastructure (cylindrical)}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2228}{\textcolor{black}{feat: actsvg plugin for new detector infrastructure (cylindrical)}}}
     (\href{https://github.com/acts-project/acts/pull/2228}{\issstr{2228}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2023-06-30
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2038}{\textcolor{black}{feat: Seed Vertex Finder}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2038}{\textcolor{black}{feat: Seed Vertex Finder}}}
     (\href{https://github.com/acts-project/acts/pull/2038}{\issstr{2038}}) \\
-    by \href{https://github.com/pbalek}{@pbalek}, updated on 2023-06-29
+    by \href{https://github.com/pbalek}{\mtngusername{{@}{p}{b}{a}{l}{e}{k}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2240}{\textcolor{black}{perf: Add option of stereo angle when building telescope detector}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2240}{\textcolor{black}{perf: Add option of stereo angle when building telescope detector}}}
     (\href{https://github.com/acts-project/acts/pull/2240}{\issstr{2240}}) \\
-    by \href{https://github.com/XiaocongAi}{@XiaocongAi}, updated on 2023-06-23
+    by \href{https://github.com/XiaocongAi}{\mtngusername{{@}{X}{i}{a}{o}{c}{o}{n}{g}{A}{i}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2021}{\textcolor{black}{refactor: change the definition of the rotation parameters}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2021}{\textcolor{black}{refactor: change the definition of the rotation parameters}}}
     (\href{https://github.com/acts-project/acts/pull/2021}{\issstr{2021}}) \\
-    by \href{https://github.com/XiaocongAi}{@XiaocongAi}, updated on 2023-06-23
+    by \href{https://github.com/XiaocongAi}{\mtngusername{{@}{X}{i}{a}{o}{c}{o}{n}{g}{A}{i}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2238}{\textcolor{black}{perf: write unbiased residual for each track state}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2238}{\textcolor{black}{perf: write unbiased residual for each track state}}}
     (\href{https://github.com/acts-project/acts/pull/2238}{\issstr{2238}}) \\
-    by \href{https://github.com/XiaocongAi}{@XiaocongAi}, updated on 2023-06-23
+    by \href{https://github.com/XiaocongAi}{\mtngusername{{@}{X}{i}{a}{o}{c}{o}{n}{g}{A}{i}}}, opened today
+    \end{minipage}
 
-    \item\iss\textbf{\href{https://github.com/acts-project/acts/pull/2003}{\textcolor{black}{feat: Addition of CsvSeedWriter}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\textbf{\href{https://github.com/acts-project/acts/pull/2003}{\textcolor{black}{feat: Addition of CsvSeedWriter}}}
     (\href{https://github.com/acts-project/acts/pull/2003}{\issstr{2003}}) \\
-    by \href{https://github.com/piotrmoszkowicz}{@piotrmoszkowicz}, updated on 2023-06-20
+    by \href{https://github.com/piotrmoszkowicz}{\mtngusername{{@}{p}{i}{o}{t}{r}{m}{o}{s}{z}{k}{o}{w}{i}{c}{z}}}, opened today
+    \end{minipage}
 
     
     
@@ -422,185 +558,230 @@
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
     
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2149}{\textcolor{black}{TrackAtVertex trackWeight is not being written in IVF}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2149}{\textcolor{black}{TrackAtVertex trackWeight is not being written in IVF}}}
     (\href{https://github.com/acts-project/acts/issues/2149}{\issstr{2149}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-06-23
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, updated on 2023-06-23
+    \end{minipage}
 
-    \item\propen\prwip\prstale\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/2089}{\textcolor{black}{add geohook for fast digitization range selection to itk example}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\propen\prwip\prstale\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/2089}{\textcolor{black}{add geohook for fast digitization range selection to itk example}}}
     (\href{https://github.com/acts-project/acts/pull/2089}{\prstr{2089}}) \\
-    by \href{https://github.com/niermann999}{@niermann999}, updated on 2023-06-04
+    by \href{https://github.com/niermann999}{\mtngusername{{@}{n}{i}{e}{r}{m}{a}{n}{n}{9}{9}{9}}}, updated on 2023-06-04
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2076}{\textcolor{black}{Track nDoF only returns the sum of calibrated size and not the actual DoFs.}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2076}{\textcolor{black}{Track nDoF only returns the sum of calibrated size and not the actual DoFs.}}}
     (\href{https://github.com/acts-project/acts/issues/2076}{\issstr{2076}}) \\
-    by \href{https://github.com/pbutti}{@pbutti}, updated on 2023-06-22
+    by \href{https://github.com/pbutti}{\mtngusername{{@}{p}{b}{u}{t}{t}{i}}}, updated on 2023-06-22
+    \end{minipage}
 
-    \item\propen\prwip\prstale\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/2073}{\textcolor{black}{remove direction from constrained step}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\propen\prwip\prstale\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/2073}{\textcolor{black}{remove direction from constrained step}}}
     (\href{https://github.com/acts-project/acts/pull/2073}{\prstr{2073}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-06-10
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, updated on 2023-06-10
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2063}{\textcolor{black}{Proposal: MultiWire SurfaceCandidateUpdator}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2063}{\textcolor{black}{Proposal: MultiWire SurfaceCandidateUpdator}}}
     (\href{https://github.com/acts-project/acts/issues/2063}{\issstr{2063}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2023-06-21
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, updated on 2023-06-21
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2054}{\textcolor{black}{LCG compatibility}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2054}{\textcolor{black}{LCG compatibility}}}
     (\href{https://github.com/acts-project/acts/issues/2054}{\issstr{2054}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-06-24
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-06-24
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2037}{\textcolor{black}{Track parameter estimation algorithm return parameter on the first seed SP surface }}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2037}{\textcolor{black}{Track parameter estimation algorithm return parameter on the first seed SP surface }}}
     (\href{https://github.com/acts-project/acts/issues/2037}{\issstr{2037}}) \\
-    by \href{https://github.com/Corentin-Allaire}{@Corentin-Allaire}, updated on 2023-05-25
+    by \href{https://github.com/Corentin-Allaire}{\mtngusername{{@}{C}{o}{r}{e}{n}{t}{i}{n}{-}{A}{l}{l}{a}{i}{r}{e}}}, updated on 2023-05-25
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2031}{\textcolor{black}{Feature: Measurement removal to get unbiased residual  during smoothing}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2031}{\textcolor{black}{Feature: Measurement removal to get unbiased residual  during smoothing}}}
     (\href{https://github.com/acts-project/acts/issues/2031}{\issstr{2031}}) \\
-    by \href{https://github.com/XiaocongAi}{@XiaocongAi}, updated on 2023-05-20
+    by \href{https://github.com/XiaocongAi}{\mtngusername{{@}{X}{i}{a}{o}{c}{o}{n}{g}{A}{i}}}, updated on 2023-05-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1997}{\textcolor{black}{Expose individual steps of track reconstruction in full\_chain python scripts}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1997}{\textcolor{black}{Expose individual steps of track reconstruction in full\_chain python scripts}}}
     (\href{https://github.com/acts-project/acts/issues/1997}{\issstr{1997}}) \\
-    by \href{https://github.com/tboldagh}{@tboldagh}, updated on 2023-05-20
+    by \href{https://github.com/tboldagh}{\mtngusername{{@}{t}{b}{o}{l}{d}{a}{g}{h}}}, updated on 2023-05-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1993}{\textcolor{black}{Improvements to Track EDM}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1993}{\textcolor{black}{Improvements to Track EDM}}}
     (\href{https://github.com/acts-project/acts/issues/1993}{\issstr{1993}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-05-20
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-05-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1992}{\textcolor{black}{vertex fitting and duplicate tracks}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1992}{\textcolor{black}{vertex fitting and duplicate tracks}}}
     (\href{https://github.com/acts-project/acts/issues/1992}{\issstr{1992}}) \\
-    by \href{https://github.com/rubihason}{@rubihason}, updated on 2023-05-09
+    by \href{https://github.com/rubihason}{\mtngusername{{@}{r}{u}{b}{i}{h}{a}{s}{o}{n}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1971}{\textcolor{black}{SpacePoint EDM design}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1971}{\textcolor{black}{SpacePoint EDM design}}}
     (\href{https://github.com/acts-project/acts/issues/1971}{\issstr{1971}}) \\
-    by \href{https://github.com/CarloVarni}{@CarloVarni}, updated on 2023-05-09
+    by \href{https://github.com/CarloVarni}{\mtngusername{{@}{C}{a}{r}{l}{o}{V}{a}{r}{n}{i}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1895}{\textcolor{black}{Estimate Track Parameters from Seeds use only one surface. What about strips?}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1895}{\textcolor{black}{Estimate Track Parameters from Seeds use only one surface. What about strips?}}}
     (\href{https://github.com/acts-project/acts/issues/1895}{\issstr{1895}}) \\
-    by \href{https://github.com/CarloVarni}{@CarloVarni}, updated on 2023-05-09
+    by \href{https://github.com/CarloVarni}{\mtngusername{{@}{C}{a}{r}{l}{o}{V}{a}{r}{n}{i}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1852}{\textcolor{black}{Bug: Unpredicatable navigation in layer with overlapping surface}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1852}{\textcolor{black}{Bug: Unpredicatable navigation in layer with overlapping surface}}}
     (\href{https://github.com/acts-project/acts/issues/1852}{\issstr{1852}}) \\
-    by \href{https://github.com/Corentin-Allaire}{@Corentin-Allaire}, updated on 2023-03-25
+    by \href{https://github.com/Corentin-Allaire}{\mtngusername{{@}{C}{o}{r}{e}{n}{t}{i}{n}{-}{A}{l}{l}{a}{i}{r}{e}}}, updated on 2023-03-25
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1819}{\textcolor{black}{Different results for full\_chain\_itk when running locally vs lxplus}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1819}{\textcolor{black}{Different results for full\_chain\_itk when running locally vs lxplus}}}
     (\href{https://github.com/acts-project/acts/issues/1819}{\issstr{1819}}) \\
-    by \href{https://github.com/CarloVarni}{@CarloVarni}, updated on 2023-05-09
+    by \href{https://github.com/CarloVarni}{\mtngusername{{@}{C}{a}{r}{l}{o}{V}{a}{r}{n}{i}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1818}{\textcolor{black}{Cmake error if ACTS\_BUILD\_PLUGIN\_ACTSVG=ON}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1818}{\textcolor{black}{Cmake error if ACTS\_BUILD\_PLUGIN\_ACTSVG=ON}}}
     (\href{https://github.com/acts-project/acts/issues/1818}{\issstr{1818}}) \\
-    by \href{https://github.com/DraTeots}{@DraTeots}, updated on 2023-05-09
+    by \href{https://github.com/DraTeots}{\mtngusername{{@}{D}{r}{a}{T}{e}{o}{t}{s}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1761}{\textcolor{black}{Make central minimum track momentum threshold}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1761}{\textcolor{black}{Make central minimum track momentum threshold}}}
     (\href{https://github.com/acts-project/acts/issues/1761}{\issstr{1761}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-01-21
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-01-21
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1748}{\textcolor{black}{Physmon throws many WARNINGs on Bethe-Heitler approximation}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1748}{\textcolor{black}{Physmon throws many WARNINGs on Bethe-Heitler approximation}}}
     (\href{https://github.com/acts-project/acts/issues/1748}{\issstr{1748}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-05-09
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1736}{\textcolor{black}{Drop `boost progress` from examples where it is not used}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1736}{\textcolor{black}{Drop `boost progress` from examples where it is not used}}}
     (\href{https://github.com/acts-project/acts/issues/1736}{\issstr{1736}}) \\
-    by \href{https://github.com/tboldagh}{@tboldagh}, updated on 2023-01-16
+    by \href{https://github.com/tboldagh}{\mtngusername{{@}{t}{b}{o}{l}{d}{a}{g}{h}}}, updated on 2023-01-16
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1731}{\textcolor{black}{Remove `volumeSignature` from geometry building}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1731}{\textcolor{black}{Remove `volumeSignature` from geometry building}}}
     (\href{https://github.com/acts-project/acts/issues/1731}{\issstr{1731}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-01-16
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-01-16
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1699}{\textcolor{black}{Optimal seeding parameters for a detector}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1699}{\textcolor{black}{Optimal seeding parameters for a detector}}}
     (\href{https://github.com/acts-project/acts/issues/1699}{\issstr{1699}}) \\
-    by \href{https://github.com/CouthuresJeremy}{@CouthuresJeremy}, updated on 2023-01-05
+    by \href{https://github.com/CouthuresJeremy}{\mtngusername{{@}{C}{o}{u}{t}{h}{u}{r}{e}{s}{J}{e}{r}{e}{m}{y}}}, updated on 2023-01-05
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1661}{\textcolor{black}{error while i running full\_chain\_odd.py}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1661}{\textcolor{black}{error while i running full\_chain\_odd.py}}}
     (\href{https://github.com/acts-project/acts/issues/1661}{\issstr{1661}}) \\
-    by \href{https://github.com/rubihason}{@rubihason}, updated on 2023-05-09
+    by \href{https://github.com/rubihason}{\mtngusername{{@}{r}{u}{b}{i}{h}{a}{s}{o}{n}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1659}{\textcolor{black}{Create volume restricted BFieldMap }}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1659}{\textcolor{black}{Create volume restricted BFieldMap }}}
     (\href{https://github.com/acts-project/acts/issues/1659}{\issstr{1659}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2022-12-21
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, updated on 2022-12-21
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1643}{\textcolor{black}{Bad physmon results if interactions enabled in Fatras}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1643}{\textcolor{black}{Bad physmon results if interactions enabled in Fatras}}}
     (\href{https://github.com/acts-project/acts/issues/1643}{\issstr{1643}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, updated on 2023-05-09
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1603}{\textcolor{black}{Particle smearing assertion with Geant4}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1603}{\textcolor{black}{Particle smearing assertion with Geant4}}}
     (\href{https://github.com/acts-project/acts/issues/1603}{\issstr{1603}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, updated on 2022-12-21
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, updated on 2022-12-21
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1544}{\textcolor{black}{Add Primary Vertex Label to tracks}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1544}{\textcolor{black}{Add Primary Vertex Label to tracks}}}
     (\href{https://github.com/acts-project/acts/issues/1544}{\issstr{1544}}) \\
-    by \href{https://github.com/Lucas-Borgna}{@Lucas-Borgna}, updated on 2022-10-22
+    by \href{https://github.com/Lucas-Borgna}{\mtngusername{{@}{L}{u}{c}{a}{s}{-}{B}{o}{r}{g}{n}{a}}}, updated on 2022-10-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1482}{\textcolor{black}{Optionally have the vertex finding recalculate perigee parameters relative to consistent reference}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1482}{\textcolor{black}{Optionally have the vertex finding recalculate perigee parameters relative to consistent reference}}}
     (\href{https://github.com/acts-project/acts/issues/1482}{\issstr{1482}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-01
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-01
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1463}{\textcolor{black}{Documentation: hints for debugging}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1463}{\textcolor{black}{Documentation: hints for debugging}}}
     (\href{https://github.com/acts-project/acts/issues/1463}{\issstr{1463}}) \\
-    by \href{https://github.com/timadye}{@timadye}, updated on 2022-09-24
+    by \href{https://github.com/timadye}{\mtngusername{{@}{t}{i}{m}{a}{d}{y}{e}}}, updated on 2022-09-24
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1437}{\textcolor{black}{Fatras: Bethe-Heitler calculation wrong?}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1437}{\textcolor{black}{Fatras: Bethe-Heitler calculation wrong?}}}
     (\href{https://github.com/acts-project/acts/issues/1437}{\issstr{1437}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2022-09-20
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1423}{\textcolor{black}{Documentation update: Contribution guidelines}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1423}{\textcolor{black}{Documentation update: Contribution guidelines}}}
     (\href{https://github.com/acts-project/acts/issues/1423}{\issstr{1423}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-19
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-19
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1422}{\textcolor{black}{Documentation update: How-to (core)}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1422}{\textcolor{black}{Documentation update: How-to (core)}}}
     (\href{https://github.com/acts-project/acts/issues/1422}{\issstr{1422}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-11-23
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-11-23
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1421}{\textcolor{black}{Documentation update: Plugins}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1421}{\textcolor{black}{Documentation update: Plugins}}}
     (\href{https://github.com/acts-project/acts/issues/1421}{\issstr{1421}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-22
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1420}{\textcolor{black}{Documentation update: Examples}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1420}{\textcolor{black}{Documentation update: Examples}}}
     (\href{https://github.com/acts-project/acts/issues/1420}{\issstr{1420}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-11-23
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-11-23
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1419}{\textcolor{black}{Documentation update: FATRAS}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1419}{\textcolor{black}{Documentation update: FATRAS}}}
     (\href{https://github.com/acts-project/acts/issues/1419}{\issstr{1419}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-22
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1418}{\textcolor{black}{Documentation update: Core}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1418}{\textcolor{black}{Documentation update: Core}}}
     (\href{https://github.com/acts-project/acts/issues/1418}{\issstr{1418}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-11-23
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-11-23
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1406}{\textcolor{black}{Full chain vertexing with AMVF}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1406}{\textcolor{black}{Full chain vertexing with AMVF}}}
     (\href{https://github.com/acts-project/acts/issues/1406}{\issstr{1406}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-01
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-01
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1386}{\textcolor{black}{Ambiguous perigees with low momentum}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1386}{\textcolor{black}{Ambiguous perigees with low momentum}}}
     (\href{https://github.com/acts-project/acts/issues/1386}{\issstr{1386}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2022-09-20
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1362}{\textcolor{black}{Vertexing produces unexpectedly poor efficiency}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1362}{\textcolor{black}{Vertexing produces unexpectedly poor efficiency}}}
     (\href{https://github.com/acts-project/acts/issues/1362}{\issstr{1362}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-09-20
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1361}{\textcolor{black}{Vertexing produces vertex candidates that are unreasonable}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1361}{\textcolor{black}{Vertexing produces vertex candidates that are unreasonable}}}
     (\href{https://github.com/acts-project/acts/issues/1361}{\issstr{1361}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-22
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1345}{\textcolor{black}{Vertexing produces propagation errors}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1345}{\textcolor{black}{Vertexing produces propagation errors}}}
     (\href{https://github.com/acts-project/acts/issues/1345}{\issstr{1345}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-09-20
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1313}{\textcolor{black}{add monitoring for vertexing in physmon}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1313}{\textcolor{black}{add monitoring for vertexing in physmon}}}
     (\href{https://github.com/acts-project/acts/issues/1313}{\issstr{1313}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2022-09-20
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1238}{\textcolor{black}{Bug: Probable Issues in Bevelled Cylinder Implementation}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1238}{\textcolor{black}{Bug: Probable Issues in Bevelled Cylinder Implementation}}}
     (\href{https://github.com/acts-project/acts/issues/1238}{\issstr{1238}}) \\
-    by \href{https://github.com/rahmans1}{@rahmans1}, updated on 2023-05-09
+    by \href{https://github.com/rahmans1}{\mtngusername{{@}{r}{a}{h}{m}{a}{n}{s}{1}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1091}{\textcolor{black}{Vertexing issues observed in python vertexing example}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1091}{\textcolor{black}{Vertexing issues observed in python vertexing example}}}
     (\href{https://github.com/acts-project/acts/issues/1091}{\issstr{1091}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-08-11
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-08-11
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/881}{\textcolor{black}{Some writers performs their writes in the destructor}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/881}{\textcolor{black}{Some writers performs their writes in the destructor}}}
     (\href{https://github.com/acts-project/acts/issues/881}{\issstr{881}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-08-11
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-08-11
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/669}{\textcolor{black}{2D r-z Magnetic Field Map Improperly Read}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/669}{\textcolor{black}{2D r-z Magnetic Field Map Improperly Read}}}
     (\href{https://github.com/acts-project/acts/issues/669}{\issstr{669}}) \\
-    by \href{https://github.com/osbornjd}{@osbornjd}, updated on 2022-09-20
+    by \href{https://github.com/osbornjd}{\mtngusername{{@}{o}{s}{b}{o}{r}{n}{j}{d}}}, updated on 2022-09-20
+    \end{minipage}
 
   \end{itemize}
 \end{frame}
@@ -612,249 +793,310 @@
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
     
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2054}{\textcolor{black}{LCG compatibility}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2054}{\textcolor{black}{LCG compatibility}}}
     (\href{https://github.com/acts-project/acts/issues/2054}{\issstr{2054}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-06-24
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-06-24
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2149}{\textcolor{black}{TrackAtVertex trackWeight is not being written in IVF}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2149}{\textcolor{black}{TrackAtVertex trackWeight is not being written in IVF}}}
     (\href{https://github.com/acts-project/acts/issues/2149}{\issstr{2149}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-06-23
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, updated on 2023-06-23
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2076}{\textcolor{black}{Track nDoF only returns the sum of calibrated size and not the actual DoFs.}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2076}{\textcolor{black}{Track nDoF only returns the sum of calibrated size and not the actual DoFs.}}}
     (\href{https://github.com/acts-project/acts/issues/2076}{\issstr{2076}}) \\
-    by \href{https://github.com/pbutti}{@pbutti}, updated on 2023-06-22
+    by \href{https://github.com/pbutti}{\mtngusername{{@}{p}{b}{u}{t}{t}{i}}}, updated on 2023-06-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2063}{\textcolor{black}{Proposal: MultiWire SurfaceCandidateUpdator}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2063}{\textcolor{black}{Proposal: MultiWire SurfaceCandidateUpdator}}}
     (\href{https://github.com/acts-project/acts/issues/2063}{\issstr{2063}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2023-06-21
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, updated on 2023-06-21
+    \end{minipage}
 
-    \item\propen\prwip\prstale\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/2073}{\textcolor{black}{remove direction from constrained step}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\propen\prwip\prstale\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/2073}{\textcolor{black}{remove direction from constrained step}}}
     (\href{https://github.com/acts-project/acts/pull/2073}{\prstr{2073}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2023-06-10
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, updated on 2023-06-10
+    \end{minipage}
 
-    \item\propen\prwip\prstale\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/2089}{\textcolor{black}{add geohook for fast digitization range selection to itk example}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\propen\prwip\prstale\prcategory{Refactor}{CadetBlue}\textbf{\href{https://github.com/acts-project/acts/pull/2089}{\textcolor{black}{add geohook for fast digitization range selection to itk example}}}
     (\href{https://github.com/acts-project/acts/pull/2089}{\prstr{2089}}) \\
-    by \href{https://github.com/niermann999}{@niermann999}, updated on 2023-06-04
+    by \href{https://github.com/niermann999}{\mtngusername{{@}{n}{i}{e}{r}{m}{a}{n}{n}{9}{9}{9}}}, updated on 2023-06-04
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2037}{\textcolor{black}{Track parameter estimation algorithm return parameter on the first seed SP surface }}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2037}{\textcolor{black}{Track parameter estimation algorithm return parameter on the first seed SP surface }}}
     (\href{https://github.com/acts-project/acts/issues/2037}{\issstr{2037}}) \\
-    by \href{https://github.com/Corentin-Allaire}{@Corentin-Allaire}, updated on 2023-05-25
+    by \href{https://github.com/Corentin-Allaire}{\mtngusername{{@}{C}{o}{r}{e}{n}{t}{i}{n}{-}{A}{l}{l}{a}{i}{r}{e}}}, updated on 2023-05-25
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2031}{\textcolor{black}{Feature: Measurement removal to get unbiased residual  during smoothing}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/2031}{\textcolor{black}{Feature: Measurement removal to get unbiased residual  during smoothing}}}
     (\href{https://github.com/acts-project/acts/issues/2031}{\issstr{2031}}) \\
-    by \href{https://github.com/XiaocongAi}{@XiaocongAi}, updated on 2023-05-20
+    by \href{https://github.com/XiaocongAi}{\mtngusername{{@}{X}{i}{a}{o}{c}{o}{n}{g}{A}{i}}}, updated on 2023-05-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1997}{\textcolor{black}{Expose individual steps of track reconstruction in full\_chain python scripts}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1997}{\textcolor{black}{Expose individual steps of track reconstruction in full\_chain python scripts}}}
     (\href{https://github.com/acts-project/acts/issues/1997}{\issstr{1997}}) \\
-    by \href{https://github.com/tboldagh}{@tboldagh}, updated on 2023-05-20
+    by \href{https://github.com/tboldagh}{\mtngusername{{@}{t}{b}{o}{l}{d}{a}{g}{h}}}, updated on 2023-05-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1993}{\textcolor{black}{Improvements to Track EDM}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1993}{\textcolor{black}{Improvements to Track EDM}}}
     (\href{https://github.com/acts-project/acts/issues/1993}{\issstr{1993}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-05-20
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-05-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1643}{\textcolor{black}{Bad physmon results if interactions enabled in Fatras}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1643}{\textcolor{black}{Bad physmon results if interactions enabled in Fatras}}}
     (\href{https://github.com/acts-project/acts/issues/1643}{\issstr{1643}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, updated on 2023-05-09
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1819}{\textcolor{black}{Different results for full\_chain\_itk when running locally vs lxplus}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1819}{\textcolor{black}{Different results for full\_chain\_itk when running locally vs lxplus}}}
     (\href{https://github.com/acts-project/acts/issues/1819}{\issstr{1819}}) \\
-    by \href{https://github.com/CarloVarni}{@CarloVarni}, updated on 2023-05-09
+    by \href{https://github.com/CarloVarni}{\mtngusername{{@}{C}{a}{r}{l}{o}{V}{a}{r}{n}{i}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1238}{\textcolor{black}{Bug: Probable Issues in Bevelled Cylinder Implementation}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1238}{\textcolor{black}{Bug: Probable Issues in Bevelled Cylinder Implementation}}}
     (\href{https://github.com/acts-project/acts/issues/1238}{\issstr{1238}}) \\
-    by \href{https://github.com/rahmans1}{@rahmans1}, updated on 2023-05-09
+    by \href{https://github.com/rahmans1}{\mtngusername{{@}{r}{a}{h}{m}{a}{n}{s}{1}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1818}{\textcolor{black}{Cmake error if ACTS\_BUILD\_PLUGIN\_ACTSVG=ON}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1818}{\textcolor{black}{Cmake error if ACTS\_BUILD\_PLUGIN\_ACTSVG=ON}}}
     (\href{https://github.com/acts-project/acts/issues/1818}{\issstr{1818}}) \\
-    by \href{https://github.com/DraTeots}{@DraTeots}, updated on 2023-05-09
+    by \href{https://github.com/DraTeots}{\mtngusername{{@}{D}{r}{a}{T}{e}{o}{t}{s}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1748}{\textcolor{black}{Physmon throws many WARNINGs on Bethe-Heitler approximation}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1748}{\textcolor{black}{Physmon throws many WARNINGs on Bethe-Heitler approximation}}}
     (\href{https://github.com/acts-project/acts/issues/1748}{\issstr{1748}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-05-09
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1971}{\textcolor{black}{SpacePoint EDM design}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1971}{\textcolor{black}{SpacePoint EDM design}}}
     (\href{https://github.com/acts-project/acts/issues/1971}{\issstr{1971}}) \\
-    by \href{https://github.com/CarloVarni}{@CarloVarni}, updated on 2023-05-09
+    by \href{https://github.com/CarloVarni}{\mtngusername{{@}{C}{a}{r}{l}{o}{V}{a}{r}{n}{i}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1992}{\textcolor{black}{vertex fitting and duplicate tracks}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1992}{\textcolor{black}{vertex fitting and duplicate tracks}}}
     (\href{https://github.com/acts-project/acts/issues/1992}{\issstr{1992}}) \\
-    by \href{https://github.com/rubihason}{@rubihason}, updated on 2023-05-09
+    by \href{https://github.com/rubihason}{\mtngusername{{@}{r}{u}{b}{i}{h}{a}{s}{o}{n}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1895}{\textcolor{black}{Estimate Track Parameters from Seeds use only one surface. What about strips?}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1895}{\textcolor{black}{Estimate Track Parameters from Seeds use only one surface. What about strips?}}}
     (\href{https://github.com/acts-project/acts/issues/1895}{\issstr{1895}}) \\
-    by \href{https://github.com/CarloVarni}{@CarloVarni}, updated on 2023-05-09
+    by \href{https://github.com/CarloVarni}{\mtngusername{{@}{C}{a}{r}{l}{o}{V}{a}{r}{n}{i}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1661}{\textcolor{black}{error while i running full\_chain\_odd.py}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1661}{\textcolor{black}{error while i running full\_chain\_odd.py}}}
     (\href{https://github.com/acts-project/acts/issues/1661}{\issstr{1661}}) \\
-    by \href{https://github.com/rubihason}{@rubihason}, updated on 2023-05-09
+    by \href{https://github.com/rubihason}{\mtngusername{{@}{r}{u}{b}{i}{h}{a}{s}{o}{n}}}, updated on 2023-05-09
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1852}{\textcolor{black}{Bug: Unpredicatable navigation in layer with overlapping surface}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1852}{\textcolor{black}{Bug: Unpredicatable navigation in layer with overlapping surface}}}
     (\href{https://github.com/acts-project/acts/issues/1852}{\issstr{1852}}) \\
-    by \href{https://github.com/Corentin-Allaire}{@Corentin-Allaire}, updated on 2023-03-25
+    by \href{https://github.com/Corentin-Allaire}{\mtngusername{{@}{C}{o}{r}{e}{n}{t}{i}{n}{-}{A}{l}{l}{a}{i}{r}{e}}}, updated on 2023-03-25
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1761}{\textcolor{black}{Make central minimum track momentum threshold}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1761}{\textcolor{black}{Make central minimum track momentum threshold}}}
     (\href{https://github.com/acts-project/acts/issues/1761}{\issstr{1761}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-01-21
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-01-21
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1736}{\textcolor{black}{Drop `boost progress` from examples where it is not used}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1736}{\textcolor{black}{Drop `boost progress` from examples where it is not used}}}
     (\href{https://github.com/acts-project/acts/issues/1736}{\issstr{1736}}) \\
-    by \href{https://github.com/tboldagh}{@tboldagh}, updated on 2023-01-16
+    by \href{https://github.com/tboldagh}{\mtngusername{{@}{t}{b}{o}{l}{d}{a}{g}{h}}}, updated on 2023-01-16
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1731}{\textcolor{black}{Remove `volumeSignature` from geometry building}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1731}{\textcolor{black}{Remove `volumeSignature` from geometry building}}}
     (\href{https://github.com/acts-project/acts/issues/1731}{\issstr{1731}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2023-01-16
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2023-01-16
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1699}{\textcolor{black}{Optimal seeding parameters for a detector}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1699}{\textcolor{black}{Optimal seeding parameters for a detector}}}
     (\href{https://github.com/acts-project/acts/issues/1699}{\issstr{1699}}) \\
-    by \href{https://github.com/CouthuresJeremy}{@CouthuresJeremy}, updated on 2023-01-05
+    by \href{https://github.com/CouthuresJeremy}{\mtngusername{{@}{C}{o}{u}{t}{h}{u}{r}{e}{s}{J}{e}{r}{e}{m}{y}}}, updated on 2023-01-05
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1603}{\textcolor{black}{Particle smearing assertion with Geant4}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1603}{\textcolor{black}{Particle smearing assertion with Geant4}}}
     (\href{https://github.com/acts-project/acts/issues/1603}{\issstr{1603}}) \\
-    by \href{https://github.com/benjaminhuth}{@benjaminhuth}, updated on 2022-12-21
+    by \href{https://github.com/benjaminhuth}{\mtngusername{{@}{b}{e}{n}{j}{a}{m}{i}{n}{h}{u}{t}{h}}}, updated on 2022-12-21
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1659}{\textcolor{black}{Create volume restricted BFieldMap }}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1659}{\textcolor{black}{Create volume restricted BFieldMap }}}
     (\href{https://github.com/acts-project/acts/issues/1659}{\issstr{1659}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2022-12-21
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, updated on 2022-12-21
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1418}{\textcolor{black}{Documentation update: Core}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1418}{\textcolor{black}{Documentation update: Core}}}
     (\href{https://github.com/acts-project/acts/issues/1418}{\issstr{1418}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-11-23
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-11-23
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1420}{\textcolor{black}{Documentation update: Examples}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1420}{\textcolor{black}{Documentation update: Examples}}}
     (\href{https://github.com/acts-project/acts/issues/1420}{\issstr{1420}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-11-23
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-11-23
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1422}{\textcolor{black}{Documentation update: How-to (core)}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1422}{\textcolor{black}{Documentation update: How-to (core)}}}
     (\href{https://github.com/acts-project/acts/issues/1422}{\issstr{1422}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-11-23
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-11-23
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1421}{\textcolor{black}{Documentation update: Plugins}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1421}{\textcolor{black}{Documentation update: Plugins}}}
     (\href{https://github.com/acts-project/acts/issues/1421}{\issstr{1421}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-22
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1419}{\textcolor{black}{Documentation update: FATRAS}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1419}{\textcolor{black}{Documentation update: FATRAS}}}
     (\href{https://github.com/acts-project/acts/issues/1419}{\issstr{1419}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-22
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1361}{\textcolor{black}{Vertexing produces vertex candidates that are unreasonable}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1361}{\textcolor{black}{Vertexing produces vertex candidates that are unreasonable}}}
     (\href{https://github.com/acts-project/acts/issues/1361}{\issstr{1361}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-22
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1544}{\textcolor{black}{Add Primary Vertex Label to tracks}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1544}{\textcolor{black}{Add Primary Vertex Label to tracks}}}
     (\href{https://github.com/acts-project/acts/issues/1544}{\issstr{1544}}) \\
-    by \href{https://github.com/Lucas-Borgna}{@Lucas-Borgna}, updated on 2022-10-22
+    by \href{https://github.com/Lucas-Borgna}{\mtngusername{{@}{L}{u}{c}{a}{s}{-}{B}{o}{r}{g}{n}{a}}}, updated on 2022-10-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1423}{\textcolor{black}{Documentation update: Contribution guidelines}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1423}{\textcolor{black}{Documentation update: Contribution guidelines}}}
     (\href{https://github.com/acts-project/acts/issues/1423}{\issstr{1423}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-19
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-19
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1482}{\textcolor{black}{Optionally have the vertex finding recalculate perigee parameters relative to consistent reference}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1482}{\textcolor{black}{Optionally have the vertex finding recalculate perigee parameters relative to consistent reference}}}
     (\href{https://github.com/acts-project/acts/issues/1482}{\issstr{1482}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-01
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-01
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1406}{\textcolor{black}{Full chain vertexing with AMVF}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1406}{\textcolor{black}{Full chain vertexing with AMVF}}}
     (\href{https://github.com/acts-project/acts/issues/1406}{\issstr{1406}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-10-01
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-10-01
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1463}{\textcolor{black}{Documentation: hints for debugging}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1463}{\textcolor{black}{Documentation: hints for debugging}}}
     (\href{https://github.com/acts-project/acts/issues/1463}{\issstr{1463}}) \\
-    by \href{https://github.com/timadye}{@timadye}, updated on 2022-09-24
+    by \href{https://github.com/timadye}{\mtngusername{{@}{t}{i}{m}{a}{d}{y}{e}}}, updated on 2022-09-24
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1362}{\textcolor{black}{Vertexing produces unexpectedly poor efficiency}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1362}{\textcolor{black}{Vertexing produces unexpectedly poor efficiency}}}
     (\href{https://github.com/acts-project/acts/issues/1362}{\issstr{1362}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-09-20
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1386}{\textcolor{black}{Ambiguous perigees with low momentum}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1386}{\textcolor{black}{Ambiguous perigees with low momentum}}}
     (\href{https://github.com/acts-project/acts/issues/1386}{\issstr{1386}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2022-09-20
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1345}{\textcolor{black}{Vertexing produces propagation errors}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1345}{\textcolor{black}{Vertexing produces propagation errors}}}
     (\href{https://github.com/acts-project/acts/issues/1345}{\issstr{1345}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-09-20
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1313}{\textcolor{black}{add monitoring for vertexing in physmon}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1313}{\textcolor{black}{add monitoring for vertexing in physmon}}}
     (\href{https://github.com/acts-project/acts/issues/1313}{\issstr{1313}}) \\
-    by \href{https://github.com/andiwand}{@andiwand}, updated on 2022-09-20
+    by \href{https://github.com/andiwand}{\mtngusername{{@}{a}{n}{d}{i}{w}{a}{n}{d}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/669}{\textcolor{black}{2D r-z Magnetic Field Map Improperly Read}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/669}{\textcolor{black}{2D r-z Magnetic Field Map Improperly Read}}}
     (\href{https://github.com/acts-project/acts/issues/669}{\issstr{669}}) \\
-    by \href{https://github.com/osbornjd}{@osbornjd}, updated on 2022-09-20
+    by \href{https://github.com/osbornjd}{\mtngusername{{@}{o}{s}{b}{o}{r}{n}{j}{d}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1437}{\textcolor{black}{Fatras: Bethe-Heitler calculation wrong?}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1437}{\textcolor{black}{Fatras: Bethe-Heitler calculation wrong?}}}
     (\href{https://github.com/acts-project/acts/issues/1437}{\issstr{1437}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2022-09-20
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, updated on 2022-09-20
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/881}{\textcolor{black}{Some writers performs their writes in the destructor}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/881}{\textcolor{black}{Some writers performs their writes in the destructor}}}
     (\href{https://github.com/acts-project/acts/issues/881}{\issstr{881}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-08-11
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-08-11
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1091}{\textcolor{black}{Vertexing issues observed in python vertexing example}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1091}{\textcolor{black}{Vertexing issues observed in python vertexing example}}}
     (\href{https://github.com/acts-project/acts/issues/1091}{\issstr{1091}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-08-11
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-08-11
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1239}{\textcolor{black}{Magnetic Field Storage}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1239}{\textcolor{black}{Magnetic Field Storage}}}
     (\href{https://github.com/acts-project/acts/issues/1239}{\issstr{1239}}) \\
-    by \href{https://github.com/osbornjd}{@osbornjd}, updated on 2022-06-12
+    by \href{https://github.com/osbornjd}{\mtngusername{{@}{o}{s}{b}{o}{r}{n}{j}{d}}}, updated on 2022-06-12
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1246}{\textcolor{black}{Reproducibility test using hash checks for non-linear KF}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1246}{\textcolor{black}{Reproducibility test using hash checks for non-linear KF}}}
     (\href{https://github.com/acts-project/acts/issues/1246}{\issstr{1246}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-06-12
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-06-12
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1146}{\textcolor{black}{Cut tube segment dd4hep conversion tests }}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1146}{\textcolor{black}{Cut tube segment dd4hep conversion tests }}}
     (\href{https://github.com/acts-project/acts/issues/1146}{\issstr{1146}}) \\
-    by \href{https://github.com/rahmans1}{@rahmans1}, updated on 2022-05-25
+    by \href{https://github.com/rahmans1}{\mtngusername{{@}{r}{a}{h}{m}{a}{n}{s}{1}}}, updated on 2022-05-25
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1221}{\textcolor{black}{Bug: fatras different particle final states between python and executable}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1221}{\textcolor{black}{Bug: fatras different particle final states between python and executable}}}
     (\href{https://github.com/acts-project/acts/issues/1221}{\issstr{1221}}) \\
-    by \href{https://github.com/CouthuresJeremy}{@CouthuresJeremy}, updated on 2022-05-01
+    by \href{https://github.com/CouthuresJeremy}{\mtngusername{{@}{C}{o}{u}{t}{h}{u}{r}{e}{s}{J}{e}{r}{e}{m}{y}}}, updated on 2022-05-01
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1211}{\textcolor{black}{ci: Coverage job is broken with gcovr \textgreater{}= 5.1}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1211}{\textcolor{black}{ci: Coverage job is broken with gcovr \textgreater{}= 5.1}}}
     (\href{https://github.com/acts-project/acts/issues/1211}{\issstr{1211}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-04-29
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-04-29
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1139}{\textcolor{black}{Bug: issue on first build after DD4hep update on system with globaly installed acts}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1139}{\textcolor{black}{Bug: issue on first build after DD4hep update on system with globaly installed acts}}}
     (\href{https://github.com/acts-project/acts/issues/1139}{\issstr{1139}}) \\
-    by \href{https://github.com/gagnonlg}{@gagnonlg}, updated on 2022-02-22
+    by \href{https://github.com/gagnonlg}{\mtngusername{{@}{g}{a}{g}{n}{o}{n}{l}{g}}}, updated on 2022-02-22
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/822}{\textcolor{black}{Feat: Radial bounds in DD4hep plugin}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/822}{\textcolor{black}{Feat: Radial bounds in DD4hep plugin}}}
     (\href{https://github.com/acts-project/acts/issues/822}{\issstr{822}}) \\
-    by \href{https://github.com/whit2333}{@whit2333}, updated on 2022-02-19
+    by \href{https://github.com/whit2333}{\mtngusername{{@}{w}{h}{i}{t}{2}{3}{3}{3}}}, updated on 2022-02-19
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1100}{\textcolor{black}{Add example (+test) for vertex fitting with constraints}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1100}{\textcolor{black}{Add example (+test) for vertex fitting with constraints}}}
     (\href{https://github.com/acts-project/acts/issues/1100}{\issstr{1100}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2022-01-07
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2022-01-07
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/988}{\textcolor{black}{Should seed finding tools have a higher-level interface?}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/988}{\textcolor{black}{Should seed finding tools have a higher-level interface?}}}
     (\href{https://github.com/acts-project/acts/issues/988}{\issstr{988}}) \\
-    by \href{https://github.com/stephenswat}{@stephenswat}, updated on 2021-11-25
+    by \href{https://github.com/stephenswat}{\mtngusername{{@}{s}{t}{e}{p}{h}{e}{n}{s}{w}{a}{t}}}, updated on 2021-11-25
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/942}{\textcolor{black}{[bug] Off axis endcap with dd4hep plugin.}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/942}{\textcolor{black}{[bug] Off axis endcap with dd4hep plugin.}}}
     (\href{https://github.com/acts-project/acts/issues/942}{\issstr{942}}) \\
-    by \href{https://github.com/whit2333}{@whit2333}, updated on 2021-11-25
+    by \href{https://github.com/whit2333}{\mtngusername{{@}{w}{h}{i}{t}{2}{3}{3}{3}}}, updated on 2021-11-25
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1036}{\textcolor{black}{Improvement: Estimate track parameters from seed at perigee surface}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/1036}{\textcolor{black}{Improvement: Estimate track parameters from seed at perigee surface}}}
     (\href{https://github.com/acts-project/acts/issues/1036}{\issstr{1036}}) \\
-    by \href{https://github.com/XiaocongAi}{@XiaocongAi}, updated on 2021-11-10
+    by \href{https://github.com/XiaocongAi}{\mtngusername{{@}{X}{i}{a}{o}{c}{o}{n}{g}{A}{i}}}, updated on 2021-11-10
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/454}{\textcolor{black}{Polyhedron surfaces tests are disabled}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/454}{\textcolor{black}{Polyhedron surfaces tests are disabled}}}
     (\href{https://github.com/acts-project/acts/issues/454}{\issstr{454}}) \\
-    by \href{https://github.com/msmk0}{@msmk0}, updated on 2021-11-04
+    by \href{https://github.com/msmk0}{\mtngusername{{@}{m}{s}{m}{k}{0}}}, updated on 2021-11-04
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/165}{\textcolor{black}{Tracking for TPC/DC without surfaces }}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/165}{\textcolor{black}{Tracking for TPC/DC without surfaces }}}
     (\href{https://github.com/acts-project/acts/issues/165}{\issstr{165}}) \\
-    by \href{https://github.com/FabianKlimpel}{@FabianKlimpel}, updated on 2021-11-04
+    by \href{https://github.com/FabianKlimpel}{\mtngusername{{@}{F}{a}{b}{i}{a}{n}{K}{l}{i}{m}{p}{e}{l}}}, updated on 2021-11-04
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/752}{\textcolor{black}{BoundingBox tests fail on double precision}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/752}{\textcolor{black}{BoundingBox tests fail on double precision}}}
     (\href{https://github.com/acts-project/acts/issues/752}{\issstr{752}}) \\
-    by \href{https://github.com/paulgessinger}{@paulgessinger}, updated on 2021-11-04
+    by \href{https://github.com/paulgessinger}{\mtngusername{{@}{p}{a}{u}{l}{g}{e}{s}{s}{i}{n}{g}{e}{r}}}, updated on 2021-11-04
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/944}{\textcolor{black}{Debug Information in Acts Seeder}}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/944}{\textcolor{black}{Debug Information in Acts Seeder}}}
     (\href{https://github.com/acts-project/acts/issues/944}{\issstr{944}}) \\
-    by \href{https://github.com/osbornjd}{@osbornjd}, updated on 2021-10-21
+    by \href{https://github.com/osbornjd}{\mtngusername{{@}{o}{s}{b}{o}{r}{n}{j}{d}}}, updated on 2021-10-21
+    \end{minipage}
 
-    \item\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/647}{\textcolor{black}{fix: avoid double-static cast }}}
+    \item\begin{minipage}[t]{\linewidth}\raggedright\iss\prstale\textbf{\href{https://github.com/acts-project/acts/issues/647}{\textcolor{black}{fix: avoid double-static cast }}}
     (\href{https://github.com/acts-project/acts/issues/647}{\issstr{647}}) \\
-    by \href{https://github.com/asalzburger}{@asalzburger}, updated on 2021-10-21
+    by \href{https://github.com/asalzburger}{\mtngusername{{@}{a}{s}{a}{l}{z}{b}{u}{r}{g}{e}{r}}}, updated on 2021-10-21
+    \end{minipage}
 
   \end{itemize}
 \end{frame}

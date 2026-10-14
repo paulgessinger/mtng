@@ -1,35 +1,43 @@
-{% macro show_item(item, spec, mode = none) %}
-    \item
+{% macro show_item(item, spec, mode = none, is_new = false) %}
+    \item\begin{minipage}[t]{\linewidth}\raggedright
+    {%- set truncate = item.is_pr and spec.truncate_pr_titles -%}
+    {%- if truncate -%}\mtngprline{ {% endif %}
     {%- if item.is_pr -%}
-      {% if mode == "OPEN" %}\propen{% elif mode == "MERGED" -%}\prmerged{% endif %}
+      {% if mode == "OPEN" %}{% if item.draft %}\prdraft{% else %}\propen{% endif %}{% elif mode == "MERGED" -%}\prmerged{% endif %}
     {%- else -%}
       \iss
     {%- endif -%}
-    {%- if item.is_wip -%}\prwip
+    {%- if item.is_pr and mode == "OPEN" and is_new -%}\prnew{%- endif -%}
+    {%- if item.is_pr and item.pr_category_breaking -%}\prbreaking{ {{- spec.pr_category_colors.get("breaking", "alertred") -}} }{%- endif -%}
+    {%- if item.draft and mode == "OPEN" -%}\prcategory{Draft}{black!45}
+    {%- elif item.is_wip -%}\prwip
     {%- endif -%}
     {%- if item.is_stale -%}\prstale
     {%- endif -%}
     {%- if item.is_pr and spec.show_pr_categories and item.pr_category_label is not none and item.pr_category_color is not none -%}
       \prcategory{
-        {%- if item.pr_category_breaking -%}\cusemoji{police-car-light} {% endif -%}
         {{- item.pr_category_label|sanitize -}}
       }{ {{- item.pr_category_color -}} }
     {%- endif -%}
+    {%- if truncate -%}
+    }{ {{- (item.pr_title_display if item.pr_title_display is not none else item.title)|title_units -}} }{ {{- item.html_url -}} }{
+    {%- else -%}
     \textbf{\href{
       {{- item.html_url -}}
     }{\textcolor{black}{
       {{- (item.pr_title_display if item.pr_title_display is not none else item.title)|sanitize -}}
     }}}
+    {%- endif %}
     (\href{ {{- item.html_url -}} }{
     {%- if item.is_pr -%}
     {% if spec.forge == "gitlab" %}!{{- item.number -}}{% else %}\prstr{ {{- item.number -}} }{% endif %}
     {%- else -%}
     \issstr{ {{- item.number -}} }
     {%- endif -%}
-    }) \\
-    by \href{ {{- item.user.html_url -}} }{@{{- item.user.login|sanitize -}}}
-    {%- if spec.do_assignee or (spec.do_reviewers and spec.show_review_summary and item.is_pr) -%}
-        ,{}
+    }){% if truncate %}}{% endif %} \\
+    by {{ user(item.user) }}
+    {%- if spec.do_assignee -%}
+        ,\space{}
     {%- endif -%}
     {%- if spec.do_assignee -%}
         {%- if item.assignee -%}
@@ -42,33 +50,19 @@
             {%- endif -%}
         {%- endif -%}
     {%- endif -%}
-    {%- if spec.do_reviewers and spec.show_review_summary and item.is_pr -%}
-        {%- if item.reviews_available is defined and not item.reviews_available -%}
-            review data unavailable
-        {%- elif item.reviews is defined and item.reviews|length > 0 -%}
-            {%- set approvals = item.reviews|selectattr("state", "==", "APPROVED")|list -%}
-            {%- set comments = item.reviews|selectattr("state", "==", "COMMENTED")|list -%}
-            {%- if approvals|length -%}
-                {} \cusemoji{check-mark-button} reviewed by {{ user((approvals|last).user) }}
-            {%- elif comments|length -%}
-                {} \cusemoji{check-mark-button} comment by {{ user((comments|last).user) }}
-            {%- else -%}
-                {} \cusemoji{cross-mark} changes requested by {{ user(item.reviews[-1].user) }}
-            {%- endif -%}
-        {%- else -%}
-            {%- if item.requested_reviewers is defined and item.requested_reviewers|length > 0 -%}
-                {%- for req in item.requested_reviewers -%}
-                    review requested
-                {%- endfor -%}
-            {%- else -%}
-                {%- if mode != "MERGED" -%}
-                    \emojispace{warning}\textbf{\textcolor{Red}{no reviewer}}
-                {%- endif -%}
-            {%- endif -%}
-        {%- endif -%}
-    {%- endif -%}
     {{- caller() }}
+    {%- if item.is_pr and spec.do_reviewers and spec.show_review_summary %}
+    {% set status, color = item|review_status -%}
+    \allowbreak\hspace{0.3em}\mbox{\scriptsize\textcolor{black!55}{\ensuremath{\cdot}}\,\textcolor{ {{- color -}} }{ {{- status -}} }}
+    {%- endif %}
+    {%- if item.is_pr and item.additions is defined and item.additions is not none and item.deletions is defined and item.deletions is not none %}
+    \allowbreak\hspace{0.4em}\mbox{\scriptsize\textcolor{green!50!black}{+{{ item.additions|human_int }}}\,\textcolor{red!75!black}{\ensuremath{-}{{ item.deletions|human_int }}}}
+    {%- endif %}
+    {%- if item.is_pr and item.changed_files is defined and item.changed_files is not none %}
+    \allowbreak\hspace{0.3em}\mbox{\scriptsize\textcolor{black!55}{\ensuremath{\cdot} {{ item.changed_files|human_int }} {{ "file" if item.changed_files == 1 else "files" }}}}
+    {%- endif %}
+    \end{minipage}
 {% endmacro %}
 {% macro user(data) -%}
-\href{ {{- data.html_url -}} }{@{{- data.login|sanitize -}}}
+\href{ {{- data.html_url -}} }{\mtngusername{ {{- ("@" ~ data.login)|title_characters -}} }}
 {%- endmacro %}

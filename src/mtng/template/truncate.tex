@@ -1,0 +1,58 @@
+% Measure in the surrounding list font; word/character groups keep escaped TeX intact.
+\ExplSyntaxOn
+% Allow unusually long usernames to wrap without changing the link target.
+\cs_if_exist:NF \mtngusername {
+  \cs_new_protected:Npn \mtngusername #1
+    { \tl_map_inline:nn {#1} {##1\allowbreak} }
+}
+\cs_if_exist:NF \mtngprline {
+\seq_new:N \l_mtng_chars_seq
+\tl_new:N \l_mtng_title_tl
+\box_new:N \l_mtng_prefix_box
+\box_new:N \l_mtng_suffix_box
+\box_new:N \l_mtng_title_box
+\dim_new:N \l_mtng_available_dim
+\int_new:N \l_mtng_keep_int
+\int_new:N \l_mtng_left_int
+\cs_new_protected:Npn \mtng_measure_title:
+  { \hbox_set:Nn \l_mtng_title_box { \bfseries \tl_use:N \l_mtng_title_tl } }
+\providecommand{\mtngprline}[4]{
+  \leavevmode
+  \group_begin:
+  \hbox_set:Nn \l_mtng_prefix_box {\ignorespaces#1\unskip}
+  \hbox_set:Nn \l_mtng_suffix_box {#4}
+  \dim_set:Nn \l_mtng_available_dim
+    { \linewidth - \box_wd:N \l_mtng_prefix_box - \box_wd:N \l_mtng_suffix_box - 0.5em }
+  \seq_clear:N \l_mtng_chars_seq
+  \tl_map_inline:nn {#2} { \seq_put_right:Nn \l_mtng_chars_seq {##1} }
+  \tl_set:Nx \l_mtng_title_tl { \seq_use:Nn \l_mtng_chars_seq {} }
+  \mtng_measure_title:
+  \int_set:Nn \l_mtng_keep_int { \seq_count:N \l_mtng_chars_seq }
+  \bool_while_do:nn
+    { \dim_compare_p:n { \box_wd:N \l_mtng_title_box > \l_mtng_available_dim }
+      && \int_compare_p:n { \l_mtng_keep_int > 0 } }
+    {
+      \int_decr:N \l_mtng_keep_int
+      \int_set:Nn \l_mtng_left_int { \int_div_truncate:nn { \l_mtng_keep_int + 1 } {2} }
+      \tl_clear:N \l_mtng_title_tl
+      \int_step_inline:nn { \l_mtng_left_int }
+        { \tl_put_right:Nx \l_mtng_title_tl { \seq_item:Nn \l_mtng_chars_seq {##1} } }
+      \tl_put_right:Nn \l_mtng_title_tl {\,\textellipsis\,}
+      \int_step_inline:nn { \l_mtng_keep_int - \l_mtng_left_int }
+        { \tl_put_right:Nx \l_mtng_title_tl
+            { \seq_item:Nn \l_mtng_chars_seq
+                { \seq_count:N \l_mtng_chars_seq - \l_mtng_keep_int + \l_mtng_left_int + ##1 } } }
+      \mtng_measure_title:
+    }
+  % If badges alone exhaust the line, retain the ordinary wrapping behavior.
+  \dim_compare:nNnTF { \l_mtng_available_dim } < { \box_wd:N \l_mtng_title_box }
+    { \box_use:N \l_mtng_prefix_box
+      \href{#3}{\textcolor{black}{\bfseries\seq_use:Nn \l_mtng_chars_seq {}}}
+      \hspace{0.5em}\box_use:N \l_mtng_suffix_box }
+    { \hbox { \box_use:N \l_mtng_prefix_box
+      \href{#3}{\textcolor{black}{\box_use:N \l_mtng_title_box}}
+      \hspace{0.5em}\box_use:N \l_mtng_suffix_box } }
+  \group_end:
+}
+}
+\ExplSyntaxOff

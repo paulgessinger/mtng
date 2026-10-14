@@ -1,10 +1,16 @@
+cache_max_age = 900          # Seconds; set to 0 to revalidate every request.
 title = "Development update"
 footline_left = "Core team"
 
 [repositories.acts]
+truncate_pr_titles = true
+do_reviewers = true
 forge = "github"
 name = "acts-project/acts"
 display_name = "ACTS"
+
+[repositories.acts.frame_titles]
+merged_prs = "Merged in {category}"
 
 [[sections]]
 type = "statistics"
@@ -18,7 +24,7 @@ type = "changes"
 repositories = ["acts"]
 state = "merged"
 group_by = "category"
-summary = false # The statistics section above already shows the summary.
+summary = false         # The statistics section above already shows the summary.
 
 [sections.labels]
 exclude = ["backport"]
@@ -27,7 +33,7 @@ exclude = ["backport"]
 type = "changes"
 repositories = ["acts"]
 state = "open"
-drafts = "exclude"
+drafts = "include"
 
 # Uncomment and supply your public event URL to position an agenda here.
 # [[sections]]

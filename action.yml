@@ -8,6 +8,10 @@ branding:
   color: blue
 
 inputs:
+  cache_max_age:
+    description: Seconds to reuse cached API responses locally (default 300; zero revalidates).
+    required: false
+    default: ""
   # --- what to report on -----------------------------------------------------
   config:
     description: >-
@@ -145,6 +149,10 @@ inputs:
     description: Parse conventional-commit prefixes from PR titles into category pills.
     required: false
     default: ""
+  truncate_pr_titles:
+    description: Shorten PR titles in the middle to fit one line.
+    required: false
+    default: ""
   group_prs_by_category:
     description: Group PR slides into one section per category.
     required: false
@@ -259,6 +267,7 @@ runs:
       id: config
       shell: bash
       env:
+        MTNG_INPUT_CACHE_MAX_AGE: ${{ inputs.cache_max_age }}
         MTNG_INPUT_CONFIG: ${{ inputs.config }}
         MTNG_INPUT_REPOSITORY: ${{ inputs.repository }}
         MTNG_INPUT_TITLE: ${{ inputs.title }}
@@ -278,6 +287,7 @@ runs:
         MTNG_INPUT_NO_ASSIGNEE_ATTENTION: ${{ inputs.no_assignee_attention }}
         MTNG_INPUT_DO_REVIEWERS: ${{ inputs.do_reviewers }}
         MTNG_INPUT_SHOW_REVIEW_SUMMARY: ${{ inputs.show_review_summary }}
+        MTNG_INPUT_TRUNCATE_PR_TITLES: ${{ inputs.truncate_pr_titles }}
         MTNG_INPUT_SHOW_PR_CATEGORIES: ${{ inputs.show_pr_categories }}
         MTNG_INPUT_GROUP_PRS_BY_CATEGORY: ${{ inputs.group_prs_by_category }}
         MTNG_INPUT_SHOW_BREAKING_CHANGES: ${{ inputs.show_breaking_changes }}

@@ -308,6 +308,7 @@ redesign are follow-up work.
   - **`no_assignee_attention`** *(boolean)*: Draw attention to items without an assignee. Default: `True`.
   - **`do_reviewers`** *(boolean)*: Show reviewer information for PRs. Default: `False`.
   - **`show_review_summary`** *(boolean)*: Show review outcome text (for example, `reviewed by`). Default: `True`.
+  - **`truncate_pr_titles`** *(boolean)*: Fit PR titles on one line by replacing the middle with an ellipsis at word boundaries (character fallback for one- or two-word titles), reserving space for status/category badges and the linked PR number. Short titles remain unchanged. Default: `False`.
   - **`show_pr_categories`** *(boolean)*: Parse conventional-commit style prefixes from PR titles and render category pills. Default: `True`.
   - **`group_prs_by_category`** *(boolean)*: Group open and merged PR slides into one section per category. Default: `False`. Section pages are titled with the category alone (`Feature`, `Bugfix`, ...); the `fix` category also carries a 🐛.
   - **`pr_category_labels`** *(object)*: Override display names for category keys used in pills and grouped sections (for example, `feat: Feature`).
@@ -368,8 +369,8 @@ to each PR and, with `group_prs_by_category`, the section a PR lands in. The def
 | `revert` | Revert | 🔄 | Mahogany |
 | `other` | Other | 📦 | beige |
 
-Titles that do not parse land in `other`; a `!` marks the PR as breaking and switches the
-pill to the `breaking` color. The table order is also the order of the grouped sections, and
+Titles that do not parse land in `other`; a `!` marks the PR as breaking with a separate 🚨 marker beside 🆕 (when present).
+The category retains its normal color; `breaking` controls the marker’s text fallback color when emoji fonts are unavailable. The table order is also the order of the grouped sections, and
 `pr_category_order` overrides it — listed categories come first, the rest follow in the
 default order:
 
@@ -688,8 +689,10 @@ cache directory (`http-v1/`). Keys isolate origins, query parameters, credential
 and representation headers. Responses are reused locally for five minutes by
 default, even when the server specifies a shorter lifetime or `no-cache`.
 This deliberate local snapshot can be stale for that window; `no-store` responses
-are never persisted. Set `--cache-max-age SECONDS` to change the window (zero
-revalidates every time). Expired responses are revalidated using
+are never persisted. Set top-level `cache_max_age = 300` in TOML (or
+`cache_max_age: 300` in YAML) to configure the window in seconds. Values must be
+non-negative; zero revalidates every time. An explicit `--cache-max-age SECONDS`
+overrides the config, and `--refresh` forces revalidation regardless of either setting. Expired responses are revalidated using
 ETag or Last-Modified when available; validators and bodies are retained for up
 to 30 days. Errors never substitute stale successful data. Old model caches are
 no longer read.
@@ -747,3 +750,17 @@ LaTeX rendering and compilation retain a status indicator because their total wo
 is not known. Progress goes to stderr; redirected and CI runs receive plain stage
 and completion messages instead of animated bars. Failed work is marked stopped,
 not complete.
+
+PR bullets show additions/deletions and files changed when the backend supplies
+those counts. Open PRs show human-readable ages (for example, `open for 18 days` or
+`opened today`), measured at the report date. Inactivity is shown only after at
+least one calendar day. Drafts use a muted icon and a Draft badge. With `do_reviewers =
+true` and `show_review_summary = true`, PRs show a compact, consistently sized review status without reviewer usernames;
+changes requested takes precedence over approval, using each reviewer's latest
+decisive review. These are review summaries, not mergeability checks. Include
+drafts with `drafts = "include"` on a changes section. Older saved reports may
+need recollecting to supply review and diff details.
+
+Open PRs created within the inclusive since–now reporting window carry a `NEW`
+badge. Metadata wraps within the list width, and PR bullets stay together when
+continued onto the next slide.

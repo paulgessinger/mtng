@@ -253,7 +253,7 @@ async def test_mixed_forges_render_separate_report_sections(forge):
     assert list(data) == ["GitHub", "GitLab"]
     output = generate_latex(spec, data, START, END, [], False)
     assert "!1" in output and "Merged MRs" in output and "Merged PRs" in output
-    assert "review data unavailable" in output
+    assert "review unavailable" in output
     assert data["GitLab"]["release_stats"].reviewers is None
 
 

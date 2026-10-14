@@ -179,7 +179,7 @@ class Repository(BaseModel):
     show_review_summary: bool = pydantic.Field(
         True,
         title="Show review summary",
-        description="Show review outcome text such as 'reviewed by', comments, and requested changes.",
+        description="Show a compact, colored review status without reviewer usernames.",
     )
 
     needs_discussion_label: str | None = pydantic.Field(
@@ -192,6 +192,10 @@ class Repository(BaseModel):
         title="Show PR categories",
         description="If true, parse conventional-commit type prefixes from PR titles and display them as category pills.",
     )
+    truncate_pr_titles: bool = pydantic.Field(
+        False,
+        description="Shorten PR titles in the middle to fit one line, preserving badges and the PR number.",
+    )
     group_prs_by_category: bool = pydantic.Field(
         False,
         title="Group PRs by category",
@@ -200,7 +204,7 @@ class Repository(BaseModel):
     pr_category_colors: dict[str, str] = pydantic.Field(
         default_factory=lambda: dict(DEFAULT_PR_CATEGORY_COLORS),
         title="PR category colors",
-        description="Map from PR category to LaTeX color name used by category pills. The special key 'breaking' controls the color of breaking-change pills.",
+        description="Map from PR category to LaTeX color name used by category pills. The special key 'breaking' controls the text fallback color of the separate breaking-change marker.",
     )
     pr_category_labels: dict[str, str] = pydantic.Field(
         default_factory=lambda: dict(DEFAULT_PR_CATEGORY_LABELS),
@@ -379,6 +383,11 @@ Section = Annotated[
 
 
 class Spec(BaseModel):
+    cache_max_age: int = pydantic.Field(
+        300,
+        ge=0,
+        description="Seconds to reuse cached API responses locally; zero revalidates every time.",
+    )
     title: str | None = pydantic.Field(
         None,
         description="Deck title shown on the title slide. Supports the {release}, {repos}, {since} and {date} placeholders. If omitted, mtng uses the default repository-based title.",
