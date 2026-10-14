@@ -79,6 +79,10 @@ inputs:
     description: Deck title. Supports the {release}, {repos}, {since} and {date} placeholders.
     required: false
     default: ""
+  accent_color:
+    description: Accent color as six hexadecimal digits, optionally prefixed with '#'. Defaults to 22529E.
+    required: false
+    default: ""
   footline_left:
     description: Left-hand footline text. Supports the same placeholders as `title`.
     required: false
@@ -272,6 +276,7 @@ runs:
         MTNG_INPUT_REPOSITORY: ${{ inputs.repository }}
         MTNG_INPUT_TITLE: ${{ inputs.title }}
         MTNG_INPUT_FOOTLINE_LEFT: ${{ inputs.footline_left }}
+        MTNG_INPUT_ACCENT_COLOR: ${{ inputs.accent_color }}
         MTNG_INPUT_DISPLAY_NAME: ${{ inputs.display_name }}
         MTNG_INPUT_WIP_LABEL: ${{ inputs.wip_label }}
         MTNG_INPUT_SHOW_WIP: ${{ inputs.show_wip }}
