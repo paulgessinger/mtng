@@ -1,5 +1,7 @@
 import json
 import re
+
+import pytest
 from datetime import datetime
 from pathlib import Path
 
@@ -152,6 +154,8 @@ def test_generate_accepts_preamble_with_pdf(monkeypatch, tmp_path):
             str(preamble),
             "--pdf",
             str(output_pdf),
+            "--tex",
+            str(tmp_path / "out.tex"),
         ],
     )
 
@@ -162,6 +166,9 @@ def test_generate_accepts_preamble_with_pdf(monkeypatch, tmp_path):
     assert "\\begin{document}" in source
     assert "\\end{document}" in source
     assert output_pdf.exists()
+    assert (tmp_path / "out.tex").read_text() == source
+    assert result.stdout == ""
+    assert "Wrote PDF:" in result.stderr
 
 
 def test_generate_rejects_full_document_as_preamble_with_pdf(monkeypatch, tmp_path):
@@ -252,3 +259,37 @@ def test_schema_command_emits_valid_json():
 
     assert result.exit_code == 0
     assert json.loads(result.stdout)["title"] == "Spec"
+
+
+@pytest.mark.parametrize("full", [False, True])
+@pytest.mark.parametrize("to_file", [False, True])
+def test_generate_plain_latex_output(monkeypatch, tmp_path, full, to_file):
+    spec = tmp_path / "spec.yml"
+    spec.write_text("repos: []\n")
+    source = r"\begin{frame}[fragile]" + "x" * 200 + r"[red]literal[/red]" + "\n"
+    captured = {}
+
+    async def collect(*args, **kwargs):
+        return {}
+
+    def generate(*args, **kwargs):
+        captured["full"] = kwargs["full_tex"]
+        return source
+
+    monkeypatch.setattr(mtng.cli, "collect_repositories", collect)
+    monkeypatch.setattr(mtng.cli, "generate_latex", generate)
+    args = ["generate", str(spec), "--since", "2024-01-01"]
+    if full:
+        args.append("--full")
+    target = tmp_path / "report.tex"
+    if to_file:
+        args.extend(["--tex", str(target)])
+    result = CliRunner().invoke(mtng.cli.cli, args)
+    assert result.exit_code == 0, result.output
+    assert captured["full"] is full
+    if to_file:
+        assert result.stdout == ""
+        assert target.read_text() == source
+        assert "Wrote LaTeX:" in result.stderr
+    else:
+        assert result.stdout == source

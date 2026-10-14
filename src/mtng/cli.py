@@ -21,7 +21,6 @@ from dateutil.tz import tzlocal
 from rich.console import Console
 from rich.status import Status
 from rich import print
-from rich.panel import Panel
 import rich.rule
 
 from mtng.generate import generate_latex
@@ -172,6 +171,13 @@ async def generate(
     cache_stats: Annotated[
         bool, typer.Option(help="Print HTTP cache and request counters")
     ] = False,
+    cache_max_age: Annotated[
+        int,
+        typer.Option(
+            min=0,
+            help="Reuse local API data for this many seconds, overriding server freshness",
+        ),
+    ] = 300,
     refresh: Annotated[
         bool, typer.Option(help="Revalidate cached API responses immediately")
     ] = False,
@@ -214,7 +220,7 @@ async def generate(
     full_tex: Annotated[
         bool,
         typer.Option(
-            "--full", help="Write a full LaTeX file that is compileable on it's own"
+            "--full", help="Generate a standalone LaTeX document instead of a fragment"
         ),
     ] = False,
     preamble: Annotated[
@@ -236,7 +242,10 @@ async def generate(
     ] = None,
     tex: Annotated[
         Path | None,
-        typer.Option(dir_okay=False, help="Write LaTex output to this file"),
+        typer.Option(
+            dir_okay=False,
+            help="Write LaTeX to this file instead of stdout (also usable with --pdf)",
+        ),
     ] = None,
 ):
     if preamble is not None and full_tex:
@@ -303,7 +312,9 @@ async def generate(
                         __name__,
                         oauth_token=value,
                         transport=HttpTransport(
-                            session, max_age=0 if refresh else 300, enabled=not no_cache
+                            session,
+                            max_age=0 if refresh else cache_max_age,
+                            enabled=not no_cache,
                         ),
                     )
                 )
@@ -313,7 +324,9 @@ async def generate(
                     host,
                     value,
                     transport=HttpTransport(
-                        session, max_age=0 if refresh else 300, enabled=not no_cache
+                        session,
+                        max_age=0 if refresh else cache_max_age,
+                        enabled=not no_cache,
                     ),
                 )
             )
@@ -361,7 +374,13 @@ async def generate(
                 transport = (
                     backend.gh.transport if kind == "github" else backend.transport
                 )
-                console.print(f"{kind} {host}: {transport.stats}")
+                stats = transport.stats
+                console.print(
+                    f"{kind} {host}: {stats['hits']} local cache hits, "
+                    f"{stats['requests']} HTTP requests "
+                    f"({stats['revalidated']} unchanged), "
+                    f"{stats['retries']} retries, {stats['shared']} shared requests"
+                )
 
     if save_data is not None:
         snapshot = ReportData(
@@ -427,10 +446,13 @@ def output_report(
         else:
             latex = f"{preamble_content}\n\n{latex}"
 
+    if tex is not None:
+        tex.write_text(latex)
+        console.print(f"Wrote LaTeX: {tex}", markup=False, highlight=False)
+
     if pdf is None:
-        if tex is not None:
-            tex.write_text(latex)
-        print(Panel(latex, title="LaTeX Output"))
+        if tex is None:
+            typer.echo(latex, nl=False)
     else:
         with TemporaryDirectory() as d:
             d = Path(d)
@@ -459,6 +481,7 @@ def output_report(
                 if proc.returncode != 0:
                     raise subprocess.CalledProcessError(proc.returncode, args)
             shutil.copy(d / "source.pdf", pdf)
+        console.print(f"Wrote PDF: {pdf}", markup=False, highlight=False)
 
 
 @cli.command(help="Render saved report data without API calls or credentials")
@@ -473,7 +496,12 @@ async def render(
             help="Override presentation settings; new data requires recollection",
         ),
     ] = None,
-    full_tex: Annotated[bool, typer.Option("--full")] = False,
+    full_tex: Annotated[
+        bool,
+        typer.Option(
+            "--full", help="Generate a standalone LaTeX document instead of a fragment"
+        ),
+    ] = False,
     preamble: Annotated[Path | None, typer.Option(exists=True, dir_okay=False)] = None,
     pdf: Annotated[Path | None, typer.Option(dir_okay=False)] = None,
     tex: Annotated[Path | None, typer.Option(dir_okay=False)] = None,

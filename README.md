@@ -464,7 +464,16 @@ with a LaTeX file like
 % Rest of slides
 ```
 
-Alternatively, you can generate a fully compileable LaTex document, by using the `--full` option.
+Both `generate` and `render` write plain LaTeX to stdout, without panels, markup
+interpretation, or line wrapping, whether stdout is a terminal or redirected.
+Progress, compiler logs, and file confirmations go to stderr.
+Use `--tex report.tex` to write the source to a file instead of stdout, or
+`--pdf report.pdf` to compile a PDF without dumping the source. Combine `--tex`
+and `--pdf` to save both files.
+
+`--full` controls only the document structure: it produces a standalone LaTeX
+document instead of a fragment. PDF compilation automatically selects a complete
+document when no custom preamble is supplied.
 
 ```console
 $ mtng generate spec.yml --full > gen.tex
@@ -634,8 +643,11 @@ Live checks bypass the application cache; cached success is not API validation.
 
 GitHub and GitLab use a persistent JSON HTTP cache under the platform's mtng
 cache directory (`http-v1/`). Keys isolate origins, query parameters, credentials
-and representation headers. Fresh responses are reused for up to five minutes,
-subject to the server's cache directives. Expired responses are revalidated using
+and representation headers. Responses are reused locally for five minutes by
+default, even when the server specifies a shorter lifetime or `no-cache`.
+This deliberate local snapshot can be stale for that window; `no-store` responses
+are never persisted. Set `--cache-max-age SECONDS` to change the window (zero
+revalidates every time). Expired responses are revalidated using
 ETag or Last-Modified when available; validators and bodies are retained for up
 to 30 days. Errors never substitute stale successful data. Old model caches are
 no longer read.
@@ -646,7 +658,13 @@ shared-request counts. Authentication checks bypass the cache. Cached data may
 include private repository content; it stays scoped to the requesting credentials.
 
 Within one process, identical simultaneous requests share a response and requests
-to each origin are serialized. Rate-limit headers control retry timing, with at
+to GitHub overlap with at most four in flight per origin. Starts are spaced at
+least 0.2 seconds apart, with search requests spaced at least 2.1 seconds apart.
+Credential-scoped search/core budgets reserve quota before dispatch, leaving a
+small safety margin. Throttling pauses the origin and reduces its request rate;
+GitLab requests remain serialized. Coordination is local to one process, so other
+clients sharing a token and undisclosed secondary limits can still cause throttling.
+Rate-limit headers control retry timing, with at
 most three attempts and a 60-second total wait budget. Longer limits produce an
 error with retry timing instead of retrying early. CI jobs are independent, so
 normal CI uses offline fixtures rather than relying on shared private caches.
