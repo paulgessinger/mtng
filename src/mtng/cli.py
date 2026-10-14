@@ -28,6 +28,7 @@ from mtng.generate import generate_latex
 from mtng.spec import Spec, IndicoSection
 from mtng.collect import collect_repositories
 from mtng.sections import collect_sections
+from mtng.progress import progress_step
 from mtng.report_data import RecordingForge, ReportData
 from mtng.forge import GitHubForge
 from mtng.forge.http import CachedGitHubAPI, HttpTransport, RateLimitError
@@ -36,7 +37,7 @@ from mtng.auth import AuthTarget, resolve_token, store_token, validate_token
 from mtng.generate import env
 from mtng import __version__
 
-console = Console()
+console = Console(stderr=True)
 cli = typer.Typer(pretty_exceptions_show_locals=False)
 auth_cli = typer.Typer(
     help="Authentication helpers", pretty_exceptions_show_locals=False
@@ -324,7 +325,6 @@ async def generate(
             if save_data
             else None
         )
-        print(Panel("Collecting repository data"))
         try:
             backends = recorders if recorders is not None else forge
             if spec.sections is None:
@@ -334,10 +334,18 @@ async def generate(
             else:
                 data = await collect_sections(spec, since, now, backends, release)
             if event is not None:
-                contributions = await handle_event(event, session)
+                with progress_step("Fetching Indico agenda") as step:
+                    contributions = await handle_event(event, session)
+                    step.advance(len(contributions))
             for section in spec.sections or []:
                 if isinstance(section, IndicoSection) and section.event not in events:
-                    events[section.event] = await handle_event(section.event, session)
+                    with progress_step(
+                        f"Fetching Indico agenda: {section.title}"
+                    ) as step:
+                        events[section.event] = await handle_event(
+                            section.event, session
+                        )
+                        step.advance(len(events[section.event]))
         except (
             GitLabError,
             RateLimitError,
@@ -390,7 +398,7 @@ def output_report(
         latexmk = find_latexmk()
         if latexmk is None:
             raise ValueError("latexmk could not be found, cannot compile using --pdf")
-    with Status("Generating LaTeX"):
+    with Status("Generating LaTeX", console=console):
         latex = generate_latex(
             spec,
             data,

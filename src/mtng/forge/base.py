@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from mtng.models import Issue, PullRequest
+from mtng.progress import progress_step
 
 FETCH_CONCURRENCY = 8
 
@@ -67,11 +68,26 @@ class Forge(Protocol):
         ...
 
 
-async def bounded_gather(items, fn, concurrency: int = FETCH_CONCURRENCY):
+async def bounded_gather(
+    items, fn, concurrency: int = FETCH_CONCURRENCY, *, description="Fetching items"
+):
     sem = asyncio.Semaphore(concurrency)
 
-    async def wrapped(item):
-        async with sem:
-            return await fn(item)
+    items = list(items)
+    with progress_step(description, total=len(items)) as step:
 
-    return await asyncio.gather(*(wrapped(item) for item in items))
+        async def wrapped(item):
+            async with sem:
+                result = await fn(item)
+                step.advance()
+                return result
+
+        tasks = [asyncio.create_task(wrapped(item)) for item in items]
+        try:
+            return await asyncio.gather(*tasks)
+        except BaseException:
+            # No workers may keep updating a progress row after it has closed.
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            raise
