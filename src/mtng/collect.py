@@ -19,7 +19,6 @@ from mtng.spec import (
 )
 from mtng.stats import compute_release_stats
 
-
 CONVENTIONAL_TITLE_RE = re.compile(
     r"^(?P<kind>[a-z][a-z0-9-]*)(?:\([^)]+\))?(?P<breaking>!)?:\s*(?P<subject>.+)$",
     re.IGNORECASE,

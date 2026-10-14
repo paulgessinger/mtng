@@ -5,12 +5,12 @@ repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
   hooks:
-  # reference.tex is a byte-exact snapshot of generated LaTeX output; the
+  # LaTeX references are byte-exact snapshots of generated output; the
   # whitespace hooks would rewrite it out from under test_generate.
   - id: trailing-whitespace
-    exclude: '^tests/ref/reference\.tex$'
+    exclude: '^tests/ref/.*\.tex$'
   - id: end-of-file-fixer
-    exclude: '^tests/ref/reference\.tex$'
+    exclude: '^tests/ref/.*\.tex$'
   - id: check-yaml
   - id: check-added-large-files
 
