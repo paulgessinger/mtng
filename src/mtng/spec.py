@@ -383,6 +383,20 @@ Section = Annotated[
 
 
 class Spec(BaseModel):
+    accent_color: str = pydantic.Field(
+        "22529E",
+        description="Accent color for full presentations as six hexadecimal digits, optionally prefixed with #. Defaults to the existing blue (22529E).",
+    )
+
+    @pydantic.field_validator("accent_color")
+    @classmethod
+    def check_accent_color(cls, value: str) -> str:
+        if not re.fullmatch(r"#?[0-9a-fA-F]{6}", value):
+            raise ValueError(
+                "accent_color must contain six hexadecimal digits, optionally prefixed with #"
+            )
+        return value.removeprefix("#").upper()
+
     cache_max_age: int = pydantic.Field(
         300,
         ge=0,

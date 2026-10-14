@@ -1,6 +1,7 @@
 cache_max_age = 900          # Seconds; set to 0 to revalidate every request.
 title = "Development update"
 footline_left = "Core team"
+accent_color = "#22529E"     # Titles, footline, bullets, and standard blocks.
 
 [repositories.acts]
 truncate_pr_titles = true

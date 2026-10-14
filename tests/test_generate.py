@@ -88,6 +88,36 @@ async def test_generate(tmp_path):
         )
 
 
+@pytest.mark.parametrize("sections", [None, []])
+@pytest.mark.parametrize(
+    "config,expected",
+    [
+        ({}, "22529E"),
+        ({"accent_color": "#7c3aEd"}, "7C3AED"),
+        ({"accent_color": "008080"}, "008080"),
+    ],
+)
+def test_full_tex_uses_accent_color(sections, config, expected):
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    output = generate_latex(
+        Spec(sections=sections, **config),
+        {},
+        since=now,
+        now=now,
+        contributions=[],
+        full_tex=True,
+    )
+    definition = rf"\definecolor{{shivablue}}{{HTML}}{{{expected}}}"
+    assert definition in output
+    assert output.index(definition) < output.index(r"\setbeamercolor{title}")
+
+
+@pytest.mark.parametrize("color", ["", "red", "#123", "1234567", "##123456", "GG0000"])
+def test_invalid_accent_color(color):
+    with pytest.raises(pydantic.ValidationError, match="six hexadecimal digits"):
+        Spec(accent_color=color)
+
+
 def test_full_tex_uses_configured_title():
     since = datetime(2022, 8, 1, tzinfo=tzlocal())
     now = datetime(2022, 8, 11, tzinfo=tzlocal())

@@ -321,6 +321,7 @@ redesign are follow-up work.
   - **`Spec`** *(object)*: Cannot contain additional properties.
     - **`title`** *(string)*: Deck title shown on the title slide. Supports the [placeholders](#placeholders) `{release}`, `{repos}`, `{since}` and `{date}`. If omitted, mtng uses the default repository-based title.
     - **`footline_left`** *(string)*: Left-side text shown in the footline. Supports the [placeholders](#placeholders) `{release}`, `{repos}`, `{since}` and `{date}`. If omitted, `mtng` is used.
+    - **`accent_color`** *(string)*: Accent for titles, footline, bullets, and standard blocks in full presentations (`--full` or PDF output). Use six hexadecimal digits with an optional `#`, for example `accent_color = "#7C3AED"`. Defaults to `22529E` (the existing blue). Fragment output inherits the containing document's theme.
     - **`repos`** *(array)*
       - **Items**: Refer to *#/definitions/Repository*.
   The equivalent TOML configuration is:
