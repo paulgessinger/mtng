@@ -56,6 +56,7 @@ class ReportData(Model):
     release: str | None = None
     contributions: list[Contribution] = Field(default_factory=list)
     events: dict[str, list[Contribution]] = Field(default_factory=dict)
+    summaries: dict[str, str] = Field(default_factory=dict)
     backends: list[BackendData]
 
     def forges(self):

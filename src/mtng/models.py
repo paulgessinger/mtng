@@ -45,6 +45,7 @@ class IssueBase(pydantic.BaseModel):
 
     is_wip: bool = False
     is_stale: bool = False
+    llm_summary: str | None = None
     pr_title_display: str | None = None
     pr_category: str | None = None
     pr_category_label: str | None = None

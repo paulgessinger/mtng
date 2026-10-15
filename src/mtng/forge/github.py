@@ -80,6 +80,12 @@ class GitHubForge:
     async def getitem(self, url: str) -> Any:
         return await self.gh.getitem(url)
 
+    async def pull_diff(self, repo_name: str, number: int) -> str:
+        return await self.gh.getitem(
+            f"/repos/{repo_name}/pulls/{number}",
+            accept="application/vnd.github.diff",
+        )
+
     async def get_reviews(self, url: str) -> list[Review]:
         return [Review.model_validate(r) async for r in self.gh.getiter(url)]
 

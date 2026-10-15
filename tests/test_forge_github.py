@@ -51,3 +51,16 @@ async def test_open_pr_collection_uses_fixture_payloads():
     assert len(prs) == 1 and prs[0].number == raw["number"]
     assert prs[0].reviews[0].user.login == raw["reviews"][0]["user"]["login"]
     assert gh._make_request.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_pull_diff_requests_diff_media_type():
+    gh = client()
+    gh.getitem = AsyncMock(return_value="diff --git a/file b/file")
+    assert (
+        await GitHubForge(gh).pull_diff("team/project", 42)
+        == "diff --git a/file b/file"
+    )
+    gh.getitem.assert_awaited_once_with(
+        "/repos/team/project/pulls/42", accept="application/vnd.github.diff"
+    )
