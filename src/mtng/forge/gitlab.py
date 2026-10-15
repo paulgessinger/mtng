@@ -151,6 +151,17 @@ class GitLabForge:
         labels = {label.name for label in item.labels}
         return set(with_labels) <= labels and not set(without_labels) & labels
 
+    async def pull_diff(self, repo_name: str, number: int) -> str:
+        parts = []
+        async for entry in self.getiter(
+            f"{self.project_path(repo_name)}/merge_requests/{number}/diffs"
+        ):
+            parts.append(
+                f"--- a/{entry['old_path']}\n+++ b/{entry['new_path']}\n"
+                + (entry.get("diff") or "[Diff unavailable]")
+            )
+        return "\n".join(parts)
+
     async def add_reviews(self, repo, prs):
         async def enrich(pr):
             try:

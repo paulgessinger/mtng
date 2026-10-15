@@ -23,6 +23,7 @@ from rich.status import Status
 from rich import print
 import rich.rule
 
+from mtng.summary import add_summaries, restore_summaries
 from mtng.generate import generate_latex
 from mtng.spec import Spec, IndicoSection
 from mtng.collect import collect_repositories
@@ -390,6 +391,7 @@ async def generate(
                 )
             else:
                 data = await collect_sections(spec, since, now, backends, release)
+            summaries = await add_summaries(data, forge, spec.llm)
             if event is not None:
                 with progress_step("Fetching Indico agenda") as step:
                     contributions = await handle_event(event, session)
@@ -435,6 +437,7 @@ async def generate(
             contributions=contributions,
             events=events,
             backends=[recorder.data for recorder in recorders.values()],
+            summaries=summaries,
         )
         save_data.write_text(snapshot.model_dump_json(indent=2) + "\n")
     output_report(
@@ -578,6 +581,7 @@ async def render(
             data = await collect_sections(
                 spec, saved.since, saved.now, saved.forges(), saved.release
             )
+        restore_summaries(data, saved.summaries, spec.llm)
     except (ValueError, KeyError) as error:
         raise typer.BadParameter(str(error)) from error
     output_report(

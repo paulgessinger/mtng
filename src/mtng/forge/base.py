@@ -26,6 +26,8 @@ class Forge(Protocol):
     # raw credentials. Instances with the same cache_id must see the same data.
     cache_id: str
 
+    async def pull_diff(self, repo_name: str, number: int) -> str: ...
+
     async def merged_prs(
         self,
         repo_name: str,

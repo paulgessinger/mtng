@@ -765,3 +765,38 @@ need recollecting to supply review and diff details.
 Open PRs created within the inclusive since–now reporting window carry a `NEW`
 badge. Metadata wraps within the list width, and PR bullets stay together when
 continued onto the next slide.
+
+### Optional LLM summaries
+
+Add this top-level table to your report TOML (or a separate config overlay):
+
+```toml
+[llm]
+enabled = true
+command = ["llm"] # executable followed by arguments, including model selection
+max_diff_chars = 20000
+max_description_chars = 8000
+timeout = 120 # seconds per invocation
+```
+
+The command receives a UTF-8 prompt on stdin and must return the summary on
+stdout. It runs directly without a shell. Configure authentication in the chosen
+command's environment. The prompt includes the PR title, description and diff;
+length limits count characters and truncated inputs are marked. Setting
+`max_diff_chars = 0` skips fetching diffs. GitHub PRs and GitLab MRs are supported.
+
+The default instructions request one or two concise plain-text sentences, at most
+50 words. Override them with `llm.instructions`. Summaries appear beneath the PR
+metadata and are escaped for LaTeX. Command failures, timeouts and empty output
+stop generation and are not cached.
+
+Successful results are cached indefinitely by the exact prompt and command,
+including its arguments, in `llm-v1` inside mtng's user cache directory (normally
+`~/.cache/mtng/llm-v1` on Linux). There is no automatic eviction; remove that
+directory to clear summaries. API cache flags do not clear this separate cache.
+Diffs are fetched again when collecting to detect changes before reusing a
+summary. `--save-data` includes summaries; offline `render` reuses those saved
+summaries without invoking a command or fetching diffs. Recollect to generate
+summaries with changed LLM settings. Omit `[llm]` or set `enabled = false` to
+leave summaries disabled. In the GitHub Action, supply LLM settings through the
+`config` file and install your chosen command on the runner.
