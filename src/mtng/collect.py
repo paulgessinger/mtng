@@ -220,9 +220,15 @@ async def collect_repositories(
                 ),
             )
 
+            for pr in open_prs:
+                enrich_item(pr, repo)
+
             if repo.do_review_followup:
                 data[key]["review_followup"] = review_followup(
-                    open_prs, repo.wip_label, repo.review_assignment_source
+                    open_prs,
+                    repo.wip_label,
+                    repo.review_assignment_source,
+                    repo.review_completion,
                 )
 
             if not repo.show_wip:
@@ -262,7 +268,7 @@ async def collect_repositories(
                 data[key]["recent_issues"] = recent_issues
                 step.advance(len(recent_issues))
 
-        for item_type in "open_prs", "stale", "recent_issues":
+        for item_type in "stale", "recent_issues":
             for item in data[key][item_type]:
                 enrich_item(item, repo)
         data[key]["open_prs_by_category"] = group_prs_by_category(data[key]["open_prs"])

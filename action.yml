@@ -121,6 +121,10 @@ inputs:
     description: Exclude items carrying any of these labels.
     required: false
     default: ""
+  review_completion:
+    description: "Review completion policy: any or all (default all)"
+    required: false
+    default: ""
   review_assignment_source:
     description: "Review assignment source: assignees, requested_reviewers, or both"
     required: false
@@ -161,7 +165,7 @@ inputs:
     required: false
     default: ""
   truncate_pr_titles:
-    description: Shorten PR titles in the middle to fit one line.
+    description: Shorten PR and issue titles in the middle to fit one line (default true).
     required: false
     default: ""
   group_prs_by_category:
@@ -293,6 +297,7 @@ runs:
         MTNG_INPUT_INCLUDE_LABELS: ${{ inputs.include_labels }}
         MTNG_INPUT_EXCLUDE_LABELS: ${{ inputs.exclude_labels }}
         MTNG_INPUT_REVIEW_ASSIGNMENT_SOURCE: ${{ inputs.review_assignment_source }}
+        MTNG_INPUT_REVIEW_COMPLETION: ${{ inputs.review_completion }}
         MTNG_INPUT_DO_REVIEW_FOLLOWUP: ${{ inputs.do_review_followup }}
         MTNG_INPUT_DO_OPEN_PRS: ${{ inputs.do_open_prs }}
         MTNG_INPUT_DO_MERGED_PRS: ${{ inputs.do_merged_prs }}

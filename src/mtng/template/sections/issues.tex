@@ -10,7 +10,7 @@
           , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
       {%- endcall %}
       {%- endfor %}
-      \end{itemize}
+      {# Remove trailing list glue/penalty so it cannot create an empty continuation. #}\end{itemize}\par\unskip\unpenalty
   \end{frame}
 {% else %}
   \section{ \reponame{} \\ No issues opened since {{ since.strftime('%Y-%m-%d') }} }

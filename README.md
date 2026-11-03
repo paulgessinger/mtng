@@ -312,7 +312,7 @@ redesign are follow-up work.
   - **`no_assignee_attention`** *(boolean)*: Draw attention to items without an assignee. Default: `True`.
   - **`do_reviewers`** *(boolean)*: Show reviewer information for PRs. Default: `False`.
   - **`show_review_summary`** *(boolean)*: Show review outcome text (for example, `reviewed by`). Default: `True`.
-  - **`truncate_pr_titles`** *(boolean)*: Fit PR and issue titles on one line by replacing the middle with an ellipsis at word boundaries (character fallback for one- or two-word titles), reserving space for status/category badges and the linked item number. Short titles remain unchanged. Default: `False`.
+  - **`truncate_pr_titles`** *(boolean)*: Fit PR and issue titles on one line across all listings, including review follow-up by replacing the middle with an ellipsis at word boundaries (character fallback for one- or two-word titles), reserving space for status/category badges and the linked item number. Short titles remain unchanged. Default: `True`; set to `false` to allow wrapping.
   - **`show_pr_categories`** *(boolean)*: Parse conventional-commit style prefixes from PR titles and render category pills. Default: `True`.
   - **`group_prs_by_category`** *(boolean)*: Group open and merged PR slides into one section per category. Default: `False`. Section pages are titled with the category alone (`Feature`, `Bugfix`, ...); the `fix` category also carries a 🐛.
   - **`pr_category_labels`** *(object)*: Override display names for category keys used in pills and grouped sections (for example, `feat: Feature`).
@@ -766,16 +766,37 @@ decisive review. These are review summaries, not mergeability checks. Include
 drafts with `drafts = "include"` on a changes section. Older saved reports may
 need recollecting to supply review and diff details.
 
-Open PRs created within the inclusive since–now reporting window carry a `NEW`
+Open and merged PRs created within the inclusive since–now reporting window carry a `NEW`
 badge. Metadata wraps within the list width, and PR bullets stay together when
 continued onto the next slide.
 
 ### Review follow-up
 
-Use a `review_followup` section to list non-draft PRs/MRs that need a review
-assignment, followed by outstanding reviews grouped by person. Both assignees and
-requested reviewers count; a PR needs assignment only when both lists are empty by
-default:
+Use a `review_followup` section to group non-draft PRs/MRs by likely next action.
+These are hints from review state, not definitive task assignments:
+
+- **Awaiting author: username**: a reviewer requested changes.
+- **Changes since review**: the PR head differs from a reviewer's latest submitted review commit. PRs appear once in a combined group.
+- **Awaiting review: username**: a selected assignee/requested reviewer has not participated.
+- **Needs clarification (review comments)**: review participation is complete, but only comments are available.
+- **Needs maintainer attention (approved)**: review participation is complete and an approval exists. Mergeability, CI, and branch requirements are not checked.
+- **Needs assignment**: no selected assignees/requested reviewers and no submitted external review.
+- **Review status unknown**: review data is missing or incomplete.
+
+Requested changes take priority over approvals and outstanding requests. For each
+reviewer, the latest approval, changes request, or dismissal determines their decision;
+a later comment or pending review does not revoke it. Reviews are ordered by submission
+time, falling back to their input order when timestamps are missing. Author reviews
+are ignored. On GitHub, the latest submitted review's `commit_id` is compared with
+`head.sha`, including comment-only reviews and approvals. A changed head routes the
+PR to **Changes since review** rather than author action
+when their changes request predates that head. A changes request without evidence
+of a changed head still takes priority. This includes rebases and force-pushes; it
+is not proof that the feedback was addressed or that the diff changed semantically.
+With `review_completion = "any"`, another person's review of the current head satisfies
+participation, but an outstanding changes request still needs its original reviewer's
+attention. Missing commit IDs retain the previous state-based classification.
+No commit-date inference is made from `updated_at`.
 
 ```toml
 [repositories.project]
@@ -797,23 +818,33 @@ For legacy `[[repos]]` configurations, set `do_review_followup = true`. Use
 independently of `do_open_prs` and `do_reviewers`. Repository or section label filters
 still apply. Native drafts and PRs with the configured WIP label are excluded. Entries
 are sorted by last update, longest inactive first within each group, and show both days
-without updates and PR age. Last update uses the forge’s `updated_at` timestamp; this
+without updates and PR age, plus the linked author, additions/deletions, and changed-file
+count when available. Last update uses the forge’s `updated_at` timestamp; this
 includes metadata changes and is not a precise measure of human interaction or time
 since assignment. A section with nothing outstanding shows an all-clear message.
 
-Each assignee and requested reviewer must submit their own approval, changes request, or
-comment-only review; pending and dismissed reviews do not count. Ordinary conversation
-comments do not count. This checks participation at any point, not whether a review
-happened after assignment or covers the latest commit. People must remain assigned or
-requested for their work to appear in the report. An earlier submitted review counts
+By default (`review_completion = "all"`), each assignee and requested reviewer must
+submit their own approval, changes request, or comment-only review. Set
+`review_completion = "any"` on a `review_followup` section when one review from
+anyone other than the PR author is enough to move the PR from outstanding reviews
+to the appropriate next-action group. Sections inherit the repository's `review_completion`
+unless overridden. Submitted reviews still count after GitHub removes a fulfilled
+review request. With either policy, a PR with a submitted non-author review and no
+remaining selected assignments does not need assignment.
+Pending and dismissed reviews do not count. Ordinary conversation
+comments do not count. This does not establish whether a review happened after
+assignment. People with outdated reviews can appear even after their request disappears. An earlier submitted review counts
 even if a new review was requested later; tracking re-review requests requires
 additional history.
 
-Missing review data appears under **Review status unknown**, not as an overdue review.
-GitLab currently supplies approvals only: an approval clears its author, but other
-assigned/requested reviewers have unknown status because comment-only and changes-request reviews are unavailable. Recollect older saved reports to capture all assignees
-and the required review data.
+Missing or partial review data appears under **Review status unknown** unless a
+known changes request identifies author action. GitLab currently supplies approvals
+only, so it cannot establish the absence of changes requests. Recollect older saved reports to capture all assignees
+and the required review data, including commit IDs for changes-since-review detection.
+GitLab currently lacks reviewed-commit IDs, so that detection is unavailable there.
 
 Generate a fictional example with `uv run python examples/review_followup.py`.
+
+![Review follow-up with PR author and size](examples/review-followup.png)
 
 ![Review follow-up example](examples/review_followup.png)

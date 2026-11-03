@@ -153,6 +153,7 @@ class Repository(BaseModel):
     review_assignment_source: Literal["assignees", "requested_reviewers", "both"] = (
         "both"
     )
+    review_completion: Literal["any", "all"] = "all"
 
     do_review_followup: bool = pydantic.Field(
         False,
@@ -203,7 +204,7 @@ class Repository(BaseModel):
         description="If true, parse conventional-commit type prefixes from PR titles and display them as category pills.",
     )
     truncate_pr_titles: bool = pydantic.Field(
-        False,
+        True,
         description="Shorten PR and issue titles in the middle to fit one line, preserving badges and the item number.",
     )
     group_prs_by_category: bool = pydantic.Field(
@@ -352,6 +353,7 @@ class ChangesSection(RepositorySection):
 class ReviewFollowupSection(RepositorySection):
     type: Literal["review_followup"] = "review_followup"
     assignment_source: Literal["assignees", "requested_reviewers", "both"] | None = None
+    review_completion: Literal["any", "all"] | None = None
 
 
 class StatisticsSection(RepositorySection):

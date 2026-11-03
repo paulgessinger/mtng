@@ -56,6 +56,8 @@ async def collect_sections(spec, since, now, forges, release=None):
                 values["do_review_followup"] = True
                 if section.assignment_source is not None:
                     values["review_assignment_source"] = section.assignment_source
+                if section.review_completion is not None:
+                    values["review_completion"] = section.review_completion
             elif isinstance(section, StatisticsSection):
                 values["do_merged_prs"] = True
                 section_release = section.release or release

@@ -7,7 +7,7 @@
     {%- else -%}
       \iss
     {%- endif -%}
-    {%- if item.is_pr and mode == "OPEN" and is_new -%}\prnew{%- endif -%}
+    {%- if item.is_pr and is_new -%}\prnew{%- endif -%}
     {%- if item.is_pr and item.pr_category_breaking -%}\prbreaking{ {{- spec.pr_category_colors.get("breaking", "alertred") -}} }{%- endif -%}
     {%- if item.draft and mode == "OPEN" -%}\prcategory{Draft}{black!45}
     {%- elif item.is_wip -%}\prwip
@@ -65,4 +65,12 @@
 {% endmacro %}
 {% macro user(data) -%}
 \href{ {{- data.html_url -}} }{\mtngusername{ {{- ("@" ~ data.login)|title_characters -}} }}
+{%- endmacro %}
+
+{% macro show_open_item(item, spec, since, now) -%}
+{%- call show_item(item, spec, mode="OPEN", is_new=since is not none and since <= item.created_at <= now) -%}
+{%- set age = item.created_at|age_days(now) -%}
+{%- set inactivity = item.updated_at|age_days(now) -%}
+, {% if age == 0 %}opened today{% else %}open for {{ age|human_days }}{% endif %}{% if inactivity > 0 %}, inactive for {{ inactivity|human_days }}{% endif %}
+{%- endcall -%}
 {%- endmacro %}

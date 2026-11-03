@@ -29,6 +29,28 @@ async def main():
             [Review(user=bob, state="COMMENTED")],
         ),
         (148, "Improve retry handling for API requests", 6, [alice], []),
+        (
+            160,
+            "Address review feedback",
+            7,
+            [],
+            [Review(user=alice, state="CHANGES_REQUESTED")],
+        ),
+        (161, "Merge approved update", 4, [], [Review(user=alice, state="APPROVED")]),
+        (
+            162,
+            "Clarify review discussion",
+            2,
+            [],
+            [Review(user=alice, state="COMMENTED")],
+        ),
+        (
+            163,
+            "Check updates after review comments",
+            5,
+            [],
+            [Review(user=alice, state="COMMENTED", commit_id="old-head")],
+        ),
         (145, "Add pagination to the activity summary", 9, [bob], []),
     ]
     prs = [
@@ -40,8 +62,12 @@ async def main():
             user=author,
             assignees=assignees,
             reviews=reviews,
+            head_sha="current-head",
             labels=[],
             draft=False,
+            additions=number * 3,
+            deletions=number // 4,
+            changed_files=number % 5 + 1,
             html_url=f"https://example.com/project/pull/{number}",
             url="https://example.com/api",
         )
