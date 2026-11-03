@@ -769,3 +769,51 @@ need recollecting to supply review and diff details.
 Open PRs created within the inclusive since–now reporting window carry a `NEW`
 badge. Metadata wraps within the list width, and PR bullets stay together when
 continued onto the next slide.
+
+### Review follow-up
+
+Use a `review_followup` section to list non-draft PRs/MRs that need a review
+assignment, followed by outstanding reviews grouped by person. Both assignees and
+requested reviewers count; a PR needs assignment only when both lists are empty by
+default:
+
+```toml
+[repositories.project]
+name = "example/project"
+
+[[sections]]
+type = "review_followup"
+repositories = ["project"]
+assignment_source = "both"
+```
+
+Set `assignment_source = "assignees"`, `"requested_reviewers"`, or `"both"` on the
+section to choose who counts as assigned. The default is `"both"`. A PR needs assignment
+when the selected source contains nobody. A section without an override inherits the
+repository’s `review_assignment_source`.
+
+For legacy `[[repos]]` configurations, set `do_review_followup = true`. Use
+`review_assignment_source` on the repository to choose the source. This works
+independently of `do_open_prs` and `do_reviewers`. Repository or section label filters
+still apply. Native drafts and PRs with the configured WIP label are excluded. Entries
+are sorted by last update, longest inactive first within each group, and show both days
+without updates and PR age. Last update uses the forge’s `updated_at` timestamp; this
+includes metadata changes and is not a precise measure of human interaction or time
+since assignment. A section with nothing outstanding shows an all-clear message.
+
+Each assignee and requested reviewer must submit their own approval, changes request, or
+comment-only review; pending and dismissed reviews do not count. Ordinary conversation
+comments do not count. This checks participation at any point, not whether a review
+happened after assignment or covers the latest commit. People must remain assigned or
+requested for their work to appear in the report. An earlier submitted review counts
+even if a new review was requested later; tracking re-review requests requires
+additional history.
+
+Missing review data appears under **Review status unknown**, not as an overdue review.
+GitLab currently supplies approvals only: an approval clears its author, but other
+assigned/requested reviewers have unknown status because comment-only and changes-request reviews are unavailable. Recollect older saved reports to capture all assignees
+and the required review data.
+
+Generate a fictional example with `uv run python examples/review_followup.py`.
+
+![Review follow-up example](examples/review_followup.png)

@@ -7,6 +7,7 @@ from mtng.progress import progress_items, progress_step
 
 from mtng.forge import Forge
 from mtng.forge.base import FetchRequirements
+from mtng.reviews import review_followup
 from mtng.models import IssueBase
 from mtng.spec import (
     DEFAULT_PR_CATEGORY_COLORS,
@@ -207,16 +208,22 @@ async def collect_repositories(
             # selected release and skip open/stale/recent/discussion lists.
             continue
 
-        if repo.do_open_prs:
+        if repo.do_open_prs or repo.do_review_followup:
             open_prs = await forge.open_prs(
                 repo.name,
                 with_labels=repo.with_labels,
                 without_labels=repo.without_labels,
                 requirements=FetchRequirements(
-                    reviews=repo.do_reviewers and repo.show_review_summary,
+                    reviews=repo.do_review_followup
+                    or (repo.do_reviewers and repo.show_review_summary),
                     details=True,
                 ),
             )
+
+            if repo.do_review_followup:
+                data[key]["review_followup"] = review_followup(
+                    open_prs, repo.wip_label, repo.review_assignment_source
+                )
 
             if not repo.show_wip:
                 open_prs = list(
@@ -225,7 +232,8 @@ async def collect_repositories(
                         open_prs,
                     )
                 )
-            data[key]["open_prs"] = open_prs
+            if repo.do_open_prs:
+                data[key]["open_prs"] = open_prs
 
         if repo.do_stale:
             if repo.stale_label is None:

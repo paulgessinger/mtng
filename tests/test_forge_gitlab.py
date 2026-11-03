@@ -319,3 +319,10 @@ async def test_transport_retries_are_bounded(monkeypatch):
     with pytest.raises(GitLabError, match="503"):
         await GitLabForge(session, "gitlab.example", "secret").getitem("/user")
     assert len(session.calls) == 3 and sleep.await_count == 2
+
+
+def test_multiple_assignees_and_partial_review_activity(forge):
+    bob = dict(USER, username="bob")
+    mr = forge.item(payload(assignees=[USER, bob]), REPO, mr=True)
+    assert [u.login for u in mr.assignees] == ["alice", "bob"]
+    assert not mr.review_activity_available

@@ -121,6 +121,13 @@ inputs:
     description: Exclude items carrying any of these labels.
     required: false
     default: ""
+  review_assignment_source:
+    description: "Review assignment source: assignees, requested_reviewers, or both"
+    required: false
+    default: ""
+  do_review_followup:
+    description: "Show non-draft PRs needing assignment and outstanding reviews from assignees or requested reviewers"
+    required: false
   do_open_prs:
     description: Show open PRs.
     required: false
@@ -285,6 +292,8 @@ runs:
         MTNG_INPUT_FILTER_LABELS: ${{ inputs.filter_labels }}
         MTNG_INPUT_INCLUDE_LABELS: ${{ inputs.include_labels }}
         MTNG_INPUT_EXCLUDE_LABELS: ${{ inputs.exclude_labels }}
+        MTNG_INPUT_REVIEW_ASSIGNMENT_SOURCE: ${{ inputs.review_assignment_source }}
+        MTNG_INPUT_DO_REVIEW_FOLLOWUP: ${{ inputs.do_review_followup }}
         MTNG_INPUT_DO_OPEN_PRS: ${{ inputs.do_open_prs }}
         MTNG_INPUT_DO_MERGED_PRS: ${{ inputs.do_merged_prs }}
         MTNG_INPUT_DO_RECENT_ISSUES: ${{ inputs.do_recent_issues }}

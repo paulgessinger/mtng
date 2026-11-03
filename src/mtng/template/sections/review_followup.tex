@@ -1,0 +1,19 @@
+{% if repo["spec"].do_review_followup and repo.get("review_followup") is not none %}
+{% for group in repo["review_followup"] %}
+\begin{frame}[allowframebreaks=0.9,t]{ {{ frame_title("review_followup", repo) }} }
+  \textbf{ {{ group.title|sanitize }} }\hfill {\small {{ group["items"]|length }} {{ "MR" if repo["spec"].forge == "gitlab" else "PR" }}{{ "s" if group["items"]|length != 1 else "" }}}
+  \medskip
+  \begin{itemize}
+  \small
+  {% for pr in group["items"] %}
+    \item \href{ {{- pr.html_url -}} }{\textbf{\#{{ pr.number }}}} {{ pr.title|sanitize }}
+      \\{\footnotesize\textcolor{black!55}{No updates for {{ pr.updated_at|age_days(now) }} day{{ "s" if pr.updated_at|age_days(now) != 1 else "" }}; PR age: {{ pr.created_at|age_days(now) }} day{{ "s" if pr.created_at|age_days(now) != 1 else "" }}}}
+  {% endfor %}
+  \end{itemize}
+\end{frame}
+{% else %}
+\begin{frame}{ {{ frame_title("review_followup", repo) }} }
+All non-draft PRs have a review assignment from the configured source, and everyone listed has submitted a review.
+\end{frame}
+{% endfor %}
+{% endif %}

@@ -35,6 +35,7 @@ class IssueBase(pydantic.BaseModel):
     html_url: str
     number: int
     assignee: User | None = None
+    assignees: list[User] = pydantic.Field(default_factory=list)
 
     body: str | None = None
     url: str
@@ -65,6 +66,7 @@ class Issue(IssueBase):
 
 class PullRequest(IssueBase):
     reviews_available: bool = True
+    review_activity_available: bool = True
     requested_reviewers: list[User] = pydantic.Field(default_factory=list)
     reviews: list[Review] = pydantic.Field(default_factory=list)
 
