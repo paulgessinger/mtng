@@ -82,6 +82,7 @@ DEFAULT_FRAME_TITLES = {
     "breaking_changes": "{repo}: Breaking changes",
     "merged_prs": "{repo}: PRs merged {range} ({category})",
     "release_prs": "{repo}: PRs in release {release} ({category})",
+    "review_followup": "{repo}: Review follow-up",
     "open_prs": "{repo}: Open PRs ({category})",
     "recent_issues": "{repo}: Issues opened since {since}",
     "new_stale": "{repo}: New stale Issues / PRs since {since}",
@@ -147,6 +148,15 @@ class Repository(BaseModel):
     stale_label: str | None = pydantic.Field(
         None,
         description="A label to identify stale PRs/issues. If set, stale PRs and issues will be listed separately and split into newly and other stale items.",
+    )
+
+    review_assignment_source: Literal["assignees", "requested_reviewers", "both"] = (
+        "both"
+    )
+
+    do_review_followup: bool = pydantic.Field(
+        False,
+        description="Show non-draft PRs needing assignment and outstanding reviews from assignees or requested reviewers.",
     )
 
     do_open_prs: bool = pydantic.Field(
@@ -339,6 +349,11 @@ class ChangesSection(RepositorySection):
         return self
 
 
+class ReviewFollowupSection(RepositorySection):
+    type: Literal["review_followup"] = "review_followup"
+    assignment_source: Literal["assignees", "requested_reviewers", "both"] | None = None
+
+
 class StatisticsSection(RepositorySection):
     type: Literal["statistics"] = "statistics"
     release: str | None = None
@@ -374,6 +389,7 @@ class IndicoSection(BaseModel):
 Section = Annotated[
     ChangesSection
     | StatisticsSection
+    | ReviewFollowupSection
     | IssuesSection
     | StaleSection
     | DiscussionSection
