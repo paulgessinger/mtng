@@ -1174,6 +1174,27 @@ def test_pr_title_truncation_is_optional():
 
 
 @pytest.mark.parametrize("truncate", [False, True])
+def test_issue_title_uses_same_truncation_as_pr(truncate):
+    repo = Repository(name="acts-project/acts", truncate_pr_titles=truncate)
+    issue = Issue(
+        title="Long issue title with escaped $ and _ characters",
+        user=User(login="alice", html_url="https://example.com/alice"),
+        labels=[],
+        number=42,
+        html_url="https://example.com/issues/42",
+        url="https://example.com/issues/42",
+        created_at=datetime(2022, 8, 2, tzinfo=tzlocal()),
+        updated_at=datetime(2022, 8, 3, tzinfo=tzlocal()),
+    )
+    output = env.get_template("item.tex").render(
+        item=issue, spec=repo, mode="OPEN", extra=""
+    )
+    assert (r"\mtngprline{" in output) is truncate
+    assert r"\issstr{42}" in output
+    assert r"\iss" in output
+
+
+@pytest.mark.parametrize("truncate", [False, True])
 @pytest.mark.parametrize("additions,deletions", [(1234, 56), (0, 0), (None, None)])
 def test_pr_diff_size(truncate, additions, deletions):
     repo = Repository(name="acts-project/acts", truncate_pr_titles=truncate)
@@ -1286,7 +1307,8 @@ def test_new_pr_badge_uses_inclusive_report_window(day, new):
 
 @pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
 @pytest.mark.asyncio
-async def test_busy_pr_rows_wrap_without_overflow(tmp_path):
+@pytest.mark.parametrize("kind", ["pr", "issue"])
+async def test_busy_item_rows_wrap_without_overflow(tmp_path, kind):
     repo = Repository(
         name="example/project",
         do_merged_prs=False,
@@ -1317,9 +1339,15 @@ async def test_busy_pr_rows_wrap_without_overflow(tmp_path):
         for i in range(16)
     ]
     since = now - timedelta(days=7)
-    data = await collect_repositories([repo], since, now, FakeForge(open_prs=prs))
+    if kind == "issue":
+        repo.do_recent_issues = True
+        issues = [Issue.model_validate(pr.model_dump()) for pr in prs]
+        forge = FakeForge(recent_issues=issues)
+    else:
+        forge = FakeForge(open_prs=prs)
+    data = await collect_repositories([repo], since, now, forge)
     tex = generate_latex(Spec(repos=[repo]), data, since, now, [], True)
-    # Test PR pagination; exclude the independent title-page layout.
+    # Test list pagination; exclude the independent title-page layout.
     tex = tex.replace(r"\frame[plain]{\titlepage}", "")
     source = tmp_path / "overflow.tex"
     source.write_text(tex)

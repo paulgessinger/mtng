@@ -1,6 +1,6 @@
 {% macro show_item(item, spec, mode = none, is_new = false) %}
     \item\begin{minipage}[t]{\linewidth}\raggedright
-    {%- set truncate = item.is_pr and spec.truncate_pr_titles -%}
+    {%- set truncate = spec.truncate_pr_titles -%}
     {%- if truncate -%}\mtngprline{ {% endif %}
     {%- if item.is_pr -%}
       {% if mode == "OPEN" %}{% if item.draft %}\prdraft{% else %}\propen{% endif %}{% elif mode == "MERGED" -%}\prmerged{% endif %}

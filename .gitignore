@@ -6,6 +6,10 @@ vscode
 build
 dist
 
+# Local generated reports
+/report.tex
+/report-data.json
+
 *.fdb_latexmk
 *.fls
 *.pdf

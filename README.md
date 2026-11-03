@@ -4,6 +4,10 @@ LaTeX code that can be compiled into a PDF presentation. The result looks someth
 
 ![Screenshot of the tool's output](screen.png)
 
+Issue and stale-item slides use the same compact layout as PR slides:
+
+![Example stale issues and PRs slide](examples/issues-overview.png)
+
 ## Installation
 
 ```console
@@ -308,7 +312,7 @@ redesign are follow-up work.
   - **`no_assignee_attention`** *(boolean)*: Draw attention to items without an assignee. Default: `True`.
   - **`do_reviewers`** *(boolean)*: Show reviewer information for PRs. Default: `False`.
   - **`show_review_summary`** *(boolean)*: Show review outcome text (for example, `reviewed by`). Default: `True`.
-  - **`truncate_pr_titles`** *(boolean)*: Fit PR titles on one line by replacing the middle with an ellipsis at word boundaries (character fallback for one- or two-word titles), reserving space for status/category badges and the linked PR number. Short titles remain unchanged. Default: `False`.
+  - **`truncate_pr_titles`** *(boolean)*: Fit PR and issue titles on one line by replacing the middle with an ellipsis at word boundaries (character fallback for one- or two-word titles), reserving space for status/category badges and the linked item number. Short titles remain unchanged. Default: `False`.
   - **`show_pr_categories`** *(boolean)*: Parse conventional-commit style prefixes from PR titles and render category pills. Default: `True`.
   - **`group_prs_by_category`** *(boolean)*: Group open and merged PR slides into one section per category. Default: `False`. Section pages are titled with the category alone (`Feature`, `Bugfix`, ...); the `fix` category also carries a 🐛.
   - **`pr_category_labels`** *(object)*: Override display names for category keys used in pills and grouped sections (for example, `feat: Feature`).

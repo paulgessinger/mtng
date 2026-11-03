@@ -2,9 +2,10 @@
 {% set newly_stale = repo["stale"] | selectattr("updated_at", "gt", since) | list %}
 {% if newly_stale | length > 0 %}
 \section{ \reponame{} \\ Stale Issues and {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
-\begin{frame}[allowframebreaks]{ {{- frame_title("new_stale", repo) -}} }
+\begin{frame}[allowframebreaks=0.9,t]{ {{- frame_title("new_stale", repo) -}} }
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
+    {% include "list_style.tex" %}
     {% for item in newly_stale %}
     {%- call show_item(item, repo["spec"], mode="OPEN") -%}
         , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
@@ -18,9 +19,10 @@
 
 {% if repo["stale"]|length > 0 %}
 \section{ \reponame{} \\ All stale Issues and {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
-\begin{frame}[allowframebreaks]{ {{- frame_title("all_stale", repo) -}} }
+\begin{frame}[allowframebreaks=0.9,t]{ {{- frame_title("all_stale", repo) -}} }
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
+    {% include "list_style.tex" %}
     {% for item in repo["stale"]|sort(reverse=True, attribute="updated_at") %}
     {%- call show_item(item, repo["spec"], mode="OPEN") -%}
         , updated on {{ item.updated_at.strftime('%Y-%m-%d') }}
