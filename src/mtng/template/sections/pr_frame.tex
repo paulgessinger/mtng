@@ -4,11 +4,7 @@
 
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
-    \footnotesize
-    \setlength{\itemsep}{0.2em}
-    \setlength{\parsep}{0pt}
-    \setlength{\parskip}{0pt}
-    \setlength{\topsep}{0pt}
+    {% include "list_style.tex" %}
     {% if mode == "OPEN" %}
     {% for wip in ["false", "true"] %}
     {% for pr in prs|selectattr("is_wip", wip)|sort(reverse=True, attribute="updated_at") %}

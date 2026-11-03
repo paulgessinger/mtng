@@ -194,7 +194,7 @@ class Repository(BaseModel):
     )
     truncate_pr_titles: bool = pydantic.Field(
         False,
-        description="Shorten PR titles in the middle to fit one line, preserving badges and the PR number.",
+        description="Shorten PR and issue titles in the middle to fit one line, preserving badges and the item number.",
     )
     group_prs_by_category: bool = pydantic.Field(
         False,
