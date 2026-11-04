@@ -842,18 +842,29 @@ summarization.
 Summaries cover every section by default. Each repository section accepts an
 `llm_summary` flag to narrow this: set `llm_summary = false` to exclude one
 section, or set `llm_summary = true` on any section to switch to opt-in mode,
-where only sections marked `true` are summarized:
+where only sections marked `true` are summarized.
+
+The `review_followup` section additionally accepts strings or lists of strings,
+selecting individual follow-up groups by kind — useful when only some kinds of
+follow-up benefit from summaries:
 
 ```toml
 [[sections]]
 type = "review_followup"
 repositories = ["acts"]
 assignment_source = "both"
-llm_summary = true # only this section gets LLM summaries
+llm_summary = "needs_assignment" # or a list of kinds
 ```
 
+Valid kinds are `needs_assignment`, `awaiting_author`, `awaiting_review`,
+`changes_since_review`, `needs_clarification`, `needs_maintainer_attention` and
+`review_status_unknown`; unknown names are rejected when the configuration is
+loaded. A kind selection also counts as opting the section in.
+
 PRs appearing in several sections are still summarized once, but displayed
-only in the selected sections.
+only in the selected sections. A PR follows its group's selection: kinds with
+per-actor groups (such as `awaiting_review`) can appear in sibling groups of
+a different kind, which then shows the summary there too.
 
 The default instructions request one short plain-text sentence of at most 15
 words. Override them with `llm.instructions`. Summaries appear beneath the PR

@@ -196,22 +196,47 @@ def _items(value):
 def summary_targets(data):
     """Visit PR occurrences in sections that want LLM summaries.
 
-    Each block may carry an ``llm_summary`` flag from its section spec. The
-    rule: if any block opts in with ``true``, only those blocks are
-    summarized; otherwise every block is, except those explicitly set to
-    ``false``. Blocks without a flag (legacy repository collection) follow
-    the default.
+    Each block may carry an ``llm_summary`` flag from its section spec:
+    ``None`` follows the report default, ``True`` selects the whole section,
+    ``False`` excludes it, and a string or list of strings selects only the
+    matching group kinds (review follow-up). Any positive selection anywhere
+    — ``True`` or a kind list — switches the report to opt-in mode where
+    unflagged sections are skipped.
     """
 
-    default = not any(block.get("llm_summary") is True for block in data.values())
+    def positive(value):
+        return value is True or (isinstance(value, (str, list)) and bool(value))
+
+    default = not any(positive(block.get("llm_summary")) for block in data.values())
     for block in data.values():
-        include = block.get("llm_summary")
-        if include is None:
-            include = default
-        if not include:
+        flag = block.get("llm_summary")
+        if flag is True:
+            kinds = None  # whole section
+        elif flag is False:
             continue
-        for item in _items(block):
-            yield block, block["spec"], item
+        elif flag is None:
+            if not default:
+                continue
+            kinds = None  # whole section
+        else:
+            kinds = {flag} if isinstance(flag, str) else set(flag)
+        if kinds is None:
+            for item in _items(block):
+                yield block, block["spec"], item
+            continue
+        for group in _grouped_items(block):
+            if group.get("kind") in kinds:
+                for item in group["items"]:
+                    yield block, block["spec"], item
+
+
+def _grouped_items(block):
+    """Yield group dicts (``kind`` + ``items``) anywhere in a block."""
+
+    for value in block.values():
+        if isinstance(value, list) and value and isinstance(value[0], dict):
+            if all("kind" in group and "items" in group for group in value):
+                yield from value
 
 
 async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:

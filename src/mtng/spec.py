@@ -360,6 +360,30 @@ class ReviewFollowupSection(RepositorySection):
     type: Literal["review_followup"] = "review_followup"
     assignment_source: Literal["assignees", "requested_reviewers", "both"] | None = None
     review_completion: Literal["any", "all"] | None = None
+    llm_summary: bool | str | list[str] | None = pydantic.Field(
+        None,
+        description="Like the base llm_summary flag, but group-aware: strings "
+        "select review-follow-up group kinds instead of the whole section, "
+        "which also counts as opting the section in.",
+    )
+
+    @pydantic.field_validator("llm_summary")
+    @classmethod
+    def check_llm_summary_groups(cls, value):
+        if value is None or isinstance(value, bool):
+            return value
+        kinds = value if isinstance(value, list) else [value]
+        if not kinds or not all(isinstance(k, str) and k for k in kinds):
+            raise ValueError("llm_summary group selection must name group kinds")
+        from mtng.reviews import FOLLOWUP_GROUP_KINDS
+
+        unknown = [k for k in kinds if k not in FOLLOWUP_GROUP_KINDS]
+        if unknown:
+            raise ValueError(
+                f"Unknown llm_summary group kinds: {unknown}; "
+                f"valid kinds are {', '.join(FOLLOWUP_GROUP_KINDS)}"
+            )
+        return value
 
 
 class StatisticsSection(RepositorySection):

@@ -5,6 +5,38 @@ from typing import Literal
 from mtng.models import PullRequest
 from mtng.stats import COUNTED_REVIEW_STATES
 
+# Canonical identifiers for review-follow-up group kinds, stamped onto every
+# group as ``kind``. Section specs select summaries with these names, so this
+# list is configuration API: additions are safe, renames are breaking.
+FOLLOWUP_GROUP_KINDS = (
+    "needs_assignment",
+    "awaiting_author",
+    "awaiting_review",
+    "changes_since_review",
+    "needs_clarification",
+    "needs_maintainer_attention",
+    "review_status_unknown",
+)
+
+
+def _group_kind(title: str) -> str:
+    """Canonical kind for a group title, tolerating actor suffixes and
+    parenthetical details ("Review status unknown: bob", "Needs maintainer
+    attention (approved)")."""
+
+    return _GROUP_KINDS[title.rsplit(":", 1)[0].split(" (", 1)[0].strip()]
+
+
+_GROUP_KINDS = {
+    "Needs assignment": "needs_assignment",
+    "Awaiting author": "awaiting_author",
+    "Awaiting review": "awaiting_review",
+    "Changes since review": "changes_since_review",
+    "Needs clarification": "needs_clarification",
+    "Needs maintainer attention": "needs_maintainer_attention",
+    "Review status unknown": "review_status_unknown",
+}
+
 
 def review_followup(
     prs: list[PullRequest],
@@ -134,6 +166,7 @@ def review_followup(
     return [
         dict(
             title=title,
+            kind=_group_kind(title),
             items=items,
             actor=actors.get(title),
             heading=title.rsplit(":", 1)[0] if title in actors else title,

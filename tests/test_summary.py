@@ -72,6 +72,25 @@ def test_invalid_config(values):
         LLMConfig(**values)
 
 
+def test_review_followup_llm_summary_validation():
+    valid = {"repositories": ["a/b"]}
+    from mtng.spec import ReviewFollowupSection, ChangesSection
+
+    # String and list forms validate against the canonical kinds.
+    section = ReviewFollowupSection(**valid, llm_summary="needs_assignment")
+    assert section.llm_summary == "needs_assignment"
+    assert ReviewFollowupSection(
+        **valid, llm_summary=["needs_assignment", "awaiting_author"]
+    ).llm_summary == ["needs_assignment", "awaiting_author"]
+    with pytest.raises(ValidationError, match="Unknown llm_summary group kinds"):
+        ReviewFollowupSection(**valid, llm_summary="needs_asignment")
+    with pytest.raises(ValidationError, match="group kinds"):
+        ReviewFollowupSection(**valid, llm_summary=[""])
+    # Other section types have no groups to select; strings are rejected there.
+    with pytest.raises(ValidationError):
+        ChangesSection(**valid, llm_summary="needs_assignment")
+
+
 def test_prompt_title_check_protocol():
     item = pr()
     off = build_prompt(item, "diff", LLMConfig(title_check=False))
@@ -552,6 +571,96 @@ def backend_stub():
     backend = AsyncMock()
     backend.pull_diff = AsyncMock(return_value="")
     return backend
+
+
+@pytest.mark.asyncio
+async def test_summary_targets_group_kinds(monkeypatch, tmp_path):
+    """String/list llm_summary values select follow-up groups by kind."""
+
+    monkeypatch.setattr("mtng.summary.appdirs.user_cache_dir", lambda _: str(tmp_path))
+    repo = Repository(name="owner/repo")
+    config = LLMConfig(
+        enabled=True,
+        transport=CommandBackend(
+            command=[sys.executable, "-c", 'print("Group summary.")']
+        ),
+    )
+
+    def followup_block(groups, **extra):
+        return {
+            "spec": repo,
+            "review_followup": [
+                {"title": t, "kind": k, "items": items, "heading": h}
+                for t, k, h, *items in groups
+            ],
+            **extra,
+        }
+
+    needs_assignment = pr()
+    awaiting = pr()
+    awaiting.number = 2
+    block = followup_block(
+        [
+            (
+                "Needs assignment",
+                "needs_assignment",
+                "Needs assignment",
+                needs_assignment,
+            ),
+            ("Awaiting review: bob", "awaiting_review", "Awaiting review", awaiting),
+        ],
+        open_prs=[pr()],  # ungrouped PR must stay out of a kind selection
+    )
+    block["_handles"] = {"assignment": needs_assignment, "awaiting": awaiting}
+    block["llm_summary"] = "needs_assignment"  # kind selection: implies opt-in
+    data = {"0:acts": block}
+    await add_summaries(data, {repo.forge_key: backend_stub()}, config)
+    assert needs_assignment.llm_summary == "Group summary."
+    assert awaiting.llm_summary is None
+
+    # An unflagged sibling section is skipped in opt-in mode.
+    other = followup_block(
+        [("Changes since review", "changes_since_review", "Changes since review", pr())]
+    )
+    other["_handles"] = {"item": other["review_followup"][0]["items"][0]}
+    data = {"0:acts": block, "1:acts": other}
+    await add_summaries(data, {repo.forge_key: backend_stub()}, config)
+    assert other["_handles"]["item"].llm_summary is None
+
+    # List form selects several kinds; other kinds stay off.
+    selected = pr()
+    block = followup_block(
+        [
+            (
+                "Needs assignment",
+                "needs_assignment",
+                "Needs assignment",
+                needs_assignment,
+            ),
+            ("Awaiting author: bob", "awaiting_author", "Awaiting author", awaiting),
+            (
+                "Changes since review",
+                "changes_since_review",
+                "Changes since review",
+                selected,
+            ),
+        ],
+    )
+    block["_handles"] = {"selected": selected}
+    block["llm_summary"] = ["needs_assignment", "changes_since_review"]
+    await add_summaries(
+        {"0:acts": block},
+        {repo.forge_key: backend_stub()},
+        LLMConfig(
+            enabled=True,
+            transport=CommandBackend(
+                command=[sys.executable, "-c", 'print("Group summary.")']
+            ),
+        ),
+    )
+    assert block["_handles"]["selected"].llm_summary == "Group summary."
+    assert needs_assignment.llm_summary == "Group summary."
+    assert awaiting.llm_summary is None
 
 
 @pytest.mark.asyncio
