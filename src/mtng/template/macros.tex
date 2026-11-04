@@ -62,7 +62,7 @@
     \allowbreak\hspace{0.3em}\mbox{\scriptsize\textcolor{black!55}{\ensuremath{\cdot} {{ item.changed_files|human_int }} {{ "file" if item.changed_files == 1 else "files" }}}}
     {%- endif %}
     {%- if item.is_pr and item.llm_summary %}
-    \par\smallskip{\small\textcolor{black!70}{ {{- item.llm_summary|sanitize -}} }\par}
+    \par\smallskip{\small\textcolor{black!70}{\emojispace{robot} {{- item.llm_summary|sanitize -}} }\par}
     {%- endif %}
     \end{minipage}
 {% endmacro %}
