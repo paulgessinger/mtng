@@ -4,6 +4,7 @@ import urllib.parse
 import re
 import hashlib
 
+from gidgethub import BadRequest
 from gidgethub.abc import GitHubAPI
 from mtng.progress import collect_items
 
@@ -81,10 +82,18 @@ class GitHubForge:
         return await self.gh.getitem(url)
 
     async def pull_diff(self, repo_name: str, number: int) -> str:
-        return await self.gh.getitem(
-            f"/repos/{repo_name}/pulls/{number}",
-            accept="application/vnd.github.diff",
-        )
+        try:
+            return await self.gh.getitem(
+                f"/repos/{repo_name}/pulls/{number}",
+                accept="application/vnd.github.diff",
+            )
+        except BadRequest as error:
+            # GitHub refuses to serve diffs for very large PRs (about 20 000
+            # lines); summarize from title and description rather than
+            # aborting the whole run.
+            if error.status_code == 400 and "diff" in str(error).lower():
+                return "[Diff unavailable]"
+            raise
 
     async def get_reviews(self, url: str) -> list[Review]:
         return [Review.model_validate(r) async for r in self.gh.getiter(url)]

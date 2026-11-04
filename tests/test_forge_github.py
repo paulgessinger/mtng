@@ -73,3 +73,28 @@ async def test_pull_diff_requests_diff_media_type():
     gh.getitem.assert_awaited_once_with(
         "/repos/team/project/pulls/42", accept="application/vnd.github.diff"
     )
+
+
+@pytest.mark.asyncio
+async def test_pull_diff_survives_oversized_diff_rejection():
+    """GitHub 400s on huge diffs; summarize from description instead."""
+
+    from gidgethub import BadRequest
+
+    gh = client()
+    gh.getitem = AsyncMock(
+        side_effect=BadRequest(
+            400, "Sorry, the diff exceeded the maximum number of lines (20000)"
+        )
+    )
+    assert await GitHubForge(gh).pull_diff("team/project", 42) == "[Diff unavailable]"
+
+
+@pytest.mark.asyncio
+async def test_pull_diff_reraises_other_bad_requests():
+    from gidgethub import BadRequest
+
+    gh = client()
+    gh.getitem = AsyncMock(side_effect=BadRequest(404, {"message": "Not Found"}))
+    with pytest.raises(BadRequest):
+        await GitHubForge(gh).pull_diff("team/project", 42)
