@@ -33,7 +33,17 @@ from mtng.report_data import RecordingForge, ReportData
 from mtng.forge import GitHubForge
 from mtng.forge.http import CachedGitHubAPI, HttpTransport, RateLimitError
 from mtng.forge.gitlab import GitLabForge, GitLabError
-from mtng.auth import AuthTarget, resolve_token, store_token, validate_token
+from mtng.auth import (
+    AuthTarget,
+    llm_keychain_key,
+    llm_keyring_username,
+    resolve_llm_api_key,
+    resolve_token,
+    store_llm_key,
+    store_token,
+    validate_llm_key,
+    validate_token,
+)
 from mtng.generate import env
 from mtng import __version__
 
@@ -683,6 +693,98 @@ def status(
         print(f"{target.label} token is valid for @{login_name}.")
 
 
+llm_cli = typer.Typer(help="Manage API keys for OpenAI-compatible LLM gateways")
+
+
+def _llm_label(base_url: str, identity: str | None) -> str:
+    label = base_url.rstrip("/")
+    return f"{label} ({identity})" if identity else label
+
+
+@llm_cli.command("login", help="Store an LLM gateway API key in your system keychain")
+def llm_login(
+    base_url: Annotated[
+        str,
+        typer.Argument(
+            help="Gateway base URL, e.g. https://llm-gateway.example.com/v1"
+        ),
+    ],
+    identity: Annotated[
+        str | None,
+        typer.Option(
+            "--identity", "-i", help="Name for this key, e.g. a LiteLLM team."
+        ),
+    ] = None,
+    key: Annotated[
+        str | None,
+        typer.Option(help="API key to store. If omitted, mtng prompts for it."),
+    ] = None,
+    validate: Annotated[
+        bool,
+        typer.Option(
+            "--validate/--no-validate",
+            help="Check the key against the gateway's /models endpoint before storing it.",
+        ),
+    ] = True,
+):
+    if key is None:
+        key = typer.prompt(
+            f"API key for {_llm_label(base_url, identity)}", hide_input=True
+        )
+    key = key.strip()
+    if key == "":
+        raise typer.BadParameter("API key cannot be empty", param_hint="--key")
+    description = asyncio.run(validate_llm_key(key, base_url)) if validate else None
+    username = store_llm_key(key, base_url, identity)
+    if description is None:
+        print(f"Stored key as '{username}' in your system keychain.")
+    else:
+        print(f"Stored key as '{username}'; {description}.")
+
+
+@llm_cli.command("status", help="Show how the key for a gateway is resolved")
+def llm_status(
+    base_url: Annotated[
+        str,
+        typer.Argument(
+            help="Gateway base URL, as configured in llm.transport.base_url"
+        ),
+    ],
+    identity: Annotated[
+        str | None, typer.Option("--identity", "-i", help="Key identity, if used.")
+    ] = None,
+    api_key_env: Annotated[
+        str,
+        typer.Option(help="Environment variable checked before the keychain."),
+    ] = "LITELLM_API_KEY",
+    validate: Annotated[
+        bool,
+        typer.Option(
+            "--validate/--no-validate",
+            help="Also check the key against the gateway's /models endpoint.",
+        ),
+    ] = False,
+):
+    username = llm_keyring_username(base_url, identity)
+    if value := os.environ.get(api_key_env, "").strip():
+        print(f"{username}: set via ${api_key_env}.")
+        token, source = value, f"${api_key_env}"
+    elif (value := llm_keychain_key(base_url, identity)) is not None:
+        print(f"{username}: stored in your system keychain.")
+        token, source = value, "keychain"
+    else:
+        print(f"{username}: not configured.")
+        print(
+            f"Run 'mtng auth llm login {base_url.rstrip('/')}'"
+            + (f" --identity {identity}" if identity else "")
+            + " or set the environment variable."
+        )
+        raise typer.Exit(1)
+    if validate:
+        description = asyncio.run(validate_llm_key(token, base_url))
+        print(f"Key is valid: {description}.")
+
+
 @cli.command(help="Print a preamble suitable to render fancy output")
 def preamble():
     out = env.loader.get_source(env, "preamble.tex")[0]
@@ -698,6 +800,7 @@ def schema():
 
 
 cli.add_typer(auth_cli, name="auth")
+auth_cli.add_typer(llm_cli, name="llm")
 
 
 @cli.callback()

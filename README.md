@@ -813,7 +813,8 @@ for several teams on one gateway by storing one keychain entry per team and
 naming them with `identity`, which selects `llm:<host>:<identity>:token`:
 
 ```console
-$ python -c "import keyring; keyring.set_password('mtng', 'llm:llm-gateway.example.com:team-b:token', 'sk-...')"
+$ mtng auth llm login https://llm-gateway.example.com/v1 --identity team-b
+$ mtng auth llm status https://llm-gateway.example.com/v1 --identity team-b --validate
 ```
 
 The prompt includes the PR title, description and diff;

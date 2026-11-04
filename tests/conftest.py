@@ -5,9 +5,18 @@ import pytest
 import requests
 
 
+def _is_local(node) -> bool:
+    return any(
+        node.get_closest_marker(name) is not None
+        for name in ("integration", "local_http")
+    )
+
+
 @pytest.fixture(autouse=True)
 def forbid_live_http(request, monkeypatch):
-    if request.node.get_closest_marker("integration"):
+    # "local_http" covers tests that dial a loopback server started by the
+    # test itself; no external service is contacted.
+    if _is_local(request.node):
         return
 
     def blocked(*args, **kwargs):

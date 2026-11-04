@@ -106,6 +106,34 @@ def llm_keyring_username(base_url: str, identity: str | None = None) -> str:
     return ":".join(parts)
 
 
+def store_llm_key(token: str, base_url: str, identity: str | None = None) -> str:
+    """Store a gateway API key in the keychain; returns the entry name."""
+
+    token = token.strip()
+    if not token:
+        raise typer.BadParameter("API key cannot be empty")
+    username = llm_keyring_username(base_url, identity)
+    try:
+        keyring.set_password(KEYRING_SERVICE, username, token)
+    except KeyringError as error:
+        raise typer.BadParameter(
+            f"Unable to store key in the system keychain: {error}"
+        ) from error
+    return username
+
+
+def llm_keychain_key(base_url: str, identity: str | None = None) -> str | None:
+    """Return the keychain key for a gateway, or None if absent/unreadable."""
+
+    try:
+        value = keyring.get_password(
+            KEYRING_SERVICE, llm_keyring_username(base_url, identity)
+        )
+    except KeyringError:
+        return None
+    return value.strip() if value and value.strip() else None
+
+
 def resolve_llm_api_key(
     api_key_env: str, base_url: str, identity: str | None = None
 ) -> str | None:
@@ -121,13 +149,42 @@ def resolve_llm_api_key(
 
     if value := os.environ.get(api_key_env, "").strip():
         return value
+    return llm_keychain_key(base_url, identity)
+
+
+async def validate_llm_key(token: str | None, base_url: str) -> str:
+    """Check a gateway key against its /models endpoint; returns a description."""
+
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
     try:
-        value = keyring.get_password(
-            KEYRING_SERVICE, llm_keyring_username(base_url, identity)
-        )
-    except KeyringError:
-        return None
-    return value.strip() if value and value.strip() else None
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{base_url.rstrip('/')}/models",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=15),
+            ) as response:
+                if response.status != 200:
+                    hint = (
+                        "the gateway rejected the key"
+                        if response.status in (401, 403)
+                        else "unexpected gateway response"
+                    )
+                    raise typer.BadParameter(
+                        f"Key validation failed: {response.status} ({hint})"
+                    )
+                body = await response.json(content_type=None)
+                models = body.get("data") if isinstance(body, dict) else None
+                if isinstance(models, list) and models:
+                    names = ", ".join(
+                        str(m.get("id", "?")) for m in models[:3] if isinstance(m, dict)
+                    )
+                    more = f" (+{len(models) - 3} more)" if len(models) > 3 else ""
+                    return f"{len(models)} models available ({names}{more})"
+                return "gateway reachable, no models listed"
+    except (aiohttp.ClientError, TimeoutError, ValueError) as error:
+        raise typer.BadParameter(
+            f"Could not reach the gateway: {format_request_error(error)}"
+        ) from error
 
 
 def format_request_error(error: Exception) -> str:

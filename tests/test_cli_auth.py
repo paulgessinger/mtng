@@ -1,3 +1,8 @@
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import threading
+from unittest.mock import AsyncMock, Mock
+
 from unittest.mock import AsyncMock, Mock
 
 import aiohttp
@@ -250,3 +255,128 @@ def test_llm_api_key_broken_keychain_is_optional(monkeypatch):
         auth.keyring, "get_password", Mock(side_effect=KeyringError("locked"))
     )
     assert resolve_llm_api_key("LITELLM_API_KEY", "https://gw.example.com/v1") is None
+
+
+class _ModelsHandler(BaseHTTPRequestHandler):
+    """Fake OpenAI-compatible /models endpoint for CLI validation tests."""
+
+    def do_GET(self):  # noqa: N802 (http.server API)
+        length = int(self.headers.get("Content-Length") or 0)
+        if length:
+            self.rfile.read(length)
+        with open("/tmp/llm_models_seen.txt", "w") as seen:
+            json.dump(
+                {
+                    "path": self.path,
+                    "auth": self.headers.get("Authorization"),
+                },
+                seen,
+            )
+        if self.headers.get("Authorization") != "Bearer good-key":
+            self.send_response(401)
+        else:
+            self.send_response(200)
+        body = json.dumps(
+            {"data": [{"id": "m1"}, {"id": "m2"}, {"id": "m3"}, {"id": "m4"}]}
+        ).encode()
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args):
+        pass
+
+
+@pytest.fixture()
+def models_server():
+    """A local OpenAI-compatible /models endpoint (loopback only)."""
+
+    server = HTTPServer(("127.0.0.1", 0), _ModelsHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    yield f"http://127.0.0.1:{server.server_port}/v1"
+    server.shutdown()
+
+
+@pytest.mark.local_http
+def test_llm_validate_and_login(monkeypatch, models_server):
+    monkeypatch.setattr(auth.keyring, "set_password", Mock())
+    monkeypatch.setattr(auth.keyring, "get_password", Mock(return_value=None))
+    # --no-validate: stored without contacting the gateway.
+    result = CliRunner().invoke(
+        mtng.cli.cli,
+        [
+            "auth",
+            "llm",
+            "login",
+            models_server,
+            "--identity",
+            "team-b",
+            "--key",
+            "key",
+            "--no-validate",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    expected_entry = llm_keyring_username(models_server, "team-b")
+    auth.keyring.set_password.assert_called_once_with("mtng", expected_entry, "key")
+    # Validation rejects a wrong key and stores nothing.
+    result = CliRunner().invoke(
+        mtng.cli.cli,
+        ["auth", "llm", "login", models_server, "--key", "bad", "--identity", "t"],
+    )
+    assert result.exit_code != 0
+    assert "rejected" in result.output
+    # A correct key validates, reports the models, and stores the key.
+    result = CliRunner().invoke(
+        mtng.cli.cli,
+        ["auth", "llm", "login", models_server, "--key", "good-key", "-i", "t"],
+    )
+    assert result.exit_code == 0, result.output
+    assert "4 models available" in result.output
+    auth.keyring.set_password.assert_called_with(
+        "mtng", llm_keyring_username(models_server, "t"), "good-key"
+    )
+
+
+@pytest.mark.local_http
+def test_llm_status(monkeypatch, models_server):
+    runner = CliRunner()
+    # Nothing configured: exit code 1 with guidance.
+    monkeypatch.setattr(auth.keyring, "get_password", Mock(return_value=None))
+    monkeypatch.delenv("LITELLM_API_KEY", raising=False)
+    result = runner.invoke(
+        mtng.cli.cli, ["auth", "llm", "status", models_server, "-i", "team-b"]
+    )
+    assert result.exit_code == 1
+    assert "not configured" in result.output
+    assert "auth llm login" in result.output
+    # Keychain entry is found and reported, and --validate hits the gateway.
+    monkeypatch.setattr(auth.keyring, "get_password", Mock(return_value="good-key"))
+    result = runner.invoke(
+        mtng.cli.cli,
+        ["auth", "llm", "status", models_server, "-i", "team-b", "--validate"],
+    )
+    assert result.exit_code == 0, result.output
+    assert "stored in your system keychain" in result.output
+    assert "4 models available" in result.output
+    # An environment variable outranks the keychain in status too.
+    monkeypatch.setenv("LITELLM_API_KEY", "env-key")
+    result = runner.invoke(
+        mtng.cli.cli,
+        ["auth", "llm", "status", models_server, "-i", "team-b", "--validate"],
+    )
+    assert result.exit_code != 0  # env key is not the valid one
+    assert "$LITELLM_API_KEY" in result.output
+
+
+@pytest.mark.local_http
+def test_llm_validate_rejects_unreachable_gateway(monkeypatch):
+    import pytest
+
+    monkeypatch.setattr(auth.keyring, "get_password", Mock(return_value=None))
+    import asyncio as _asyncio
+
+    with pytest.raises(typer.BadParameter, match="Could not reach the gateway"):
+        _asyncio.run(auth.validate_llm_key("k", "http://127.0.0.1:1/v1"))
