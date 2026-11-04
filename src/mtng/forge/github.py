@@ -95,7 +95,12 @@ class GitHubForge:
         prs = await bounded_gather(
             urls, self.getitem, description="Fetching PR details"
         )
-        return [PullRequest.model_validate(pr) for pr in prs]
+        return [
+            PullRequest.model_validate(
+                pr | {"head_sha": (pr.get("head") or {}).get("sha")}
+            )
+            for pr in prs
+        ]
 
     async def add_reviews(self, prs: list[PullRequest]) -> list[PullRequest]:
         async def enrich_reviews(pr: PullRequest) -> PullRequest:

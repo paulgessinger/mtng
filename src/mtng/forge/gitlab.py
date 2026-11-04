@@ -130,6 +130,7 @@ class GitLabForge:
             html_url=data["web_url"],
             number=data["iid"],
             assignee=self.user(assignee) if assignee else None,
+            assignees=[self.user(u) for u in data.get("assignees") or []],
             body=data.get("description"),
             url=f"{self.base_url}{self.project_path(repo)}/{kind}/{data['iid']}",
             updated_at=data["updated_at"],
@@ -143,6 +144,7 @@ class GitLabForge:
             **common,
             merged_at=data.get("merged_at"),
             reviews_available=False,
+            review_activity_available=False,
             requested_reviewers=[self.user(u) for u in data.get("reviewers") or []],
         )
 

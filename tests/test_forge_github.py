@@ -38,6 +38,12 @@ async def test_open_pr_collection_uses_fixture_payloads():
     from pathlib import Path
 
     raw = json.loads((Path(__file__).parent / "ref" / "merged_prs.json").read_text())[0]
+    raw["assignees"] = [
+        {"login": login, "html_url": f"https://github.com/{login}"}
+        for login in ["alice", "bob"]
+    ]
+    raw["head"] = {"sha": "current-head"}
+    raw["reviews"][0]["commit_id"] = "reviewed-head"
     search_item = dict(raw, pull_request={"url": raw["url"]})
     gh = client()
     gh._make_request = AsyncMock(
@@ -50,6 +56,9 @@ async def test_open_pr_collection_uses_fixture_payloads():
     prs = await GitHubForge(gh).open_prs("acts-project/acts")
     assert len(prs) == 1 and prs[0].number == raw["number"]
     assert prs[0].reviews[0].user.login == raw["reviews"][0]["user"]["login"]
+    assert [u.login for u in prs[0].assignees] == ["alice", "bob"]
+    assert prs[0].head_sha == "current-head"
+    assert prs[0].reviews[0].commit_id == "reviewed-head"
     assert gh._make_request.await_count == 3
 
 

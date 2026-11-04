@@ -332,3 +332,10 @@ async def test_pull_diff_includes_paths_and_unavailable_files(forge):
     result = await forge.pull_diff(REPO, 42)
     assert "--- a/before.py\n+++ b/after.py\n+code" in result
     assert "+++ b/large\n[Diff unavailable]" in result
+
+
+def test_multiple_assignees_and_partial_review_activity(forge):
+    bob = dict(USER, username="bob")
+    mr = forge.item(payload(assignees=[USER, bob]), REPO, mr=True)
+    assert [u.login for u in mr.assignees] == ["alice", "bob"]
+    assert not mr.review_activity_available

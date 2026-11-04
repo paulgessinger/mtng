@@ -19,6 +19,7 @@ from dateutil.tz import tzlocal
 import mtng.collect
 from mtng.generate import (
     build_placeholders,
+    title_units,
     env,
     expand_placeholders,
     generate_latex,
@@ -649,7 +650,7 @@ def test_breaking_changes_section():
     assert "\\section{ \\protect\\cusemoji{warning}{} Breaking changes}" in output
     assert "{\\reponame{}: Breaking changes}" in output
     # Repeated by default, so the breaking PR is on its category slide as well.
-    assert output.count("break the API") == 2
+    assert output.count(str(title_units("break the API"))) == 2
 
 
 def test_breaking_changes_not_repeated():
@@ -666,8 +667,8 @@ def test_breaking_changes_not_repeated():
 
     output = _render(repo_spec, data)
 
-    assert output.count("break the API") == 1
-    assert "add a thing" in output
+    assert output.count(str(title_units("break the API"))) == 1
+    assert str(title_units("add a thing")) in output
 
 
 def test_breaking_changes_can_be_disabled():
@@ -681,7 +682,7 @@ def test_breaking_changes_can_be_disabled():
     output = _render(repo_spec, _repo_data(repo_spec, prs))
 
     assert "Breaking changes" not in output
-    assert output.count("break the API") == 1
+    assert output.count(str(title_units("break the API"))) == 1
 
 
 def test_breaking_changes_section_skipped_when_empty():
@@ -875,8 +876,8 @@ def test_item_render_uses_stripped_title_when_present():
         pull_request=[],
     )
     output = tpl.render(item=item, spec=repo, mode="MERGED", extra="")
-    assert "Keep original in data" in output
-    assert "feat: Keep original in data" not in output
+    assert str(title_units("Keep original in data")) in output
+    assert str(title_units("feat: Keep original in data")) not in output
 
 
 def test_parse_release_tag():
@@ -1164,13 +1165,35 @@ def test_title_characters_preserves_escape_units():
 
 
 def test_pr_title_truncation_is_optional():
-    repo = Repository(name="acts-project/acts", truncate_pr_titles=True)
+    repo = Repository(name="acts-project/acts")
+    assert repo.truncate_pr_titles
     output = _render(repo, _repo_data(repo, [_merged_pr("feat: Short title", repo)]))
     assert "\\mtngprline{" in output
     assert "{S}{h}{o}{r}{t}{ }{t}{i}{t}{l}{e}" in output
     repo.truncate_pr_titles = False
     output = _render(repo, _repo_data(repo, [_merged_pr("feat: Short title", repo)]))
     assert "\\mtngprline{" not in output
+
+
+@pytest.mark.parametrize("truncate", [False, True])
+def test_issue_title_uses_same_truncation_as_pr(truncate):
+    repo = Repository(name="acts-project/acts", truncate_pr_titles=truncate)
+    issue = Issue(
+        title="Long issue title with escaped $ and _ characters",
+        user=User(login="alice", html_url="https://example.com/alice"),
+        labels=[],
+        number=42,
+        html_url="https://example.com/issues/42",
+        url="https://example.com/issues/42",
+        created_at=datetime(2022, 8, 2, tzinfo=tzlocal()),
+        updated_at=datetime(2022, 8, 3, tzinfo=tzlocal()),
+    )
+    output = env.get_template("item.tex").render(
+        item=issue, spec=repo, mode="OPEN", extra=""
+    )
+    assert (r"\mtngprline{" in output) is truncate
+    assert r"\issstr{42}" in output
+    assert r"\iss" in output
 
 
 @pytest.mark.parametrize("truncate", [False, True])
@@ -1274,19 +1297,22 @@ def test_draft_icon_and_file_count():
 @pytest.mark.parametrize(
     "day,new", [(0, False), (1, True), (5, True), (11, True), (12, False)]
 )
-def test_new_pr_badge_uses_inclusive_report_window(day, new):
+@pytest.mark.parametrize("section", ["open_prs", "merged_prs"])
+def test_new_pr_badge_uses_inclusive_report_window(day, new, section):
     repo = Repository(name="acts-project/acts")
     pr = _merged_pr("feat: new PR", repo)
     pr.created_at = datetime(2022, 8, 1, tzinfo=tzlocal()) + timedelta(days=day - 1)
-    data = _repo_data(repo, [])
-    data[repo.name]["open_prs"] = [pr]
+    data = _repo_data(repo, [pr] if section == "merged_prs" else [])
+    data[repo.name][section] = [pr]
     output = _render(repo, data)
     assert (r"\prnew\prcategory" in output) is new
 
 
 @pytest.mark.skipif(not have_latexmk, reason="latexmk not found")
 @pytest.mark.asyncio
-async def test_busy_pr_rows_wrap_without_overflow(tmp_path):
+@pytest.mark.parametrize("kind", ["pr", "issue"])
+@pytest.mark.parametrize("row_count", [8, 16, 24])
+async def test_busy_item_rows_wrap_without_overflow(tmp_path, kind, row_count):
     repo = Repository(
         name="example/project",
         do_merged_prs=False,
@@ -1314,12 +1340,18 @@ async def test_busy_pr_rows_wrap_without_overflow(tmp_path):
             changed_files=1234,
             reviews=[Review(user=user, state="CHANGES_REQUESTED")],
         )
-        for i in range(16)
+        for i in range(row_count)
     ]
     since = now - timedelta(days=7)
-    data = await collect_repositories([repo], since, now, FakeForge(open_prs=prs))
+    if kind == "issue":
+        repo.do_recent_issues = True
+        issues = [Issue.model_validate(pr.model_dump()) for pr in prs]
+        forge = FakeForge(recent_issues=issues)
+    else:
+        forge = FakeForge(open_prs=prs)
+    data = await collect_repositories([repo], since, now, forge)
     tex = generate_latex(Spec(repos=[repo]), data, since, now, [], True)
-    # Test PR pagination; exclude the independent title-page layout.
+    # Test list pagination; exclude the independent title-page layout.
     tex = tex.replace(r"\frame[plain]{\titlepage}", "")
     source = tmp_path / "overflow.tex"
     source.write_text(tex)
@@ -1336,6 +1368,23 @@ async def test_busy_pr_rows_wrap_without_overflow(tmp_path):
     log = source.with_suffix(".log").read_text()
     assert "Overfull" not in log
     assert source.with_suffix(".pdf").exists()
+    if shutil.which("pdftotext"):
+        text = subprocess.check_output(
+            ["pdftotext", str(source.with_suffix(".pdf")), "-"]
+        ).decode()
+        pages = [
+            page
+            for page in text.split("\f")
+            if (
+                "example/project : Open PRs"
+                if kind == "pr"
+                else "example/project : Issues"
+            )
+            in page
+        ]
+        # A continuation containing only the frame title/footer is a regression.
+        assert pages and all("long title" in page for page in pages)
+        assert text.count("long title") == row_count
 
 
 @pytest.mark.parametrize(
@@ -1413,3 +1462,21 @@ def test_breaking_marker_keeps_category_color(kind, color):
     assert r"\prnew\prbreaking{alertred}\prcategory{" in rendered
     assert f"}}{{{color}}}" in rendered
     assert r"\prcategory{\cusemoji" not in rendered
+
+
+@pytest.mark.parametrize("truncate", [True, False])
+def test_issue_title_truncation(truncate):
+    repo = Repository(name="example/project", truncate_pr_titles=truncate)
+    issue = Issue(
+        title="A long issue title with $ and _ characters",
+        user=User(login="alice", html_url="https://example.com/alice"),
+        labels=[],
+        number=42,
+        html_url="https://example.com/issues/42",
+        url="https://example.com/issues/42",
+        created_at=datetime.now(),
+        updated_at=datetime.now(),
+    )
+    output = env.get_template("item.tex").render(item=issue, spec=repo, extra="")
+    assert (r"\mtngprline{" in output) is truncate
+    assert r"\issstr{42}" in output
