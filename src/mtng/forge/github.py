@@ -4,6 +4,7 @@ import urllib.parse
 import re
 import hashlib
 
+from gidgethub import BadRequest
 from gidgethub.abc import GitHubAPI
 from mtng.progress import collect_items
 
@@ -80,18 +81,90 @@ class GitHubForge:
     async def getitem(self, url: str) -> Any:
         return await self.gh.getitem(url)
 
+    async def pull_diff(self, repo_name: str, number: int) -> str:
+        try:
+            return await self.gh.getitem(
+                f"/repos/{repo_name}/pulls/{number}",
+                accept="application/vnd.github.diff",
+            )
+        except BadRequest as error:
+            # GitHub refuses to serve diffs for very large PRs (about 20 000
+            # lines) with "Sorry, the diff exceeded the maximum number of
+            # lines" — observed as 406 Not Acceptable, historically also
+            # 400. Fall back to the per-file endpoint, which reports every
+            # changed file with size metadata and per-file patch excerpts,
+            # rather than aborting the whole run.
+            if error.status_code in (400, 406) and "diff" in str(error).lower():
+                return await self._diff_from_files(repo_name, number)
+            raise
+
+    async def _diff_from_files(self, repo_name: str, number: int) -> str:
+        files = [
+            item
+            async for item in self.gh.getiter(
+                f"/repos/{repo_name}/pulls/{number}/files?per_page=100"
+            )
+        ]
+        headers = []
+        for item in files:
+            line = (
+                f"{item['filename']}"
+                f" (+{item.get('additions', 0)} -{item.get('deletions', 0)})"
+            )
+            if previous := item.get("previous_filename"):
+                line += f" (renamed from {previous})"
+            headers.append(line)
+        lines = [
+            f"[Diff too large to fetch; {len(files)} changed files:]",
+            *headers,
+            "",
+            "[Patch excerpts where available:]",
+        ]
+        # Patch bodies first; the prompt builder applies its own character
+        # limit, but avoid assembling megabytes only to truncate them.
+        budget = 60000
+        for item in files:
+            if budget <= 0:
+                lines.append("[Truncated]")
+                break
+            patch = item.get("patch")
+            if not patch:
+                continue
+            text = patch
+            if len(text) > budget:
+                text = text[:budget] + "\n[Truncated]"
+            budget -= len(text)
+            lines.append(text)
+        return "\n".join(lines)
+
     async def get_reviews(self, url: str) -> list[Review]:
         return [Review.model_validate(r) async for r in self.gh.getiter(url)]
 
-    async def pull_details(self, urls: list[str]) -> list[PullRequest]:
+    async def pull_details(
+        self, urls: list[str], *, closed_at: dict[str, datetime] | None = None
+    ) -> list[PullRequest]:
         """Fetch full PR payloads. Search results lack the line and commit
-        counts, and the reviews are a separate request on top."""
+        counts, and the reviews are a separate request on top.
+
+        ``closed_at`` overlays authoritative close timestamps taken from the
+        search response onto detail payloads, which a locally cached copy may
+        have captured before the state change."""
+
         prs = await bounded_gather(
             urls, self.getitem, description="Fetching PR details"
         )
         return [
             PullRequest.model_validate(
-                pr | {"head_sha": (pr.get("head") or {}).get("sha")}
+                pr
+                | {
+                    "head_sha": (pr.get("head") or {}).get("sha"),
+                    # A merged PR always has closed_at set, but a payload
+                    # fetched around merge time can trail the state change;
+                    # prefer the search timestamp, then merged_at.
+                    "closed_at": (closed_at or {}).get(pr["url"])
+                    or pr.get("closed_at")
+                    or pr.get("merged_at"),
+                }
             )
             for pr in prs
         ]
@@ -120,7 +193,14 @@ class GitHubForge:
             self.gh.getiter(url), Issue.model_validate, "Finding merged PRs"
         )
 
-        prs = await self.pull_details([item.pull_request["url"] for item in items])
+        prs = await self.pull_details(
+            [item.pull_request["url"] for item in items],
+            closed_at={
+                item.pull_request["url"]: item.closed_at
+                for item in items
+                if item.closed_at is not None
+            },
+        )
         return await self.add_reviews(prs)
 
     async def release_prs(

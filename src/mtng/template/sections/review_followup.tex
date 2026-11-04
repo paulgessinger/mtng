@@ -1,21 +1,34 @@
 {% if repo["spec"].do_review_followup and repo.get("review_followup") is not none %}
 \section{ {{ frame_title("review_followup", repo) }} }
 {% from "macros.tex" import user, show_open_item %}
-{% for group in repo["review_followup"] %}
-\begin{frame}[allowframebreaks=0.9,t]{ {{ frame_title("review_followup", repo) }} }
-  \textbf{ {{ group.heading|sanitize }}{% if group.actor %}: {{ user(group.actor) }}{% endif %} }\hfill {\small {{ group["items"]|length }} {{ "MR" if repo["spec"].forge == "gitlab" else "PR" }}{{ "s" if group["items"]|length != 1 else "" }}}
-  \medskip
-  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+{% macro item_list(items, spec, since, now) %}
   \begin{itemize}
     \footnotesize
     \setlength{\itemsep}{0.2em}
     \setlength{\parsep}{0pt}
     \setlength{\parskip}{0pt}
     \setlength{\topsep}{0pt}
-  {% for pr in group["items"] %}
-    {{- show_open_item(pr, repo["spec"], since, now) }}
+  {% for pr in items %}
+    {{- show_open_item(pr, spec, since, now) }}
   {% endfor %}
   {# Remove trailing list glue/penalty so it cannot create an empty continuation. #}\end{itemize}\par\unskip\unpenalty
+{% endmacro %}
+{% for group in repo["review_followup"] %}
+{% set rereview = group.get("rereview") %}
+{% set count = group["items"]|length + (rereview["items"]|length if rereview else 0) %}
+\begin{frame}[allowframebreaks=0.85,t]{ {{ frame_title("review_followup", repo) }} }
+  \textbf{ {{ group.heading|sanitize }}{% if group.actor %}: {{ user(group.actor) }}{% endif %} }\hfill {\small {{ count }} {{ "MR" if repo["spec"].forge == "gitlab" else "PR" }}{{ "s" if count != 1 else "" }}}
+  \medskip
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+{% if group["items"] %}
+{{ item_list(group["items"], repo["spec"], since, now) }}
+{% endif %}
+{% if rereview %}
+{% if group["items"] %}  \medskip{% endif %}
+  {\small\textit{Re-review: new commits since last review} }
+  \smallskip
+{{ item_list(rereview["items"], repo["spec"], since, now) }}
+{% endif %}
 \end{frame}
 {% else %}
 \begin{frame}{ {{ frame_title("review_followup", repo) }} }

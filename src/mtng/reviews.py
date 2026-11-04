@@ -5,6 +5,37 @@ from typing import Literal
 from mtng.models import PullRequest
 from mtng.stats import COUNTED_REVIEW_STATES
 
+# Canonical identifiers for review-follow-up group kinds, stamped onto every
+# group as ``kind``. Section specs select summaries with these names, so this
+# list is configuration API: additions are safe, renames are breaking.
+FOLLOWUP_GROUP_KINDS = (
+    "needs_assignment",
+    "awaiting_author",
+    "awaiting_review",
+    "changes_since_review",
+    "needs_clarification",
+    "needs_maintainer_attention",
+    "review_status_unknown",
+)
+
+
+def _group_kind(title: str) -> str:
+    """Canonical kind for a group title, tolerating actor suffixes and
+    parenthetical details ("Review status unknown: bob", "Needs maintainer
+    attention (approved)")."""
+
+    return _GROUP_KINDS[title.rsplit(":", 1)[0].split(" (", 1)[0].strip()]
+
+
+_GROUP_KINDS = {
+    "Needs assignment": "needs_assignment",
+    "Awaiting author": "awaiting_author",
+    "Awaiting review": "awaiting_review",
+    "Review comments, no decision": "needs_clarification",
+    "Needs maintainer attention": "needs_maintainer_attention",
+    "Review status unknown": "review_status_unknown",
+}
+
 
 def review_followup(
     prs: list[PullRequest],
@@ -13,6 +44,8 @@ def review_followup(
     review_completion: Literal["any", "all"] = "all",
 ) -> list[dict]:
     groups: dict[str, list[PullRequest]] = {}
+    # Re-reviews render at the end of the reviewer's "Awaiting review" group.
+    rereviews: dict[str, list[PullRequest]] = {}
 
     actors = {}
 
@@ -52,6 +85,8 @@ def review_followup(
                     continue
                 if review.state in COUNTED_REVIEW_STATES:
                     reviewed.add(login)
+                    # Re-insert so iteration order is by latest review.
+                    latest_reviews.pop(login, None)
                     latest_reviews[login] = review
                 # A later comment or pending review doesn't revoke a decision.
                 # A dismissal does; don't resurrect an earlier approval.
@@ -87,7 +122,13 @@ def review_followup(
                 if login in changes_requested
             }
         if outdated and pr.review_activity_available:
-            add("Changes since review", pr)
+            # Whoever reviewed last is most likely to pick it back up.
+            login, review = list(outdated.items())[-1]
+            user = reviewer_users.get(login, review.user)
+            title = f"Awaiting review: {user.login}"
+            groups.setdefault(title, [])
+            rereviews.setdefault(title, []).append(pr)
+            actors.setdefault(title, user)
             if review_completion == "all":
                 for login in sorted(reviewers.keys() - reviewed):
                     add(
@@ -115,7 +156,7 @@ def review_followup(
             if "APPROVED" in decisions.values():
                 add("Needs maintainer attention (approved)", pr)
             else:
-                add("Needs clarification (review comments)", pr)
+                add("Review comments, no decision", pr)
         elif reviewers:
             for login in sorted(reviewers.keys() - reviewed):
                 add(f"Awaiting review: {reviewers[login]}", pr, reviewer_users[login])
@@ -126,17 +167,28 @@ def review_followup(
         "Needs assignment",
         "Awaiting author",
         "Awaiting review",
-        "Changes since review",
-        "Needs clarification",
+        "Review comments, no decision",
         "Needs maintainer attention",
         "Review status unknown",
     ]
     return [
         dict(
             title=title,
+            kind=_group_kind(title),
             items=items,
             actor=actors.get(title),
             heading=title.rsplit(":", 1)[0] if title in actors else title,
+            **(
+                dict(
+                    rereview=dict(
+                        title="Re-review",
+                        kind="changes_since_review",
+                        items=rereviews[title],
+                    )
+                )
+                if title in rereviews
+                else {}
+            ),
         )
         for title, items in sorted(
             groups.items(),

@@ -225,28 +225,28 @@ BoldItalicFont=* Bold Oblique]%
 
 \providecommand{\prdraft}{\propen[black!45]}
 
-\providecommand{\prwip}{
-  \begingroup\footnotesize
-  \tikzsetnextfilename{prwip}
-  \raisebox{-0.3\height}{
-  \begin{tikzpicture}[]
-    \node[prpill,fill=Yellow] (t) {\footnotesize\emojispace{construction}WIP};
-  \end{tikzpicture}
-  \hspace*{0.2em}
-}
-  \endgroup
+\providecommand{\prwip}{%
+  \begingroup\footnotesize%
+  \tikzsetnextfilename{prwip}%
+  \raisebox{-0.3\height}{%
+  \begin{tikzpicture}[]%
+    \node[prpill,fill=Yellow] (t) {\footnotesize\emojispace{construction}WIP};%
+  \end{tikzpicture}%
+  }%
+  \hspace*{0.2em}%
+  \endgroup%
 }
 
-\providecommand{\prstale}{
-  \begingroup\footnotesize
-  \tikzsetnextfilename{prstale}
-  \raisebox{-0.3\height}{
-  \begin{tikzpicture}[]
-    \node[prpill,fill=beige] (t) {\footnotesize{}Stale};
-  \end{tikzpicture}
-  \hspace*{0.2em}
-}
-  \endgroup
+\providecommand{\prstale}{%
+  \begingroup\footnotesize%
+  \tikzsetnextfilename{prstale}%
+  \raisebox{-0.3\height}{%
+  \begin{tikzpicture}[]%
+    \node[prpill,fill=beige] (t) {\footnotesize{}Stale};%
+  \end{tikzpicture}%
+  }%
+  \hspace*{0.2em}%
+  \endgroup%
 }
 
 % Gap between the category pill and the PR title, overridable by the host deck.
@@ -332,23 +332,17 @@ BoldItalicFont=* Bold Oblique]%
   \end{center}%
 }
 
-\providecommand{\iss}{
-  \begingroup
-  % \tikzset{external/export next=false}
-  \tikzsetnextfilename{iss}
-  \footnotesize
-  \hspace*{-0.7em}
-  \raisebox{-0.3\height}{
-  \begin{tikzpicture}[line width=1pt,color=LimeGreen]
-    \begin{scope}[transform canvas={scale=0.85},shift={(0.4em,0.5em)}]
-      \draw[line width=1.0pt] (0,0) circle(0.6em);
-      \fill[] (0,0) circle(0.15em);
-    \end{scope}
-    \coordinate (tl) at (-0.3em,-0.3em);
-    \coordinate (br) at (1.1em,1em);
-    \clip (tl) rectangle (br);
-  \end{tikzpicture}
-  \hspace*{-0.9em}
-}
-  \endgroup
+% Same footprint and trailing gap as the PR status icons.
+\providecommand{\iss}{%
+  \begingroup\footnotesize%
+  \tikzsetnextfilename{iss}%
+  \raisebox{-0.15\height}{%
+  \begin{tikzpicture}[line width=1pt,color=LimeGreen]%
+    \draw (0,0) circle(0.5em);%
+    \fill (0,0) circle(0.13em);%
+  \end{tikzpicture}%
+  }%
+  % The bounding box excludes the stroke, which overhangs by half its width.
+  \hspace*{\dimexpr0.2em+0.5pt\relax}%
+  \endgroup%
 }

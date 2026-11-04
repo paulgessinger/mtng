@@ -321,6 +321,19 @@ async def test_transport_retries_are_bounded(monkeypatch):
     assert len(session.calls) == 3 and sleep.await_count == 2
 
 
+@pytest.mark.asyncio
+async def test_pull_diff_includes_paths_and_unavailable_files(forge):
+    async def diffs(path):
+        assert path == "/projects/group%2Fsub%2Fproject/merge_requests/42/diffs"
+        yield {"old_path": "before.py", "new_path": "after.py", "diff": "+code"}
+        yield {"old_path": "large", "new_path": "large", "too_large": True}
+
+    forge.getiter = diffs
+    result = await forge.pull_diff(REPO, 42)
+    assert "--- a/before.py\n+++ b/after.py\n+code" in result
+    assert "+++ b/large\n[Diff unavailable]" in result
+
+
 def test_multiple_assignees_and_partial_review_activity(forge):
     bob = dict(USER, username="bob")
     mr = forge.item(payload(assignees=[USER, bob]), REPO, mr=True)

@@ -1480,3 +1480,40 @@ def test_issue_title_truncation(truncate):
     output = env.get_template("item.tex").render(item=issue, spec=repo, extra="")
     assert (r"\mtngprline{" in output) is truncate
     assert r"\issstr{42}" in output
+
+
+@pytest.mark.asyncio
+async def test_search_result_prs_omit_review_status():
+    # Stale items come from the issue search and carry no review data, so
+    # there is no status to report rather than an unavailable one.
+    now = datetime(2026, 11, 4)
+    stale_pr = Issue(
+        number=7,
+        title="Stale change",
+        user=User(login="author", html_url="https://example.com/author"),
+        labels=[Label(name="Stale")],
+        url="https://example.com/api/7",
+        html_url="https://example.com/pull/7",
+        created_at=now - timedelta(days=30),
+        updated_at=now - timedelta(days=1),
+        pull_request={"url": "https://example.com/api/pulls/7"},
+    )
+    repo = Repository(
+        name="example/project",
+        stale_label="Stale",
+        do_reviewers=True,
+        do_open_prs=False,
+        do_merged_prs=False,
+        do_recent_issues=False,
+    )
+    data = await collect_repositories(
+        [repo],
+        now - timedelta(days=7),
+        now,
+        FakeForge(labelled={"Stale": [stale_pr]}),
+    )
+    tex = generate_latex(
+        Spec(repos=[repo]), data, now - timedelta(days=7), now, [], False
+    )
+    assert r"\prstr{7}" in tex
+    assert "review unavailable" not in tex

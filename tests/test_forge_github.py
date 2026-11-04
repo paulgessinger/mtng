@@ -60,3 +60,131 @@ async def test_open_pr_collection_uses_fixture_payloads():
     assert prs[0].head_sha == "current-head"
     assert prs[0].reviews[0].commit_id == "reviewed-head"
     assert gh._make_request.await_count == 3
+
+
+@pytest.mark.asyncio
+async def test_pull_diff_requests_diff_media_type():
+    gh = client()
+    gh.getitem = AsyncMock(return_value="diff --git a/file b/file")
+    assert (
+        await GitHubForge(gh).pull_diff("team/project", 42)
+        == "diff --git a/file b/file"
+    )
+    gh.getitem.assert_awaited_once_with(
+        "/repos/team/project/pulls/42", accept="application/vnd.github.diff"
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [400, 406])
+async def test_pull_diff_survives_oversized_diff_rejection(status):
+    """GitHub rejects huge diffs (406 observed, 400 documented); use /files."""
+
+    from gidgethub import BadRequest
+
+    gh = client()
+    gh.getitem = AsyncMock(
+        side_effect=BadRequest(
+            status, "Sorry, the diff exceeded the maximum number of lines (20000)"
+        )
+    )
+
+    async def files(url):
+        assert url == "/repos/team/project/pulls/42/files?per_page=100"
+        yield {
+            "filename": "core/big.py",
+            "additions": 1200,
+            "deletions": 300,
+            "patch": "@@ -1,2 +1,3 @@\n+new",
+        }
+        yield {"filename": "docs/moved.md", "previous_filename": "docs/old.md"}
+        yield {"filename": "data/blob.bin", "additions": 0, "deletions": 0}
+
+    gh.getiter = files
+    diff = await GitHubForge(gh).pull_diff("team/project", 42)
+    assert diff.startswith("[Diff too large to fetch; 3 changed files:]")
+    assert "core/big.py (+1200 -300)" in diff
+    assert "docs/moved.md (+0 -0) (renamed from docs/old.md)" in diff
+    assert "data/blob.bin (+0 -0)" in diff
+    assert "+new" in diff  # patch excerpt included
+
+
+@pytest.mark.asyncio
+async def test_pull_diff_file_fallback_parks_patch_budget():
+    from gidgethub import BadRequest
+
+    gh = client()
+    gh.getitem = AsyncMock(
+        side_effect=BadRequest(
+            406, "Sorry, the diff exceeded the maximum number of lines (20000)"
+        )
+    )
+
+    async def files(url):
+        yield {"filename": "a.py", "patch": "x" * 55000}
+        yield {"filename": "b.py", "patch": "y" * 10000}
+
+    gh.getiter = files
+    diff = await GitHubForge(gh).pull_diff("team/project", 42)
+    # First patch consumes most of the budget; the second is cut to the rest.
+    assert ("x" * 55000) in diff
+    assert ("y" * 5000 + "\n[Truncated]") in diff
+
+
+@pytest.mark.asyncio
+async def test_pull_diff_reraises_other_bad_requests():
+    from gidgethub import BadRequest
+
+    gh = client()
+    gh.getitem = AsyncMock(side_effect=BadRequest(404, {"message": "Not Found"}))
+    with pytest.raises(BadRequest):
+        await GitHubForge(gh).pull_diff("team/project", 42)
+
+
+@pytest.mark.asyncio
+async def test_merged_pr_closed_at_overlay():
+    """The search response knows the close time; a locally cached detail
+    captured before the merge must not produce a null closed_at."""
+
+    from datetime import UTC, datetime, timedelta
+    import json
+    from pathlib import Path
+
+    now = datetime(2026, 11, 4, 16, tzinfo=UTC)
+    since = now - timedelta(days=7)
+
+    raw = json.loads((Path(__file__).parent / "ref" / "merged_prs.json").read_text())[0]
+    raw["head"] = {"sha": "current-head"}
+    raw["reviews"] = []
+    stale = dict(raw, closed_at=None, merged_at=None, state="open")
+    closed = dict(
+        raw,
+        closed_at="2026-11-04T14:59:08+00:00",
+        merged_at=None,
+        state="closed",
+    )
+    search_item = dict(
+        raw, closed_at="2026-11-04T14:59:08+00:00", pull_request={"url": raw["url"]}
+    )
+
+    gh = client()
+    gh._make_request = AsyncMock(
+        side_effect=[
+            ({"items": [search_item]}, None, 200),
+            (stale, None, 200),
+            ([], None, 200),
+        ]
+    )
+    prs = await GitHubForge(gh).merged_prs("team/project", since, now)
+    assert prs[0].closed_at == datetime(2026, 11, 4, 14, 59, 8, tzinfo=UTC)
+
+    # A detail payload that already knows a close time is left alone.
+    gh._make_request = AsyncMock(
+        side_effect=[
+            ({"items": [search_item]}, None, 200),
+            (closed, None, 200),
+            ([], None, 200),
+        ]
+    )
+    prs = await GitHubForge(gh).merged_prs("team/project", since, now)
+    assert prs[0].closed_at == datetime(2026, 11, 4, 14, 59, 8, tzinfo=UTC)

@@ -196,6 +196,16 @@ are collected. Saved report data contains the merged configuration. On `render`,
 the merged config files replace the saved config, just as a single `--config` did;
 the existing restrictions against requesting uncollected data still apply.
 
+Before any of these files are read, `mtng generate` and `mtng render` load a
+per-user configuration file as the lowest layer: `config.toml` inside mtng's
+user configuration directory (`~/Library/Application Support/mtng/config.toml`
+on macOS, `~/.config/mtng/config.toml` on Linux). Machine-level defaults such
+as the LLM gateway transport belong there, keeping meeting specs free of
+host-specific settings; the project config overrides the user layer key by
+key, and an invalid user config is reported like any other config error. The
+GitHub Action ignores this layer — shared runners must not pick up a
+maintainer's personal configuration.
+
 ### Existing configurations
 
 Existing `repos` configurations remain supported without migration, in TOML,
@@ -770,15 +780,136 @@ Open and merged PRs created within the inclusive since–now reporting window ca
 badge. Metadata wraps within the list width, and PR bullets stay together when
 continued onto the next slide.
 
+### Optional LLM summaries
+
+Add this top-level table to your report TOML (or a separate config overlay):
+
+```toml
+[llm]
+enabled = true
+max_diff_chars = 20000
+max_description_chars = 8000
+timeout = 120 # seconds per summary
+max_concurrency = 4 # summaries generated in parallel, bounded by this
+```
+
+Choose one of two transports with `llm.transport`.
+
+**`command`** (the default) runs a local executable per summary, feeding the
+prompt on stdin and reading the summary from stdout:
+
+```toml
+[llm.transport]
+type = "command"
+command = ["claude", "-p", "--output-format", "text"]
+# or, e.g., command = ["llm"]
+```
+
+**`chat-completions`** POSTs to any OpenAI-compatible chat completions endpoint,
+such as a LiteLLM gateway, Ollama, vLLM or OpenRouter:
+
+```toml
+[llm.transport]
+type = "chat-completions"
+model = "anthropic/claude-sonnet-4" # gateway model name
+base_url = "https://llm-gateway.example.com/v1"
+api_key_env = "LITELLM_API_KEY" # name of the environment variable holding the key
+# identity = "team-b" # optional, see below
+# temperature = 0.2
+# max_tokens = 200
+```
+
+The key is resolved like forge tokens: first from the environment variable
+named by `api_key_env`, then from the system keychain (service `mtng`, entry
+`llm:<host>:token`, e.g. `llm:llm-gateway.example.com:token`). If neither is
+present, the request is sent without an `Authorization` header, which suits
+keyless local gateways. LiteLLM virtual keys are scoped to a team; hold keys
+for several teams on one gateway by storing one keychain entry per team and
+naming them with `identity`, which selects `llm:<host>:<identity>:token`:
+
+```console
+$ mtng auth llm login https://llm-gateway.example.com/v1 --identity team-b
+$ mtng auth llm status https://llm-gateway.example.com/v1 --identity team-b --validate
+```
+
+The prompt includes the PR title, description and diff;
+length limits count characters and truncated inputs are marked. Setting
+`max_diff_chars = 0` skips fetching diffs. GitHub PRs and GitLab MRs are supported.
+Distinct PRs are summarized once (even across sections) with at most
+`max_concurrency` requests in flight; set it to 1 for strictly sequential
+summarization.
+
+Summaries cover every section by default. Each repository section accepts an
+`llm_summary` flag to narrow this: set `llm_summary = false` to exclude one
+section, or set `llm_summary = true` on any section to switch to opt-in mode,
+where only sections marked `true` are summarized.
+
+The `review_followup` section additionally accepts strings or lists of strings,
+selecting individual follow-up groups by kind — useful when only some kinds of
+follow-up benefit from summaries:
+
+```toml
+[[sections]]
+type = "review_followup"
+repositories = ["acts"]
+assignment_source = "both"
+llm_summary = "needs_assignment" # or a list of kinds
+```
+
+Valid kinds are `needs_assignment`, `awaiting_author`, `awaiting_review`,
+`changes_since_review`, `needs_clarification`, `needs_maintainer_attention` and
+`review_status_unknown`; unknown names are rejected when the configuration is
+loaded. A kind selection also counts as opting the section in.
+
+The `changes` section accepts `llm_summary = "new"`, restricting summaries to
+items created within the report window — the same items the report marks as
+new. This also counts as opting the section in:
+
+```toml
+[[sections]]
+type = "changes"
+state = "open"
+repositories = ["acts"]
+llm_summary = "new"
+```
+
+PRs appearing in several sections are still summarized once, but displayed
+only in the selected sections. A PR follows its group's selection: kinds with
+per-actor groups (such as `awaiting_review`) can appear in sibling groups of
+a different kind, which then shows the summary there too.
+
+The default instructions request one short plain-text sentence of at most 15
+words. Override them with `llm.instructions`. Summaries appear beneath the PR
+metadata and are escaped for LaTeX. Transport failures, timeouts, HTTP errors and
+empty output stop generation and are not cached; results already returned are
+cached as they arrive, so an aborted run resumes where it stopped.
+
+By default (`title_check = true`) the model also judges whether the title alone
+is sufficiently descriptive: it prefixes its reply with `USEFUL` or `REDUNDANT`,
+and summaries judged redundant with the title are omitted from the slides. Set
+`title_check = false` to keep every summary. Enabling
+this changes every prompt, so existing cached summaries are re-generated once.
+
+Successful results are cached indefinitely by the exact prompt and transport
+configuration, in `llm-v1` inside mtng's user cache directory (normally
+`~/.cache/mtng/llm-v1` on Linux). There is no automatic eviction; remove that
+directory to clear summaries. API cache flags do not clear this separate cache.
+Diffs are fetched again when collecting to detect changes before reusing a
+summary. `--save-data` includes summaries; offline `render` reuses those saved
+summaries without invoking a transport or fetching diffs. Recollect to generate
+summaries with changed LLM settings. Omit `[llm]` or set `enabled = false` to
+leave summaries disabled. In the GitHub Action, supply LLM settings through the
+`config` file; for the `command` transport, install your chosen command on the
+runner, and for `chat-completions`, provide the API key environment variable.
+
 ### Review follow-up
 
 Use a `review_followup` section to group non-draft PRs/MRs by likely next action.
 These are hints from review state, not definitive task assignments:
 
 - **Awaiting author: username**: a reviewer requested changes.
-- **Changes since review**: the PR head differs from a reviewer's latest submitted review commit. PRs appear once in a combined group.
-- **Awaiting review: username**: a selected assignee/requested reviewer has not participated.
-- **Needs clarification (review comments)**: review participation is complete, but only comments are available.
+- **Awaiting review: username**: a selected assignee/requested reviewer has not participated. PRs with new commits since a submitted review are listed at the end of the same frame under **Re-review**, assigned to whichever reviewer with an outdated review reviewed most recently (group kind `changes_since_review`).
+- **Review comments, no decision**: review participation is complete, but only comment reviews exist and nothing was pushed since. The next step may lie with the author or the reviewer (group kind `needs_clarification`).
 - **Needs maintainer attention (approved)**: review participation is complete and an approval exists. Mergeability, CI, and branch requirements are not checked.
 - **Needs assignment**: no selected assignees/requested reviewers and no submitted external review.
 - **Review status unknown**: review data is missing or incomplete.
@@ -789,7 +920,7 @@ a later comment or pending review does not revoke it. Reviews are ordered by sub
 time, falling back to their input order when timestamps are missing. Author reviews
 are ignored. On GitHub, the latest submitted review's `commit_id` is compared with
 `head.sha`, including comment-only reviews and approvals. A changed head routes the
-PR to **Changes since review** rather than author action
+PR to **Re-review** rather than author action
 when their changes request predates that head. A changes request without evidence
 of a changed head still takes priority. This includes rebases and force-pushes; it
 is not proof that the feedback was addressed or that the diff changed semantically.
@@ -844,7 +975,5 @@ and the required review data, including commit IDs for changes-since-review dete
 GitLab currently lacks reviewed-commit IDs, so that detection is unavailable there.
 
 Generate a fictional example with `uv run python examples/review_followup.py`.
-
-![Review follow-up with PR author and size](examples/review-followup.png)
 
 ![Review follow-up example](examples/review_followup.png)

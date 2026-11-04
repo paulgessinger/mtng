@@ -182,8 +182,7 @@ class HttpTransport:
             if raw is not None:
                 try:
                     stored = json.loads(raw)
-                    fresh = self.max_age
-                    if time.time() - stored["stored_at"] < fresh:
+                    if time.time() - stored["stored_at"] < self.max_age:
                         self.stats["hits"] += 1
                         return 200, stored["headers"], stored["body"].encode()
                 except (ValueError, KeyError, TypeError):

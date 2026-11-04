@@ -48,6 +48,7 @@ dev = [
 addopts = "-m 'not integration'"
 markers = [
     "integration: tests that call external services",
+    "local_http: tests that dial a loopback server started by the test",
 ]
 
 [tool.hatch.version]

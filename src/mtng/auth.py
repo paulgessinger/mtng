@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 import os
 from typing import Literal
+from urllib.parse import urlsplit
 
 import aiohttp
 import gidgethub
@@ -83,6 +84,112 @@ def store_token(token: str, target: AuthTarget) -> None:
         raise typer.BadParameter(
             f"Unable to store token in the system keychain: {error}",
             param_hint="--token",
+        ) from error
+
+
+def llm_keyring_username(base_url: str, identity: str | None = None) -> str:
+    """Keychain username for an OpenAI-compatible gateway, keyed per host.
+
+    An optional identity distinguishes several keys for the same gateway,
+    for example one per LiteLLM team.
+    """
+
+    parsed = urlsplit(base_url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        raise ValueError("base_url must be an http(s) URL")
+    port = parsed.port  # Also validates the port range.
+    host = parsed.hostname + (f":{port}" if port and port not in (80, 443) else "")
+    parts = ["llm", host]
+    if identity:
+        parts.append(identity)
+    parts.append("token")
+    return ":".join(parts)
+
+
+def store_llm_key(token: str, base_url: str, identity: str | None = None) -> str:
+    """Store a gateway API key in the keychain; returns the entry name."""
+
+    token = token.strip()
+    if not token:
+        raise typer.BadParameter("API key cannot be empty")
+    username = llm_keyring_username(base_url, identity)
+    try:
+        keyring.set_password(KEYRING_SERVICE, username, token)
+    except KeyringError as error:
+        raise typer.BadParameter(
+            f"Unable to store key in the system keychain: {error}"
+        ) from error
+    return username
+
+
+def llm_keychain_key(base_url: str, identity: str | None = None) -> str | None:
+    """Return the keychain key for a gateway, or None if absent/unreadable."""
+
+    try:
+        value = keyring.get_password(
+            KEYRING_SERVICE, llm_keyring_username(base_url, identity)
+        )
+    except KeyringError:
+        return None
+    return value.strip() if value and value.strip() else None
+
+
+def resolve_llm_api_key(
+    api_key_env: str, base_url: str, identity: str | None = None
+) -> str | None:
+    """Resolve a gateway API key from the environment, then the keychain.
+
+    The environment variable named by ``api_key_env`` wins, matching forge
+    token resolution. Otherwise the keychain entry for the gateway (and
+    optional identity, e.g. a LiteLLM team) is used. A broken keychain is
+    treated like a missing entry so unauthenticated local gateways keep
+    working; requests then fail visibly if the gateway actually requires
+    a key.
+    """
+
+    if value := os.environ.get(api_key_env, "").strip():
+        return value
+    return llm_keychain_key(base_url, identity)
+
+
+async def validate_llm_key(token: str | None, base_url: str) -> str:
+    """Check a gateway key against its /models endpoint; returns a description."""
+
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{base_url.rstrip('/')}/models",
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=15),
+            ) as response:
+                body_text = await response.text()
+                if response.status != 200:
+                    hint = (
+                        "the gateway rejected the key"
+                        if response.status in (401, 403)
+                        else "unexpected gateway response"
+                    )
+                    # Include the gateway's own error message; LiteLLM, for
+                    # example, distinguishes invalid, expired and over-budget
+                    # virtual keys in its response body.
+                    detail = " ".join(body_text.split())[:300]
+                    raise typer.BadParameter(
+                        f"Key validation failed: {response.status} ({hint})"
+                        + (f": {detail}" if detail else "")
+                    )
+                body = await response.json(content_type=None)
+                models = body.get("data") if isinstance(body, dict) else None
+                if isinstance(models, list) and models:
+                    names = ", ".join(
+                        str(m.get("id", "?")) for m in models[:3] if isinstance(m, dict)
+                    )
+                    more = f" (+{len(models) - 3} more)" if len(models) > 3 else ""
+                    return f"{len(models)} models available ({names}{more})"
+                return "gateway reachable, no models listed"
+    except (aiohttp.ClientError, TimeoutError, ValueError) as error:
+        raise typer.BadParameter(
+            f"Could not reach the gateway: {format_request_error(error)}"
         ) from error
 
 

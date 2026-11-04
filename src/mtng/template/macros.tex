@@ -51,7 +51,8 @@
         {%- endif -%}
     {%- endif -%}
     {{- caller() }}
-    {%- if item.is_pr and spec.do_reviewers and spec.show_review_summary %}
+    {#- Search results (stale, needs discussion) carry no review data at all. #}
+    {%- if item.is_pr and item.reviews_available is defined and spec.do_reviewers and spec.show_review_summary %}
     {% set status, color = item|review_status -%}
     \allowbreak\hspace{0.3em}\mbox{\scriptsize\textcolor{black!55}{\ensuremath{\cdot}}\,\textcolor{ {{- color -}} }{ {{- status -}} }}
     {%- endif %}
@@ -60,6 +61,9 @@
     {%- endif %}
     {%- if item.is_pr and item.changed_files is defined and item.changed_files is not none %}
     \allowbreak\hspace{0.3em}\mbox{\scriptsize\textcolor{black!55}{\ensuremath{\cdot} {{ item.changed_files|human_int }} {{ "file" if item.changed_files == 1 else "files" }}}}
+    {%- endif %}
+    {%- if item.is_pr and item.llm_summary %}
+    \par\smallskip{\small\textcolor{black!70}{\emojispace{robot} {{- item.llm_summary|sanitize -}} }\par}
     {%- endif %}
     \end{minipage}
 {% endmacro %}

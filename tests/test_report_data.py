@@ -14,7 +14,7 @@ from mtng.forge.gitlab import GitLabForge
 from mtng.generate import generate_latex
 from mtng.models import PullRequest
 from mtng.report_data import RecordingForge, ReportData
-from mtng.spec import Repository, Spec
+from mtng.spec import LLMConfig, Repository, Spec
 from fake_forge import FakeForge
 from test_forge_github import client
 from test_forge_gitlab import payload
@@ -93,11 +93,24 @@ async def test_gitlab_skips_unneeded_approvals():
     assert forge.request.await_count == 1
 
 
-def test_generate_save_and_render_without_credentials_or_session(monkeypatch, tmp_path):
+@pytest.mark.parametrize("summaries", [False, True])
+def test_generate_save_and_render_without_credentials_or_session(
+    monkeypatch, tmp_path, summaries
+):
+    import subprocess
+
+    monkeypatch.setattr("mtng.summary.appdirs.user_cache_dir", lambda _: str(tmp_path))
+    monkeypatch.setattr(
+        "mtng.summary.subprocess.run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args, 0, stdout="A concise summary."
+        ),
+    )
     config = tmp_path / "config.json"
     config.write_text(
         Spec(
-            repos=[Repository(name="acts-project/acts", show_wip=True)]
+            repos=[Repository(name="acts-project/acts", show_wip=True)],
+            llm=LLMConfig(enabled=summaries, max_diff_chars=0),
         ).model_dump_json()
     )
     snapshot, first, second = [
@@ -137,6 +150,9 @@ def test_generate_save_and_render_without_credentials_or_session(monkeypatch, tm
             "Offline render must not resolve credentials or create a session"
         )
 
+    if summaries:
+        assert "A concise summary." in first.read_text()
+    monkeypatch.setattr("mtng.summary.subprocess.run", fail)
     monkeypatch.setattr(mtng.cli, "resolve_token", fail)
     monkeypatch.setattr(mtng.cli.aiohttp, "ClientSession", fail)
     result = runner.invoke(
