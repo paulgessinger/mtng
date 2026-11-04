@@ -466,6 +466,7 @@ class LLMConfig(BaseModel):
     max_diff_chars: int = pydantic.Field(20000, ge=0)
     max_description_chars: int = pydantic.Field(8000, ge=0)
     timeout: float = pydantic.Field(120, gt=0, allow_inf_nan=False)
+    max_concurrency: int = pydantic.Field(4, ge=1)
     instructions: str = pydantic.Field(
         "Summarize this pull request concisely in one or two short sentences "
         "(at most 50 words). Explain the change and its purpose without repeating "

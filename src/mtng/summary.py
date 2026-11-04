@@ -12,7 +12,7 @@ import requests
 
 from mtng.auth import resolve_llm_api_key
 from mtng.models import IssueBase
-from mtng.progress import progress_items
+from mtng.progress import progress_step
 from mtng.spec import ChatCompletionsBackend, CommandBackend, LLMConfig
 
 
@@ -134,28 +134,69 @@ def report_prs(data):
 
 
 async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
+    """Summarize every distinct PR in the report, in parallel.
+
+    Distinct PRs are summarized once and attached to every occurrence;
+    failures propagate and abort the whole run, leaving the cache free of
+    incomplete results. Concurrency is bounded by ``config.max_concurrency``
+    and covers diff fetching too, since that is also an awaited network call.
+    """
+
     if not config.enabled:
         return {}
-    summaries = {}
+    work = []
+    seen = set()
+    for repo, item in report_prs(data):
+        identity = (repo.forge_key, repo.name, item.number, item.title, item.body)
+        if identity not in seen:
+            seen.add(identity)
+            work.append((repo, item, identity))
+    if not work:
+        return {}
     path = Path(appdirs.user_cache_dir("mtng")) / "llm-v1"
     # No time expiry or size-based eviction: entries remain until manually removed.
     with diskcache.Cache(str(path), eviction_policy="none") as cache:
-        for repo, item in progress_items(
-            list(report_prs(data)), "Summarizing PRs", unit="PRs"
-        ):
+        with progress_step("Summarizing PRs", total=len(work), unit="PRs") as step:
+            semaphore = asyncio.Semaphore(config.max_concurrency)
+            label = asyncio.Event()  # first completion swaps in a PR-specific label
+            described = set()
+            by_identity: dict = {}
+
+            async def summarize_one(entry):
+                repo, item, identity = entry
+                async with semaphore:
+                    backend = forges[repo.forge_key]
+                    diff = (
+                        await backend.pull_diff(repo.name, item.number)
+                        if config.max_diff_chars
+                        else ""
+                    )
+                    prompt = build_prompt(item, diff, config)
+                    summary = await asyncio.to_thread(summarize, prompt, config, cache)
+                by_identity[identity] = summary
+                step.advance()
+                if label.is_set() and (repo.name, item.number) not in described:
+                    step.progress.update(
+                        step.task_id,
+                        description=f"Summarizing PRs: {repo.name}#{item.number}",
+                    )
+                    described.add((repo.name, item.number))
+
+            pending = {
+                asyncio.create_task(summarize_one(entry), name=repr(entry[2]))
+                for entry in work
+            }
+            try:
+                await asyncio.gather(*pending)
+            finally:
+                label.set()
+                for task in pending:
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
+        for repo, item in report_prs(data):
             identity = (repo.forge_key, repo.name, item.number, item.title, item.body)
-            if identity not in summaries:
-                backend = forges[repo.forge_key]
-                diff = (
-                    await backend.pull_diff(repo.name, item.number)
-                    if config.max_diff_chars
-                    else ""
-                )
-                prompt = build_prompt(item, diff, config)
-                summaries[identity] = await asyncio.to_thread(
-                    summarize, prompt, config, cache
-                )
-            item.llm_summary = summaries[identity]
+            item.llm_summary = by_identity[identity]
     return {item.html_url: item.llm_summary for _, item in report_prs(data)}
 
 

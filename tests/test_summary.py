@@ -1,7 +1,10 @@
+import asyncio
 import json
 from pathlib import Path
 import subprocess
 import sys
+import time
+import unittest.mock
 from unittest.mock import AsyncMock, Mock
 
 import diskcache
@@ -56,6 +59,7 @@ def pr():
         {"max_diff_chars": -1},
         {"max_description_chars": -1},
         {"timeout": 0},
+        {"max_concurrency": 0},
     ],
 )
 def test_invalid_config(values):
@@ -329,3 +333,113 @@ async def test_zero_diff_limit_skips_fetch(monkeypatch, tmp_path):
         {"repo": {"spec": repo, "prs": [pr()]}}, {repo.forge_key: backend}, config
     )
     backend.pull_diff.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_summaries_run_with_bounded_concurrency(monkeypatch, tmp_path):
+    """Semaphore bounds in-flight work; failures abort without caching."""
+
+    monkeypatch.setattr("mtng.summary.appdirs.user_cache_dir", lambda _: str(tmp_path))
+    config = LLMConfig(
+        enabled=True,
+        max_concurrency=3,
+        transport=CommandBackend(
+            command=[sys.executable, "-c", 'print("Concise summary.")']
+        ),
+    )
+    repo = Repository(name="owner/repo")
+    items = [pr() for _ in range(7)]
+    for index, item in enumerate(items):
+        item.number = index + 1
+        item.title = f"PR number {index + 1}"  # distinct identities
+    backend = AsyncMock()
+    state = {"in_flight": 0, "peak": 0}
+
+    async def pull_diff(*args):
+        state["in_flight"] += 1
+        state["peak"] = max(state["peak"], state["in_flight"])
+        await asyncio.sleep(0.05)
+        state["in_flight"] -= 1
+        return "+code"
+
+    backend.pull_diff = pull_diff
+    await add_summaries(
+        {"repo": {"spec": repo, "prs": items}}, {repo.forge_key: backend}, config
+    )
+    assert state["peak"] == 3
+    assert all(item.llm_summary == "Concise summary." for item in items)
+
+
+@pytest.mark.asyncio
+async def test_first_failure_aborts_pending_summaries(monkeypatch, tmp_path):
+    """One failing summary cancels the rest and leaves the cache empty."""
+
+    monkeypatch.setattr("mtng.summary.appdirs.user_cache_dir", lambda _: str(tmp_path))
+    config = LLMConfig(
+        enabled=True,
+        max_concurrency=2,
+        transport=CommandBackend(
+            command=[sys.executable, "-c", "import sys; sys.exit(1)"]
+        ),
+    )
+    repo = Repository(name="owner/repo")
+    items = [pr() for _ in range(4)]
+    for index, item in enumerate(items):
+        item.number = index + 1
+        item.title = f"PR number {index + 1}"
+    backend = AsyncMock()
+    started = []
+
+    async def pull_diff(repo_name, number):
+        started.append(number)
+        await asyncio.sleep(0.02)
+        return ""
+
+    backend.pull_diff = pull_diff
+    started.clear()
+    with diskcache.Cache(str(tmp_path / "llm-v1")) as cache:
+        with pytest.raises(ValueError, match="LLM summary command"):
+            with unittest.mock.patch(
+                "mtng.summary.summarize",
+                side_effect=lambda *a, **k: (_ for _ in ()).throw(
+                    ValueError("LLM summary command failed")
+                ),
+            ):
+                await add_summaries(
+                    {"repo": {"spec": repo, "prs": items}},
+                    {repo.forge_key: backend},
+                    config,
+                )
+        assert len(cache) == 0
+    assert len(started) < 4  # pending work was cancelled before starting
+    assert all(item.llm_summary is None for item in items)
+
+
+@pytest.mark.asyncio
+async def test_parallel_summaries_order_independent(monkeypatch, tmp_path):
+    """Results attach to the right PRs regardless of completion order."""
+
+    monkeypatch.setattr("mtng.summary.appdirs.user_cache_dir", lambda _: str(tmp_path))
+    config = LLMConfig(
+        enabled=True,
+        max_concurrency=4,
+        transport=CommandBackend(
+            command=[sys.executable, "-c", 'print("Slow PR summary.")']
+        ),
+    )
+    repo = Repository(name="owner/repo")
+    items = [pr() for _ in range(4)]
+    for index, item in enumerate(items):
+        item.number = index + 1
+        item.title = f"PR number {index + 1}"
+    backend = AsyncMock()
+
+    async def pull_diff(repo_name, number):
+        await asyncio.sleep(0.01 * (4 - number))  # later PRs finish first
+        return ""
+
+    backend.pull_diff = pull_diff
+    await add_summaries(
+        {"repo": {"spec": repo, "prs": items}}, {repo.forge_key: backend}, config
+    )
+    assert all(item.llm_summary == "Slow PR summary." for item in items)

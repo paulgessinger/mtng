@@ -779,7 +779,8 @@ Add this top-level table to your report TOML (or a separate config overlay):
 enabled = true
 max_diff_chars = 20000
 max_description_chars = 8000
-timeout = 120 # seconds per invocation
+timeout = 120 # seconds per summary
+max_concurrency = 4 # summaries generated in parallel, bounded by this
 ```
 
 Choose one of two transports with `llm.transport`.
@@ -824,6 +825,9 @@ $ mtng auth llm status https://llm-gateway.example.com/v1 --identity team-b --va
 The prompt includes the PR title, description and diff;
 length limits count characters and truncated inputs are marked. Setting
 `max_diff_chars = 0` skips fetching diffs. GitHub PRs and GitLab MRs are supported.
+Distinct PRs are summarized once (even across sections) with at most
+`max_concurrency` requests in flight; set it to 1 for strictly sequential
+summarization.
 
 The default instructions request one or two concise plain-text sentences, at most
 50 words. Override them with `llm.instructions`. Summaries appear beneath the PR
