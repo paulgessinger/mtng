@@ -2,7 +2,7 @@
 {% set newly_stale = repo["stale"] | selectattr("updated_at", "gt", since) | list %}
 {% if newly_stale | length > 0 %}
 \section{ \reponame{} \\ Stale Issues and {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
-\begin{frame}[allowframebreaks=0.9,t]{ {{- frame_title("new_stale", repo) -}} }
+\begin{frame}[allowframebreaks=0.85,t]{ {{- frame_title("new_stale", repo) -}} }
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
     {% include "list_style.tex" %}
@@ -19,7 +19,7 @@
 
 {% if repo["stale"]|length > 0 %}
 \section{ \reponame{} \\ All stale Issues and {{ "MRs" if repo["spec"].forge == "gitlab" else "PRs" }}}
-\begin{frame}[allowframebreaks=0.9,t]{ {{- frame_title("all_stale", repo) -}} }
+\begin{frame}[allowframebreaks=0.85,t]{ {{- frame_title("all_stale", repo) -}} }
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
   \begin{itemize}
     {% include "list_style.tex" %}

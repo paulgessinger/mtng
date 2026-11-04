@@ -2,7 +2,7 @@
 \section{ {{ frame_title("review_followup", repo) }} }
 {% from "macros.tex" import user, show_open_item %}
 {% for group in repo["review_followup"] %}
-\begin{frame}[allowframebreaks=0.9,t]{ {{ frame_title("review_followup", repo) }} }
+\begin{frame}[allowframebreaks=0.85,t]{ {{ frame_title("review_followup", repo) }} }
   \textbf{ {{ group.heading|sanitize }}{% if group.actor %}: {{ user(group.actor) }}{% endif %} }\hfill {\small {{ group["items"]|length }} {{ "MR" if repo["spec"].forge == "gitlab" else "PR" }}{{ "s" if group["items"]|length != 1 else "" }}}
   \medskip
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
