@@ -23,6 +23,7 @@ from mtng.summary import (
     restore_summaries,
     split_verdict,
     summarize,
+    summary_targets,
 )
 
 
@@ -503,6 +504,54 @@ async def test_enrichment_deduplicates_sections_and_restores_offline(
     )
     assert r"Fixes 50\% of a\_bug \& more." in rendered
     assert rendered.index("Fixes") > rendered.index("by ")
+
+
+@pytest.mark.asyncio
+async def test_summary_targets_selection(monkeypatch, tmp_path):
+    """llm_summary flags select sections; default stays summarize-everything."""
+
+    monkeypatch.setattr("mtng.summary.appdirs.user_cache_dir", lambda _: str(tmp_path))
+    repo = Repository(name="owner/repo")
+    config = LLMConfig(
+        enabled=True,
+        transport=CommandBackend(
+            command=[sys.executable, "-c", 'print("Section summary.")']
+        ),
+    )
+
+    def block(flag):
+        item = pr()
+        return {
+            "spec": repo,
+            "prs": [item],
+            "llm_summary": flag,
+            "item": item,  # direct handle for assertions
+        }
+
+    # No flags anywhere: every block is summarized (legacy behavior).
+    data = {"a": block(None), "b": block(None)}
+    await add_summaries(data, {repo.forge_key: backend_stub()}, config)
+    assert data["a"]["item"].llm_summary == "Section summary."
+    assert data["b"]["item"].llm_summary == "Section summary."
+
+    # One opt-in: only that block is summarized.
+    data = {"a": block(None), "b": block(True), "c": block(None)}
+    await add_summaries(data, {repo.forge_key: backend_stub()}, config)
+    assert data["a"]["item"].llm_summary is None
+    assert data["b"]["item"].llm_summary == "Section summary."
+    assert data["c"]["item"].llm_summary is None
+
+    # Opt-out only: everyone but the excluded block.
+    data = {"a": block(None), "b": block(False)}
+    await add_summaries(data, {repo.forge_key: backend_stub()}, config)
+    assert data["a"]["item"].llm_summary == "Section summary."
+    assert data["b"]["item"].llm_summary is None
+
+
+def backend_stub():
+    backend = AsyncMock()
+    backend.pull_diff = AsyncMock(return_value="")
+    return backend
 
 
 @pytest.mark.asyncio

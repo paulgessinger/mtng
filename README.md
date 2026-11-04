@@ -196,6 +196,16 @@ are collected. Saved report data contains the merged configuration. On `render`,
 the merged config files replace the saved config, just as a single `--config` did;
 the existing restrictions against requesting uncollected data still apply.
 
+Before any of these files are read, `mtng generate` and `mtng render` load a
+per-user configuration file as the lowest layer: `config.toml` inside mtng's
+user configuration directory (`~/Library/Application Support/mtng/config.toml`
+on macOS, `~/.config/mtng/config.toml` on Linux). Machine-level defaults such
+as the LLM gateway transport belong there, keeping meeting specs free of
+host-specific settings; the project config overrides the user layer key by
+key, and an invalid user config is reported like any other config error. The
+GitHub Action ignores this layer — shared runners must not pick up a
+maintainer's personal configuration.
+
 ### Existing configurations
 
 Existing `repos` configurations remain supported without migration, in TOML,
@@ -828,6 +838,22 @@ length limits count characters and truncated inputs are marked. Setting
 Distinct PRs are summarized once (even across sections) with at most
 `max_concurrency` requests in flight; set it to 1 for strictly sequential
 summarization.
+
+Summaries cover every section by default. Each repository section accepts an
+`llm_summary` flag to narrow this: set `llm_summary = false` to exclude one
+section, or set `llm_summary = true` on any section to switch to opt-in mode,
+where only sections marked `true` are summarized:
+
+```toml
+[[sections]]
+type = "review_followup"
+repositories = ["acts"]
+assignment_source = "both"
+llm_summary = true # only this section gets LLM summaries
+```
+
+PRs appearing in several sections are still summarized once, but displayed
+only in the selected sections.
 
 The default instructions request one short plain-text sentence of at most 15
 words. Override them with `llm.instructions`. Summaries appear beneath the PR

@@ -85,5 +85,6 @@ async def collect_sections(spec, since, now, forges, release=None):
                     ]
                 block["open_prs_by_category"] = group_prs_by_category(block["open_prs"])
             block["section_index"] = index
+            block["llm_summary"] = section.llm_summary
             data[f"{index}:{alias}"] = block
     return data

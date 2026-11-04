@@ -176,20 +176,42 @@ def summarize(prompt: str, config: LLMConfig, cache) -> tuple[bool | None, str]:
 def report_prs(data):
     """Visit every PR occurrence, including category groups and repeated sections."""
 
-    def items(value):
-        if isinstance(value, IssueBase):
-            if value.is_pr:
-                yield value
-        elif isinstance(value, dict):
-            for child in value.values():
-                yield from items(child)
-        elif isinstance(value, list):
-            for child in value:
-                yield from items(child)
-
     for block in data.values():
-        for item in items(block):
+        for item in _items(block):
             yield block["spec"], item
+
+
+def _items(value):
+    if isinstance(value, IssueBase):
+        if value.is_pr:
+            yield value
+    elif isinstance(value, dict):
+        for child in value.values():
+            yield from _items(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _items(child)
+
+
+def summary_targets(data):
+    """Visit PR occurrences in sections that want LLM summaries.
+
+    Each block may carry an ``llm_summary`` flag from its section spec. The
+    rule: if any block opts in with ``true``, only those blocks are
+    summarized; otherwise every block is, except those explicitly set to
+    ``false``. Blocks without a flag (legacy repository collection) follow
+    the default.
+    """
+
+    default = not any(block.get("llm_summary") is True for block in data.values())
+    for block in data.values():
+        include = block.get("llm_summary")
+        if include is None:
+            include = default
+        if not include:
+            continue
+        for item in _items(block):
+            yield block, block["spec"], item
 
 
 async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
@@ -207,7 +229,7 @@ async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
         return {}
     work = []
     seen = set()
-    for repo, item in report_prs(data):
+    for _, repo, item in summary_targets(data):
         identity = (repo.forge_key, repo.name, item.number, item.title, item.body)
         if identity not in seen:
             seen.add(identity)
@@ -255,19 +277,19 @@ async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
                     if not task.done():
                         task.cancel()
                 await asyncio.gather(*pending, return_exceptions=True)
-        for repo, item in report_prs(data):
+        for _, repo, item in summary_targets(data):
             identity = (repo.forge_key, repo.name, item.number, item.title, item.body)
             title_ok, summary = by_identity[identity]
             if title_ok is not False:
                 item.llm_summary = summary
     return {
         item.html_url: item.llm_summary
-        for _, item in report_prs(data)
+        for _, repo, item in summary_targets(data)
         if item.llm_summary is not None
     }
 
 
 def restore_summaries(data, summaries, config: LLMConfig):
     if config.enabled:
-        for _, item in report_prs(data):
+        for _, repo, item in summary_targets(data):
             item.llm_summary = summaries.get(item.html_url)

@@ -324,6 +324,12 @@ class RepositorySection(BaseModel):
     repositories: list[str] = pydantic.Field(min_length=1)
     title: str | None = None
     labels: LabelFilter = pydantic.Field(default_factory=LabelFilter)
+    llm_summary: bool | None = pydantic.Field(
+        None,
+        description="LLM summaries for this section. Unset sections follow the "
+        "default: every section is summarized, unless any section sets this to "
+        "true, in which case only those sections are.",
+    )
 
     @pydantic.field_validator("repositories")
     @classmethod
