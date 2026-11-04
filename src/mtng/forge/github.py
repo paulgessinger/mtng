@@ -89,10 +89,12 @@ class GitHubForge:
             )
         except BadRequest as error:
             # GitHub refuses to serve diffs for very large PRs (about 20 000
-            # lines). Fall back to the per-file endpoint, which reports every
+            # lines) with "Sorry, the diff exceeded the maximum number of
+            # lines" — observed as 406 Not Acceptable, historically also
+            # 400. Fall back to the per-file endpoint, which reports every
             # changed file with size metadata and per-file patch excerpts,
             # rather than aborting the whole run.
-            if error.status_code == 400 and "diff" in str(error).lower():
+            if error.status_code in (400, 406) and "diff" in str(error).lower():
                 return await self._diff_from_files(repo_name, number)
             raise
 

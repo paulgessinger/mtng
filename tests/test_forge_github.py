@@ -76,15 +76,16 @@ async def test_pull_diff_requests_diff_media_type():
 
 
 @pytest.mark.asyncio
-async def test_pull_diff_survives_oversized_diff_rejection():
-    """GitHub 400s on huge diffs; fall back to the per-file endpoint."""
+@pytest.mark.parametrize("status", [400, 406])
+async def test_pull_diff_survives_oversized_diff_rejection(status):
+    """GitHub rejects huge diffs (406 observed, 400 documented); use /files."""
 
     from gidgethub import BadRequest
 
     gh = client()
     gh.getitem = AsyncMock(
         side_effect=BadRequest(
-            400, "Sorry, the diff exceeded the maximum number of lines (20000)"
+            status, "Sorry, the diff exceeded the maximum number of lines (20000)"
         )
     )
 
@@ -115,7 +116,7 @@ async def test_pull_diff_file_fallback_parks_patch_budget():
     gh = client()
     gh.getitem = AsyncMock(
         side_effect=BadRequest(
-            400, "Sorry, the diff exceeded the maximum number of lines (20000)"
+            406, "Sorry, the diff exceeded the maximum number of lines (20000)"
         )
     )
 
