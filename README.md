@@ -773,30 +773,53 @@ Add this top-level table to your report TOML (or a separate config overlay):
 ```toml
 [llm]
 enabled = true
-command = ["llm"] # executable followed by arguments, including model selection
 max_diff_chars = 20000
 max_description_chars = 8000
 timeout = 120 # seconds per invocation
 ```
 
-The command receives a UTF-8 prompt on stdin and must return the summary on
-stdout. It runs directly without a shell. Configure authentication in the chosen
-command's environment. The prompt includes the PR title, description and diff;
+Choose one of two transports with `llm.transport`.
+
+**`command`** (the default) runs a local executable per summary, feeding the
+prompt on stdin and reading the summary from stdout:
+
+```toml
+[llm.transport]
+type = "command"
+command = ["claude", "-p", "--output-format", "text"]
+# or, e.g., command = ["llm"]
+```
+
+**`chat-completions`** POSTs to any OpenAI-compatible chat completions endpoint,
+such as a LiteLLM gateway, Ollama, vLLM or OpenRouter:
+
+```toml
+[llm.transport]
+type = "chat-completions"
+model = "anthropic/claude-sonnet-4" # gateway model name
+base_url = "https://llm-gateway.example.com/v1"
+api_key_env = "LITELLM_API_KEY" # name of the environment variable holding the key
+# temperature = 0.2
+# max_tokens = 200
+```
+
+The prompt includes the PR title, description and diff;
 length limits count characters and truncated inputs are marked. Setting
 `max_diff_chars = 0` skips fetching diffs. GitHub PRs and GitLab MRs are supported.
 
 The default instructions request one or two concise plain-text sentences, at most
 50 words. Override them with `llm.instructions`. Summaries appear beneath the PR
-metadata and are escaped for LaTeX. Command failures, timeouts and empty output
-stop generation and are not cached.
+metadata and are escaped for LaTeX. Transport failures, timeouts, HTTP errors and
+empty output stop generation and are not cached.
 
-Successful results are cached indefinitely by the exact prompt and command,
-including its arguments, in `llm-v1` inside mtng's user cache directory (normally
+Successful results are cached indefinitely by the exact prompt and transport
+configuration, in `llm-v1` inside mtng's user cache directory (normally
 `~/.cache/mtng/llm-v1` on Linux). There is no automatic eviction; remove that
 directory to clear summaries. API cache flags do not clear this separate cache.
 Diffs are fetched again when collecting to detect changes before reusing a
 summary. `--save-data` includes summaries; offline `render` reuses those saved
-summaries without invoking a command or fetching diffs. Recollect to generate
+summaries without invoking a transport or fetching diffs. Recollect to generate
 summaries with changed LLM settings. Omit `[llm]` or set `enabled = false` to
 leave summaries disabled. In the GitHub Action, supply LLM settings through the
-`config` file and install your chosen command on the runner.
+`config` file; for the `command` transport, install your chosen command on the
+runner, and for `chat-completions`, provide the API key environment variable.

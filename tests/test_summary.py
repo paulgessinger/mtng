@@ -10,8 +10,14 @@ from pydantic import ValidationError
 
 from mtng.generate import env
 from mtng.models import PullRequest
-from mtng.spec import LLMConfig, Repository
-from mtng.summary import add_summaries, build_prompt, restore_summaries, summarize
+from mtng.spec import ChatCompletionsBackend, CommandBackend, LLMConfig, Repository
+from mtng.summary import (
+    add_summaries,
+    build_prompt,
+    cache_key,
+    restore_summaries,
+    summarize,
+)
 
 
 def pr():
@@ -22,9 +28,17 @@ def pr():
 @pytest.mark.parametrize(
     "values",
     [
-        {"command": []},
-        {"command": [""]},
-        {"command": ["x\0"]},
+        {"transport": {"type": "command", "command": []}},
+        {"transport": {"type": "command", "command": [""]}},
+        {"transport": {"type": "command", "command": ["x\0"]}},
+        {"transport": {"type": "chat-completions", "model": ""}},
+        {
+            "transport": {
+                "type": "chat-completions",
+                "model": "m",
+                "base_url": "ftp://x",
+            }
+        },
         {"max_diff_chars": -1},
         {"max_description_chars": -1},
         {"timeout": 0},
@@ -65,7 +79,7 @@ def test_subprocess_and_persistent_cache(tmp_path):
         'p.write_text(p.read_text() + "x" if p.exists() else "x")\n'
         'print("Summary:", sys.stdin.read())\n'
     )
-    config = LLMConfig(command=[sys.executable, str(script)])
+    config = LLMConfig(transport=CommandBackend(command=[sys.executable, str(script)]))
     path = str(tmp_path / "cache")
     with diskcache.Cache(path, eviction_policy="none") as cache:
         assert summarize("first prompt", config, cache) == "Summary: first prompt"
@@ -73,12 +87,88 @@ def test_subprocess_and_persistent_cache(tmp_path):
         assert summarize("first prompt", config, cache) == "Summary: first prompt"
         assert counter.read_text() == "x"
         summarize("changed prompt", config, cache)
-        config.command.append("changed-model")
-        summarize("first prompt", config, cache)
+        changed = config.model_copy(
+            update={
+                "transport": CommandBackend(
+                    command=config.transport.command + ["changed-model"]
+                )
+            }
+        )
+        summarize("first prompt", changed, cache)
         assert counter.read_text() == "xxx"
         for key in cache:
             _, expires = cache.get(key, expire_time=True)
             assert expires is None
+
+
+def test_cache_key_separates_transports():
+    command = CommandBackend(command=["llm"])
+    gateway = CommandBackend(command=["llm", "--model", "other"])
+    chat = ChatCompletionsBackend(model="gpt-4o", base_url="https://gw.example.com/v1")
+    prompt = "same prompt"
+    assert cache_key(command, prompt) != cache_key(gateway, prompt)
+    assert cache_key(command, prompt) != cache_key(chat, prompt)
+
+
+def test_chat_completions(monkeypatch, tmp_path):
+    captured = {}
+    calls = []
+
+    class Response:
+        status_code = 200
+        headers = {"content-type": "application/json"}
+
+        def __init__(self, url, **kwargs):
+            calls.append(url)
+            captured.update(url=url, payload=kwargs["json"], headers=kwargs["headers"])
+
+        def json(self):
+            return {"choices": [{"message": {"content": "  Compact\n summary.  "}}]}
+
+    post = Response
+
+    transport = {
+        "type": "chat-completions",
+        "model": "claude-sonnet-4",
+        "base_url": "https://gateway.example.com/v1/",
+    }
+    config = LLMConfig(enabled=True, transport=transport)
+    assert config.transport.base_url == "https://gateway.example.com/v1"
+    monkeypatch.setattr("mtng.summary.requests.post", post)
+    monkeypatch.setenv("GATEWAY_KEY", "sekrit")
+    config.transport.api_key_env = "GATEWAY_KEY"
+    with diskcache.Cache(str(tmp_path)) as cache:
+        assert summarize("prompt", config, cache) == "Compact summary."
+        assert captured["url"] == "https://gateway.example.com/v1/chat/completions"
+        assert captured["headers"]["Authorization"] == "Bearer sekrit"
+        assert captured["payload"]["model"] == "claude-sonnet-4"
+        # Same transport, same prompt: served from cache without a second call.
+        assert summarize("prompt", config, cache) == "Compact summary."
+        assert len(calls) == 1
+
+
+def test_chat_completions_error(monkeypatch, tmp_path):
+    class Response:
+        status_code = 429
+        text = "rate limited"
+        headers = {"content-type": "application/json"}
+
+        def json(self):
+            return {"error": {"message": "rate limited"}}
+
+    monkeypatch.setattr("mtng.summary.requests.post", lambda *a, **k: Response())
+    config = LLMConfig(
+        enabled=True,
+        transport={
+            "type": "chat-completions",
+            "model": "m",
+            "base_url": "http://localhost:4000/v1",
+        },
+    )
+    with diskcache.Cache(str(tmp_path)) as cache:
+        with pytest.raises(ValueError, match="429"):
+            summarize("prompt", config, cache)
+        assert len(cache) == 0
 
 
 @pytest.mark.parametrize(
@@ -147,7 +237,9 @@ async def test_zero_diff_limit_skips_fetch(monkeypatch, tmp_path):
     config = LLMConfig(
         enabled=True,
         max_diff_chars=0,
-        command=[sys.executable, "-c", 'print("Short summary.")'],
+        transport=CommandBackend(
+            command=[sys.executable, "-c", 'print("Short summary.")']
+        ),
     )
     repo = Repository(name="owner/repo")
     backend = AsyncMock()

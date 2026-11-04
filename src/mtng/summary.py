@@ -1,17 +1,19 @@
-"""Optional subprocess summaries, cached by exact prompt and command indefinitely."""
+"""Optional LLM summaries, cached by exact prompt and transport indefinitely."""
 
 import asyncio
 import hashlib
 import json
-from pathlib import Path
+import os
 import subprocess
+from pathlib import Path
 
 import appdirs
 import diskcache
+import requests
 
 from mtng.models import IssueBase
 from mtng.progress import progress_items
-from mtng.spec import LLMConfig
+from mtng.spec import ChatCompletionsBackend, CommandBackend, LLMConfig
 
 
 def build_prompt(item: IssueBase, diff: str, config: LLMConfig) -> str:
@@ -30,26 +32,80 @@ def build_prompt(item: IssueBase, diff: str, config: LLMConfig) -> str:
     )
 
 
-def summarize(prompt: str, config: LLMConfig, cache) -> str:
-    key = hashlib.sha256(
-        json.dumps([config.command, prompt], ensure_ascii=False).encode("utf-8")
+def cache_key(transport, prompt: str) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            [transport.model_dump(), prompt], ensure_ascii=False, sort_keys=True
+        ).encode("utf-8")
     ).hexdigest()
-    cached = cache.get(key)
-    if cached is not None:
-        return cached
+
+
+def summarize_command(prompt: str, transport: CommandBackend, timeout: float) -> str:
     try:
         result = subprocess.run(
-            config.command,
+            transport.command,
             input=prompt,
             text=True,
             encoding="utf-8",
             capture_output=True,
-            timeout=config.timeout,
+            timeout=timeout,
             check=True,
         )
     except (OSError, subprocess.SubprocessError) as error:
         raise ValueError(f"LLM summary command failed: {error}") from error
-    summary = " ".join(result.stdout.split())
+    return result.stdout
+
+
+def summarize_chat_completions(
+    prompt: str, transport: ChatCompletionsBackend, timeout: float
+) -> str:
+    """Blocking call; summarize() runs it from a worker thread."""
+
+    headers = {}
+    if api_key := os.environ.get(transport.api_key_env, ""):
+        headers["Authorization"] = f"Bearer {api_key}"
+    payload = {
+        "model": transport.model,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if transport.temperature is not None:
+        payload["temperature"] = transport.temperature
+    if transport.max_tokens is not None:
+        payload["max_tokens"] = transport.max_tokens
+    try:
+        response = requests.post(
+            f"{transport.base_url}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=timeout,
+        )
+    except requests.RequestException as error:
+        raise ValueError(f"LLM summary request failed: {error}") from error
+    body = (
+        response.json()
+        if response.headers.get("content-type", "").startswith("application/json")
+        else None
+    )
+    if response.status_code != 200:
+        detail = body.get("error", body) if isinstance(body, dict) else response.text
+        raise ValueError(
+            f"LLM summary request failed ({response.status_code}): {detail}"
+        )
+    return body["choices"][0]["message"]["content"]
+
+
+def summarize(prompt: str, config: LLMConfig, cache) -> str:
+    key = cache_key(config.transport, prompt)
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    transport = config.transport
+    match transport:
+        case CommandBackend():
+            output = summarize_command(prompt, transport, config.timeout)
+        case ChatCompletionsBackend():
+            output = summarize_chat_completions(prompt, transport, config.timeout)
+    summary = " ".join(output.split())
     if not summary:
         raise ValueError("LLM summary command returned empty output")
     cache.set(key, summary, expire=None)
