@@ -142,42 +142,30 @@ async def test_pull_diff_reraises_other_bad_requests():
 
 
 @pytest.mark.asyncio
-async def test_merged_pr_details_revalidate_and_backfill_closed_at(monkeypatch):
+async def test_merged_pr_closed_at_overlay():
+    """The search response knows the close time; a locally cached detail
+    captured before the merge must not produce a null closed_at."""
+
+    from datetime import UTC, datetime, timedelta
     import json
-    from datetime import UTC, datetime
     from pathlib import Path
 
-    from mtng.forge import github as github_module
+    now = datetime(2026, 11, 4, 16, tzinfo=UTC)
+    since = now - timedelta(days=7)
 
     raw = json.loads((Path(__file__).parent / "ref" / "merged_prs.json").read_text())[0]
     raw["head"] = {"sha": "current-head"}
     raw["reviews"] = []
-    # Detail payload that knows about the merge only through merged_at, as
-    # the HTTP cache can serve when a search already observed the merge.
-    stale = dict(
-        raw,
-        closed_at=None,
-        merged_at="2026-11-04T14:59:08+00:00",
-        state="closed",
-        updated_at=raw["created_at"],
-    )
-    merged = dict(
+    stale = dict(raw, closed_at=None, merged_at=None, state="open")
+    closed = dict(
         raw,
         closed_at="2026-11-04T14:59:08+00:00",
-        merged_at="2026-11-04T14:59:08+00:00",
+        merged_at=None,
         state="closed",
     )
-    search_item = dict(raw, pull_request={"url": raw["url"]})
-
-    calls = []
-    real = github_module.force_fresh
-
-    def spy(enabled):
-        calls.append(enabled)
-        return real(enabled)
-
-    monkeypatch.setattr(github_module, "force_fresh", spy)
-    now = datetime(2026, 11, 4, 16, tzinfo=UTC)
+    search_item = dict(
+        raw, closed_at="2026-11-04T14:59:08+00:00", pull_request={"url": raw["url"]}
+    )
 
     gh = client()
     gh._make_request = AsyncMock(
@@ -187,20 +175,16 @@ async def test_merged_pr_details_revalidate_and_backfill_closed_at(monkeypatch):
             ([], None, 200),
         ]
     )
-    prs = await GitHubForge(gh).merged_prs("team/project", now, now)
-    assert calls == [True]
-    # Backfilled from merged_at when the payload trails the merge.
+    prs = await GitHubForge(gh).merged_prs("team/project", since, now)
     assert prs[0].closed_at == datetime(2026, 11, 4, 14, 59, 8, tzinfo=UTC)
-    assert prs[0].merged_at == datetime(2026, 11, 4, 14, 59, 8, tzinfo=UTC)
 
-    # A payload that already carries closed_at keeps it unchanged.
+    # A detail payload that already knows a close time is left alone.
     gh._make_request = AsyncMock(
         side_effect=[
             ({"items": [search_item]}, None, 200),
-            (merged, None, 200),
+            (closed, None, 200),
             ([], None, 200),
         ]
     )
-    prs = await GitHubForge(gh).merged_prs("team/project", now, now)
-    assert calls == [True, True]
+    prs = await GitHubForge(gh).merged_prs("team/project", since, now)
     assert prs[0].closed_at == datetime(2026, 11, 4, 14, 59, 8, tzinfo=UTC)

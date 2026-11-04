@@ -9,7 +9,6 @@ from gidgethub.abc import GitHubAPI
 from mtng.progress import collect_items
 
 from mtng.forge.base import bounded_gather, FetchRequirements
-from mtng.forge.http import force_fresh
 from mtng.models import Issue, PullRequest, Review
 
 
@@ -142,30 +141,29 @@ class GitHubForge:
         return [Review.model_validate(r) async for r in self.gh.getiter(url)]
 
     async def pull_details(
-        self, urls: list[str], *, fresh: bool = False
+        self, urls: list[str], *, closed_at: dict[str, datetime] | None = None
     ) -> list[PullRequest]:
         """Fetch full PR payloads. Search results lack the line and commit
         counts, and the reviews are a separate request on top.
 
-        ``fresh`` opts the detail fetches out of unvalidated cache hits, for
-        callers whose PR list came from a search window rather than live
-        state."""
+        ``closed_at`` overlays authoritative close timestamps taken from the
+        search response onto detail payloads, which a locally cached copy may
+        have captured before the state change."""
 
-        async def fetch(url):
-            with force_fresh(fresh):
-                return await self.getitem(url)
-
-        prs = await bounded_gather(urls, fetch, description="Fetching PR details")
+        prs = await bounded_gather(
+            urls, self.getitem, description="Fetching PR details"
+        )
         return [
             PullRequest.model_validate(
                 pr
                 | {
                     "head_sha": (pr.get("head") or {}).get("sha"),
                     # A merged PR always has closed_at set, but a payload
-                    # fetched at merge time can trail the state change;
-                    # merged_at is the same timestamp, so prefer whichever
-                    # is populated.
-                    "closed_at": pr.get("closed_at") or pr.get("merged_at"),
+                    # fetched around merge time can trail the state change;
+                    # prefer the search timestamp, then merged_at.
+                    "closed_at": (closed_at or {}).get(pr["url"])
+                    or pr.get("closed_at")
+                    or pr.get("merged_at"),
                 }
             )
             for pr in prs
@@ -196,7 +194,12 @@ class GitHubForge:
         )
 
         prs = await self.pull_details(
-            [item.pull_request["url"] for item in items], fresh=True
+            [item.pull_request["url"] for item in items],
+            closed_at={
+                item.pull_request["url"]: item.closed_at
+                for item in items
+                if item.closed_at is not None
+            },
         )
         return await self.add_reviews(prs)
 
