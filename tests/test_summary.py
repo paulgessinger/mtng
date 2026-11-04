@@ -71,10 +71,10 @@ def test_invalid_config(values):
 
 def test_prompt_title_check_protocol():
     item = pr()
-    off = build_prompt(item, "diff", LLMConfig())
+    off = build_prompt(item, "diff", LLMConfig(title_check=False))
     assert "USEFUL" not in off
     assert TITLE_VERDICT_PROTOCOL not in off
-    on = build_prompt(item, "diff", LLMConfig(title_check=True))
+    on = build_prompt(item, "diff", LLMConfig())
     assert "USEFUL" in on and "REDUNDANT" in on
     assert TITLE_VERDICT_PROTOCOL in on
     assert json.loads(on.split("PR content (JSON):\n")[1])["title"] == item.title
@@ -123,7 +123,7 @@ def test_prompt_limits():
         "description": "desc\n[Truncated]",
         "diff": "abc\n[Truncated]",
     }
-    assert "concisel" in prompt
+    assert "15 words" in prompt
     item.body = None
     assert (
         json.loads(build_prompt(item, "", config).split("PR content (JSON):\n")[1])[

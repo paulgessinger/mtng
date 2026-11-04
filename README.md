@@ -829,15 +829,16 @@ Distinct PRs are summarized once (even across sections) with at most
 `max_concurrency` requests in flight; set it to 1 for strictly sequential
 summarization.
 
-The default instructions request one or two concise plain-text sentences, at most
-50 words. Override them with `llm.instructions`. Summaries appear beneath the PR
+The default instructions request one short plain-text sentence of at most 15
+words. Override them with `llm.instructions`. Summaries appear beneath the PR
 metadata and are escaped for LaTeX. Transport failures, timeouts, HTTP errors and
 empty output stop generation and are not cached; results already returned are
 cached as they arrive, so an aborted run resumes where it stopped.
 
-Set `title_check = true` to have the model also judge whether the title alone is
-sufficiently descriptive: it prefixes its reply with `USEFUL` or `REDUNDANT`, and
-summaries judged redundant with the title are omitted from the slides. Enabling
+By default (`title_check = true`) the model also judges whether the title alone
+is sufficiently descriptive: it prefixes its reply with `USEFUL` or `REDUNDANT`,
+and summaries judged redundant with the title are omitted from the slides. Set
+`title_check = false` to keep every summary. Enabling
 this changes every prompt, so existing cached summaries are re-generated once.
 
 Successful results are cached indefinitely by the exact prompt and transport
