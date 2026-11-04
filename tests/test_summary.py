@@ -15,10 +15,12 @@ from mtng.generate import env
 from mtng.models import PullRequest
 from mtng.spec import ChatCompletionsBackend, CommandBackend, LLMConfig, Repository
 from mtng.summary import (
+    TITLE_VERDICT_PROTOCOL,
     add_summaries,
     build_prompt,
     cache_key,
     restore_summaries,
+    split_verdict,
     summarize,
 )
 
@@ -67,6 +69,49 @@ def test_invalid_config(values):
         LLMConfig(**values)
 
 
+def test_prompt_title_check_protocol():
+    item = pr()
+    off = build_prompt(item, "diff", LLMConfig())
+    assert "USEFUL" not in off
+    assert TITLE_VERDICT_PROTOCOL not in off
+    on = build_prompt(item, "diff", LLMConfig(title_check=True))
+    assert "USEFUL" in on and "REDUNDANT" in on
+    assert TITLE_VERDICT_PROTOCOL in on
+    assert json.loads(on.split("PR content (JSON):\n")[1])["title"] == item.title
+
+
+@pytest.mark.parametrize(
+    ("output", "expected"),
+    [
+        ("USEFUL\nShort summary.", (True, "Short summary.")),
+        ("REDUNDANT.\nAdds context.", (False, "Adds context.")),
+        ("useful:\nTidy text", (True, "Tidy text")),
+        ("Just a summary", (None, "Just a summary")),
+        ("USEFUL", (True, "")),
+        ("USEFUL\nTwo\nlines", (True, "Two lines")),
+        ("USEFUL BUT\nBroken", (None, "USEFUL BUT Broken")),
+    ],
+)
+def test_split_verdict(output, expected):
+    assert split_verdict(output) == expected
+
+
+def test_summarize_reads_legacy_string_cache(tmp_path):
+    config = LLMConfig()
+    with diskcache.Cache(str(tmp_path)) as cache:
+        cache.set(
+            cache_key(
+                config.transport,
+                "prompts-unchanged",
+            ),
+            "Legacy summary.",
+        )
+        assert summarize("prompts-unchanged", config, cache) == (
+            None,
+            "Legacy summary.",
+        )
+
+
 def test_prompt_limits():
     item = pr()
     item.body = "description"
@@ -100,9 +145,15 @@ def test_subprocess_and_persistent_cache(tmp_path):
     config = LLMConfig(transport=CommandBackend(command=[sys.executable, str(script)]))
     path = str(tmp_path / "cache")
     with diskcache.Cache(path, eviction_policy="none") as cache:
-        assert summarize("first prompt", config, cache) == "Summary: first prompt"
+        assert summarize("first prompt", config, cache) == (
+            None,
+            "Summary: first prompt",
+        )
     with diskcache.Cache(path, eviction_policy="none") as cache:
-        assert summarize("first prompt", config, cache) == "Summary: first prompt"
+        assert summarize("first prompt", config, cache) == (
+            None,
+            "Summary: first prompt",
+        )
         assert counter.read_text() == "x"
         summarize("changed prompt", config, cache)
         changed = config.model_copy(
@@ -156,13 +207,13 @@ def test_chat_completions(monkeypatch, tmp_path):
     monkeypatch.delenv("GATEWAY_KEY", raising=False)
     monkeypatch.setattr("mtng.summary.requests.post", post)
     with diskcache.Cache(str(tmp_path)) as cache:
-        assert summarize("prompt", config, cache) == "Compact summary."
+        assert summarize("prompt", config, cache) == (None, "Compact summary.")
         assert captured["url"] == "https://gateway.example.com/v1/chat/completions"
         # No environment variable and no keychain entry: unauthenticated request.
         assert "Authorization" not in captured["headers"]
         assert captured["payload"]["model"] == "claude-sonnet-4"
         # Same transport, same prompt: served from cache without a second call.
-        assert summarize("prompt", config, cache) == "Compact summary."
+        assert summarize("prompt", config, cache) == (None, "Compact summary.")
         assert len(calls) == 1
 
 
@@ -194,7 +245,7 @@ def test_chat_completions_uses_keychain_key(monkeypatch, tmp_path):
         },
     )
     with diskcache.Cache(str(tmp_path)) as cache:
-        assert summarize("prompt", config, cache) == "ok"
+        assert summarize("prompt", config, cache) == (None, "ok")
     assert captured["headers"]["Authorization"] == "Bearer keyring-key"
 
 
@@ -227,7 +278,7 @@ def test_chat_completions_identity_keychain_entry(monkeypatch, tmp_path):
         },
     )
     with diskcache.Cache(str(tmp_path)) as cache:
-        assert summarize("prompt", config, cache) == "ok"
+        assert summarize("prompt", config, cache) == (None, "ok")
     get.assert_called_once_with("mtng", "llm:gw.example.com:team-b:token")
     assert captured["headers"]["Authorization"] == "Bearer team-b-key"
 

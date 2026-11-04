@@ -832,7 +832,13 @@ summarization.
 The default instructions request one or two concise plain-text sentences, at most
 50 words. Override them with `llm.instructions`. Summaries appear beneath the PR
 metadata and are escaped for LaTeX. Transport failures, timeouts, HTTP errors and
-empty output stop generation and are not cached.
+empty output stop generation and are not cached; results already returned are
+cached as they arrive, so an aborted run resumes where it stopped.
+
+Set `title_check = true` to have the model also judge whether the title alone is
+sufficiently descriptive: it prefixes its reply with `USEFUL` or `REDUNDANT`, and
+summaries judged redundant with the title are omitted from the slides. Enabling
+this changes every prompt, so existing cached summaries are re-generated once.
 
 Successful results are cached indefinitely by the exact prompt and transport
 configuration, in `llm-v1` inside mtng's user cache directory (normally

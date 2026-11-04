@@ -15,6 +15,13 @@ from mtng.models import IssueBase
 from mtng.progress import progress_step
 from mtng.spec import ChatCompletionsBackend, CommandBackend, LLMConfig
 
+TITLE_VERDICT_PROTOCOL = (
+    "Begin your reply with USEFUL if the title alone already conveys the "
+    "essence of the change, or with REDUNDANT if the summary adds meaningful "
+    "information the title lacks. On the very next line, provide the summary "
+    "itself, formatted exactly as requested below."
+)
+
 
 def build_prompt(item: IssueBase, diff: str, config: LLMConfig) -> str:
     def truncate(text, limit):
@@ -25,11 +32,29 @@ def build_prompt(item: IssueBase, diff: str, config: LLMConfig) -> str:
         "description": truncate(item.body or "", config.max_description_chars),
         "diff": truncate(diff, config.max_diff_chars),
     }
+    protocol = TITLE_VERDICT_PROTOCOL if config.title_check else ""
     return (
         config.instructions
+        + (f"\n\n{protocol}" if protocol else "")
         + "\n\nPR content (JSON):\n"
         + json.dumps(content, ensure_ascii=False)
     )
+
+
+def split_verdict(output: str) -> tuple[bool | None, str]:
+    """Split an optional ``USEFUL``/``REDUNDANT`` verdict from the summary text.
+
+    Returns ``(title_ok, summary)``; ``title_ok`` is ``None`` when the output
+    carries no verdict. Malformed verdict prefixes degrade gracefully: only a
+    bare first line containing exactly one of the two keywords is consumed.
+    """
+
+    lines = output.splitlines()
+    if lines:
+        first = lines[0].strip().upper().rstrip(".:!")
+        if first in ("USEFUL", "REDUNDANT"):
+            return first == "USEFUL", " ".join("\n".join(lines[1:]).split())
+    return None, " ".join(output.split())
 
 
 def cache_key(transport, prompt: str) -> str:
@@ -96,22 +121,23 @@ def summarize_chat_completions(
     return body["choices"][0]["message"]["content"]
 
 
-def summarize(prompt: str, config: LLMConfig, cache) -> str:
+def summarize(prompt: str, config: LLMConfig, cache) -> tuple[bool | None, str]:
     key = cache_key(config.transport, prompt)
     cached = cache.get(key)
     if cached is not None:
-        return cached
+        # Entries written before the title verdict existed are plain strings.
+        return cached if isinstance(cached, tuple) else (None, cached)
     transport = config.transport
     match transport:
         case CommandBackend():
             output = summarize_command(prompt, transport, config.timeout)
         case ChatCompletionsBackend():
             output = summarize_chat_completions(prompt, transport, config.timeout)
-    summary = " ".join(output.split())
+    title_ok, summary = split_verdict(output)
     if not summary:
         raise ValueError("LLM summary command returned empty output")
-    cache.set(key, summary, expire=None)
-    return summary
+    cache.set(key, (title_ok, summary), expire=None)
+    return title_ok, summary
 
 
 def report_prs(data):
@@ -138,7 +164,9 @@ async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
 
     Distinct PRs are summarized once and attached to every occurrence;
     failures propagate and abort the whole run, leaving the cache free of
-    incomplete results. Concurrency is bounded by ``config.max_concurrency``
+    incomplete results. With ``config.title_check``, a model verdict that the
+    title alone is sufficient ("REDUNDANT") suppresses the summary line.
+    Concurrency is bounded by ``config.max_concurrency``
     and covers diff fetching too, since that is also an awaited network call.
     """
 
@@ -172,8 +200,8 @@ async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
                         else ""
                     )
                     prompt = build_prompt(item, diff, config)
-                    summary = await asyncio.to_thread(summarize, prompt, config, cache)
-                by_identity[identity] = summary
+                    verdict = await asyncio.to_thread(summarize, prompt, config, cache)
+                by_identity[identity] = verdict
                 step.advance()
                 if label.is_set() and (repo.name, item.number) not in described:
                     step.progress.update(
@@ -196,8 +224,14 @@ async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
                 await asyncio.gather(*pending, return_exceptions=True)
         for repo, item in report_prs(data):
             identity = (repo.forge_key, repo.name, item.number, item.title, item.body)
-            item.llm_summary = by_identity[identity]
-    return {item.html_url: item.llm_summary for _, item in report_prs(data)}
+            title_ok, summary = by_identity[identity]
+            if title_ok is not False:
+                item.llm_summary = summary
+    return {
+        item.html_url: item.llm_summary
+        for _, item in report_prs(data)
+        if item.llm_summary is not None
+    }
 
 
 def restore_summaries(data, summaries, config: LLMConfig):
