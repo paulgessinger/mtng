@@ -58,7 +58,7 @@ def test_assignments_drafts_and_oldest_first():
     [
         ("APPROVED", "Needs maintainer attention (approved)"),
         ("CHANGES_REQUESTED", "Awaiting author: bob"),
-        ("COMMENTED", "Needs clarification (review comments)"),
+        ("COMMENTED", "Review comments, no decision"),
         ("PENDING", "Awaiting review: alice"),
         ("DISMISSED", "Awaiting review: alice"),
     ],
@@ -242,7 +242,7 @@ def test_review_completion_policy(policy, expected, state):
             (
                 "Needs maintainer attention (approved)"
                 if state == "APPROVED"
-                else "Needs clarification (review comments)"
+                else "Review comments, no decision"
             )
         ]
     groups = review_followup(
@@ -376,7 +376,7 @@ def test_completed_review_without_remaining_request_needs_no_assignment(policy, 
     expected = {
         "APPROVED": "Needs maintainer attention (approved)",
         "CHANGES_REQUESTED": "Awaiting author: bob",
-        "COMMENTED": "Needs clarification (review comments)",
+        "COMMENTED": "Review comments, no decision",
     }
     groups = review_followup(
         [pr(6179, reviews=[Review(user=ALICE, state=state)])], review_completion=policy
@@ -493,8 +493,11 @@ def test_changed_head_needs_original_reviewer(state, policy):
         ],
         review_completion=policy,
     )
-    assert [g["title"] for g in groups] == ["Changes since review"]
-    assert groups[0]["actor"] is None
+    assert [g["title"] for g in groups] == ["Awaiting review: alice"]
+    assert groups[0]["actor"] == ALICE
+    assert groups[0]["items"] == []
+    assert groups[0]["rereview"]["kind"] == "changes_since_review"
+    assert [item.number for item in groups[0]["rereview"]["items"]] == [1]
 
 
 @pytest.mark.parametrize(
@@ -510,7 +513,7 @@ def test_unknown_or_unchanged_head_does_not_imply_changes(head, reviewed):
         ],
         review_completion="any",
     )
-    assert [g["title"] for g in groups] == ["Needs clarification (review comments)"]
+    assert [g["title"] for g in groups] == ["Review comments, no decision"]
 
 
 def test_new_comment_review_clears_changes_since_review():
@@ -539,14 +542,14 @@ def test_new_comment_review_clears_changes_since_review():
         ],
         review_completion="any",
     )
-    assert [g["title"] for g in groups] == ["Needs clarification (review comments)"]
+    assert [g["title"] for g in groups] == ["Review comments, no decision"]
 
 
 @pytest.mark.parametrize(
     "policy,expected",
     [
         ("any", "Needs maintainer attention (approved)"),
-        ("all", "Changes since review"),
+        ("all", "Awaiting review: alice"),
     ],
 )
 def test_current_review_satisfies_any_policy(policy, expected):
@@ -579,21 +582,75 @@ def test_changed_head_metadata_survives_serialization():
         head_sha="new", reviews=[Review(user=ALICE, state="COMMENTED", commit_id="old")]
     )
     replayed = PullRequest.model_validate_json(item.model_dump_json())
-    assert review_followup([replayed])[0]["title"] == "Changes since review"
+    group = review_followup([replayed])[0]
+    assert group["title"] == "Awaiting review: alice"
+    assert group["rereview"]["items"] == [replayed]
 
 
-def test_changes_since_review_combines_reviewers_without_duplicate_prs():
+def test_changes_since_review_goes_to_latest_reviewer():
     carol = User(login="carol", html_url="https://example.com/carol")
-    reviews = [
-        Review(user=user, state="COMMENTED", commit_id="old") for user in [ALICE, carol]
-    ]
     groups = review_followup(
         [
-            pr(1, head_sha="new", reviews=reviews),
-            pr(2, head_sha="new", reviews=reviews),
+            # No timestamps: input order decides, so carol reviewed last.
+            pr(
+                1,
+                head_sha="new",
+                reviews=[
+                    Review(user=user, state="COMMENTED", commit_id="old")
+                    for user in [ALICE, carol]
+                ],
+            ),
+            # alice's second review is the latest, even though carol's
+            # first-seen review came after alice's first.
+            pr(
+                2,
+                head_sha="new",
+                reviews=[
+                    Review(
+                        user=ALICE,
+                        state="COMMENTED",
+                        commit_id="old",
+                        submitted_at=NOW - timedelta(days=3),
+                    ),
+                    Review(
+                        user=carol,
+                        state="COMMENTED",
+                        commit_id="old",
+                        submitted_at=NOW - timedelta(days=2),
+                    ),
+                    Review(
+                        user=ALICE,
+                        state="COMMENTED",
+                        commit_id="old",
+                        submitted_at=NOW - timedelta(days=1),
+                    ),
+                ],
+            ),
         ],
         review_completion="all",
     )
+    assert [
+        (g["title"], g["actor"], [item.number for item in g["rereview"]["items"]])
+        for g in groups
+    ] == [
+        ("Awaiting review: alice", ALICE, [2]),
+        ("Awaiting review: carol", carol, [1]),
+    ]
+
+
+def test_rereview_joins_reviewers_awaiting_review_group():
+    groups = review_followup(
+        [
+            pr(1, head_sha="new", requested_reviewers=[ALICE]),
+            pr(
+                2,
+                head_sha="new",
+                reviews=[Review(user=ALICE, state="COMMENTED", commit_id="old")],
+            ),
+        ]
+    )
     assert len(groups) == 1
-    assert groups[0]["title"] == "Changes since review"
-    assert [item.number for item in groups[0]["items"]] == [2, 1]
+    assert groups[0]["title"] == "Awaiting review: alice"
+    assert [item.number for item in groups[0]["items"]] == [1]
+    assert [item.number for item in groups[0]["rereview"]["items"]] == [2]
+    assert "rereview" not in review_followup([pr(1, requested_reviewers=[ALICE])])[0]

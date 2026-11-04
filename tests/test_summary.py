@@ -627,8 +627,11 @@ async def test_summary_targets_group_kinds(monkeypatch, tmp_path):
     await add_summaries(data, {repo.forge_key: backend_stub()}, config)
     assert other["_handles"]["item"].llm_summary is None
 
-    # List form selects several kinds; other kinds stay off.
+    # List form selects several kinds; other kinds stay off. Re-reviews are
+    # nested in the reviewer's "Awaiting review" group but keep their kind.
     selected = pr()
+    initial = pr()
+    initial.number = 3
     block = followup_block(
         [
             (
@@ -638,14 +641,14 @@ async def test_summary_targets_group_kinds(monkeypatch, tmp_path):
                 needs_assignment,
             ),
             ("Awaiting author: bob", "awaiting_author", "Awaiting author", awaiting),
-            (
-                "Changes since review",
-                "changes_since_review",
-                "Changes since review",
-                selected,
-            ),
+            ("Awaiting review: carol", "awaiting_review", "Awaiting review", initial),
         ],
     )
+    block["review_followup"][-1]["rereview"] = {
+        "title": "Re-review",
+        "kind": "changes_since_review",
+        "items": [selected],
+    }
     block["_handles"] = {"selected": selected}
     block["llm_summary"] = ["needs_assignment", "changes_since_review"]
     await add_summaries(
@@ -661,6 +664,7 @@ async def test_summary_targets_group_kinds(monkeypatch, tmp_path):
     assert block["_handles"]["selected"].llm_summary == "Group summary."
     assert needs_assignment.llm_summary == "Group summary."
     assert awaiting.llm_summary is None
+    assert initial.llm_summary is None
 
 
 @pytest.mark.asyncio

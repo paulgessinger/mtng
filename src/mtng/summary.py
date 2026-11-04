@@ -245,7 +245,11 @@ def _grouped_items(block):
     for value in block.values():
         if isinstance(value, list) and value and isinstance(value[0], dict):
             if all("kind" in group and "items" in group for group in value):
-                yield from value
+                for group in value:
+                    yield group
+                    # Review follow-up nests re-reviews in the reviewer's group.
+                    if "rereview" in group:
+                        yield group["rereview"]
 
 
 async def add_summaries(data, forges, config: LLMConfig, window=None) -> dict[str, str]:

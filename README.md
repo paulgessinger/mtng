@@ -908,9 +908,8 @@ Use a `review_followup` section to group non-draft PRs/MRs by likely next action
 These are hints from review state, not definitive task assignments:
 
 - **Awaiting author: username**: a reviewer requested changes.
-- **Changes since review**: the PR head differs from a reviewer's latest submitted review commit. PRs appear once in a combined group.
-- **Awaiting review: username**: a selected assignee/requested reviewer has not participated.
-- **Needs clarification (review comments)**: review participation is complete, but only comments are available.
+- **Awaiting review: username**: a selected assignee/requested reviewer has not participated. PRs with new commits since a submitted review are listed at the end of the same frame under **Re-review**, assigned to whichever reviewer with an outdated review reviewed most recently (group kind `changes_since_review`).
+- **Review comments, no decision**: review participation is complete, but only comment reviews exist and nothing was pushed since. The next step may lie with the author or the reviewer (group kind `needs_clarification`).
 - **Needs maintainer attention (approved)**: review participation is complete and an approval exists. Mergeability, CI, and branch requirements are not checked.
 - **Needs assignment**: no selected assignees/requested reviewers and no submitted external review.
 - **Review status unknown**: review data is missing or incomplete.
@@ -921,7 +920,7 @@ a later comment or pending review does not revoke it. Reviews are ordered by sub
 time, falling back to their input order when timestamps are missing. Author reviews
 are ignored. On GitHub, the latest submitted review's `commit_id` is compared with
 `head.sha`, including comment-only reviews and approvals. A changed head routes the
-PR to **Changes since review** rather than author action
+PR to **Re-review** rather than author action
 when their changes request predates that head. A changes request without evidence
 of a changed head still takes priority. This includes rebases and force-pushes; it
 is not proof that the feedback was addressed or that the diff changed semantically.
