@@ -861,6 +861,18 @@ Valid kinds are `needs_assignment`, `awaiting_author`, `awaiting_review`,
 `review_status_unknown`; unknown names are rejected when the configuration is
 loaded. A kind selection also counts as opting the section in.
 
+The `changes` section accepts `llm_summary = "new"`, restricting summaries to
+items created within the report window — the same items the report marks as
+new. This also counts as opting the section in:
+
+```toml
+[[sections]]
+type = "changes"
+state = "open"
+repositories = ["acts"]
+llm_summary = "new"
+```
+
 PRs appearing in several sections are still summarized once, but displayed
 only in the selected sections. A PR follows its group's selection: kinds with
 per-actor groups (such as `awaiting_review`) can appear in sibling groups of

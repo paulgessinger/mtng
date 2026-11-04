@@ -346,6 +346,12 @@ class ChangesSection(RepositorySection):
     group_by: Literal["none", "category"] = "none"
     drafts: Literal["include", "exclude", "only"] | None = None
     summary: bool = True
+    llm_summary: bool | Literal["new"] | None = pydantic.Field(
+        None,
+        description='Like the base llm_summary flag, but "new" restricts '
+        "summaries to items created within the report window (the items "
+        "marked as new), which also counts as opting the section in.",
+    )
 
     @pydantic.model_validator(mode="after")
     def check_release(self):

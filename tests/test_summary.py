@@ -664,6 +664,65 @@ async def test_summary_targets_group_kinds(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_summary_targets_new_items(monkeypatch, tmp_path):
+    '"new" on a changes section selects items created within the window.'
+
+    from datetime import UTC, datetime, timedelta
+
+    monkeypatch.setattr("mtng.summary.appdirs.user_cache_dir", lambda _: str(tmp_path))
+    repo = Repository(name="owner/repo")
+    config = LLMConfig(
+        enabled=True,
+        transport=CommandBackend(
+            command=[sys.executable, "-c", 'print("New summary.")']
+        ),
+    )
+    now = datetime(2026, 11, 4, 16, tzinfo=UTC)
+    since = now - timedelta(days=7)
+
+    def item_with_age(days):
+        item = pr()
+        item.number = days + 1
+        item.created_at = now - timedelta(days=days)
+        return item
+
+    fresh = item_with_age(2)
+    old = item_with_age(30)
+    block = {
+        "spec": repo,
+        "merged_prs": [fresh, old],
+        "llm_summary": "new",
+        "_handles": {"fresh": fresh, "old": old},
+    }
+    await add_summaries(
+        {"0:acts": block},
+        {repo.forge_key: backend_stub()},
+        config,
+        window=(since, now),
+    )
+    assert block["_handles"]["fresh"].llm_summary == "New summary."
+    assert block["_handles"]["old"].llm_summary is None
+
+    # Without a window (legacy replay data) every item is treated as in-window
+    # rather than silently summarizing nothing.
+    old.llm_summary = None
+    await add_summaries({"0:acts": block}, {repo.forge_key: backend_stub()}, config)
+    assert block["_handles"]["old"].llm_summary == "New summary."
+
+    # Restore honors the same rule with the saved window.
+    for item in (fresh, old):
+        item.llm_summary = None
+    restore_summaries(
+        {"0:acts": block},
+        {fresh.html_url: "Restored."},
+        config,
+        window=(since, now),
+    )
+    assert block["_handles"]["fresh"].llm_summary == "Restored."
+    assert block["_handles"]["old"].llm_summary is None
+
+
+@pytest.mark.asyncio
 async def test_zero_diff_limit_skips_fetch(monkeypatch, tmp_path):
     monkeypatch.setattr("mtng.summary.appdirs.user_cache_dir", lambda _: str(tmp_path))
     config = LLMConfig(

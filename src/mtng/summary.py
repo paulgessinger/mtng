@@ -193,15 +193,17 @@ def _items(value):
             yield from _items(child)
 
 
-def summary_targets(data):
+def summary_targets(data, window=None):
     """Visit PR occurrences in sections that want LLM summaries.
 
     Each block may carry an ``llm_summary`` flag from its section spec:
     ``None`` follows the report default, ``True`` selects the whole section,
-    ``False`` excludes it, and a string or list of strings selects only the
-    matching group kinds (review follow-up). Any positive selection anywhere
-    — ``True`` or a kind list — switches the report to opt-in mode where
-    unflagged sections are skipped.
+    ``False`` excludes it, and a string or list of strings makes a narrower
+    selection: review follow-up blocks pick group kinds, changes blocks pick
+    ``"new"`` for items created within ``window`` (a ``(since, now)``
+    tuple), matching the items the template marks as new. Any positive
+    selection anywhere — ``True`` or a string/list — switches the report to
+    opt-in mode where unflagged sections are skipped.
     """
 
     def positive(value):
@@ -218,6 +220,13 @@ def summary_targets(data):
             if not default:
                 continue
             kinds = None  # whole section
+        elif flag == "new":
+            # A missing window (legacy replay data) treats every item as
+            # inside the window rather than silently summarizing nothing.
+            for item in _items(block):
+                if window is None or window[0] <= item.created_at <= window[1]:
+                    yield block, block["spec"], item
+            continue
         else:
             kinds = {flag} if isinstance(flag, str) else set(flag)
         if kinds is None:
@@ -239,7 +248,7 @@ def _grouped_items(block):
                 yield from value
 
 
-async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
+async def add_summaries(data, forges, config: LLMConfig, window=None) -> dict[str, str]:
     """Summarize every distinct PR in the report, in parallel.
 
     Distinct PRs are summarized once and attached to every occurrence;
@@ -254,7 +263,7 @@ async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
         return {}
     work = []
     seen = set()
-    for _, repo, item in summary_targets(data):
+    for _, repo, item in summary_targets(data, window):
         identity = (repo.forge_key, repo.name, item.number, item.title, item.body)
         if identity not in seen:
             seen.add(identity)
@@ -302,19 +311,20 @@ async def add_summaries(data, forges, config: LLMConfig) -> dict[str, str]:
                     if not task.done():
                         task.cancel()
                 await asyncio.gather(*pending, return_exceptions=True)
-        for _, repo, item in summary_targets(data):
+        for _, repo, item in summary_targets(data, window):
             identity = (repo.forge_key, repo.name, item.number, item.title, item.body)
             title_ok, summary = by_identity[identity]
             if title_ok is not False:
                 item.llm_summary = summary
     return {
         item.html_url: item.llm_summary
-        for _, repo, item in summary_targets(data)
+        for _, repo, item in summary_targets(data, window)
         if item.llm_summary is not None
     }
 
 
-def restore_summaries(data, summaries, config: LLMConfig):
+def restore_summaries(data, summaries, config: LLMConfig, window=None):
     if config.enabled:
-        for _, repo, item in summary_targets(data):
+        for _, repo, item in summary_targets(data, window):
+            item.llm_summary = summaries.get(item.html_url)
             item.llm_summary = summaries.get(item.html_url)

@@ -420,7 +420,7 @@ async def generate(
                 )
             else:
                 data = await collect_sections(spec, since, now, backends, release)
-            summaries = await add_summaries(data, forge, spec.llm)
+            summaries = await add_summaries(data, forge, spec.llm, window=(since, now))
             if event is not None:
                 with progress_step("Fetching Indico agenda") as step:
                     contributions = await handle_event(event, session)
@@ -610,7 +610,9 @@ async def render(
             data = await collect_sections(
                 spec, saved.since, saved.now, saved.forges(), saved.release
             )
-        restore_summaries(data, saved.summaries, spec.llm)
+        restore_summaries(
+            data, saved.summaries, spec.llm, window=(saved.since, saved.now)
+        )
     except (ValueError, KeyError) as error:
         raise typer.BadParameter(str(error)) from error
     output_report(
