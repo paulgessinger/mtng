@@ -3,7 +3,9 @@
 import asyncio
 import hashlib
 import json
+import random
 import subprocess
+import time
 from pathlib import Path
 
 import appdirs
@@ -81,10 +83,32 @@ def summarize_command(prompt: str, transport: CommandBackend, timeout: float) ->
     return result.stdout
 
 
+RETRYABLE_STATUSES = frozenset({429, 502, 503, 504})
+RETRY_AFTER_CAP = 30.0
+
+
+def retry_delay(headers, attempt: int) -> float:
+    """Light exponential back-off (~1 s, 2 s, ...) with jitter to keep
+    concurrent workers from retrying in lockstep; an explicit Retry-After
+    header wins, capped to keep a stuck gateway from stalling a run."""
+
+    if (value := headers.get("retry-after")) is not None:
+        try:
+            return min(float(value), RETRY_AFTER_CAP)
+        except ValueError:  # HTTP-date or garbage: fall through to back-off
+            pass
+    return 2**attempt + random.uniform(0, 0.5)
+
+
 def summarize_chat_completions(
-    prompt: str, transport: ChatCompletionsBackend, timeout: float
+    prompt: str, transport: ChatCompletionsBackend, timeout: float, retries: int = 0
 ) -> str:
-    """Blocking call; summarize() runs it from a worker thread."""
+    """Blocking call; summarize() runs it from a worker thread.
+
+    Transient gateway failures (429, 502, 503, 504 and dropped connections)
+    are retried up to ``retries`` times with light back-off; other statuses
+    fail immediately.
+    """
 
     headers = {}
     if api_key := resolve_llm_api_key(
@@ -99,26 +123,33 @@ def summarize_chat_completions(
         payload["temperature"] = transport.temperature
     if transport.max_tokens is not None:
         payload["max_tokens"] = transport.max_tokens
-    try:
-        response = requests.post(
-            f"{transport.base_url}/chat/completions",
-            json=payload,
-            headers=headers,
-            timeout=timeout,
+    url = f"{transport.base_url}/chat/completions"
+    for attempt in range(retries + 1):
+        try:
+            response = requests.post(
+                url, json=payload, headers=headers, timeout=timeout
+            )
+        except requests.ConnectionError as error:
+            if attempt == retries:
+                raise ValueError(f"LLM summary request failed: {error}") from error
+            time.sleep(retry_delay({}, attempt))
+            continue
+        except requests.RequestException as error:
+            raise ValueError(f"LLM summary request failed: {error}") from error
+        body = (
+            response.json()
+            if response.headers.get("content-type", "").startswith("application/json")
+            else None
         )
-    except requests.RequestException as error:
-        raise ValueError(f"LLM summary request failed: {error}") from error
-    body = (
-        response.json()
-        if response.headers.get("content-type", "").startswith("application/json")
-        else None
-    )
-    if response.status_code != 200:
+        if response.status_code == 200:
+            return body["choices"][0]["message"]["content"]
+        if response.status_code in RETRYABLE_STATUSES and attempt < retries:
+            time.sleep(retry_delay(response.headers, attempt))
+            continue
         detail = body.get("error", body) if isinstance(body, dict) else response.text
         raise ValueError(
             f"LLM summary request failed ({response.status_code}): {detail}"
         )
-    return body["choices"][0]["message"]["content"]
 
 
 def summarize(prompt: str, config: LLMConfig, cache) -> tuple[bool | None, str]:
@@ -132,7 +163,9 @@ def summarize(prompt: str, config: LLMConfig, cache) -> tuple[bool | None, str]:
         case CommandBackend():
             output = summarize_command(prompt, transport, config.timeout)
         case ChatCompletionsBackend():
-            output = summarize_chat_completions(prompt, transport, config.timeout)
+            output = summarize_chat_completions(
+                prompt, transport, config.timeout, config.retries
+            )
     title_ok, summary = split_verdict(output)
     if not summary:
         raise ValueError("LLM summary command returned empty output")

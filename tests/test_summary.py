@@ -1,6 +1,7 @@
 import asyncio
 import json
 from pathlib import Path
+import requests
 import subprocess
 import sys
 import time
@@ -62,6 +63,7 @@ def pr():
         {"max_description_chars": -1},
         {"timeout": 0},
         {"max_concurrency": 0},
+        {"retries": -1},
     ],
 )
 def test_invalid_config(values):
@@ -296,6 +298,7 @@ def test_chat_completions_error(monkeypatch, tmp_path):
     monkeypatch.setattr("mtng.summary.requests.post", lambda *a, **k: Response())
     config = LLMConfig(
         enabled=True,
+        retries=0,
         transport={
             "type": "chat-completions",
             "model": "m",
@@ -306,6 +309,140 @@ def test_chat_completions_error(monkeypatch, tmp_path):
         with pytest.raises(ValueError, match="429"):
             summarize("prompt", config, cache)
         assert len(cache) == 0
+
+
+@pytest.fixture
+def retry_env(monkeypatch):
+    """Deterministic back-off: record sleeps, strip jitter."""
+
+    sleeps = []
+    monkeypatch.setattr("mtng.summary.time.sleep", sleeps.append)
+    monkeypatch.setattr("mtng.summary.random.uniform", lambda low, high: 0)
+    return sleeps
+
+
+def transient_post(calls, statuses, bodies):
+    """Build a requests.post replacement cycling through scripted replies."""
+
+    replies = iter(zip(statuses, bodies))
+
+    def post(url, **kwargs):
+        calls.append(url)
+        status, body = next(replies)
+        response = requests.Response()
+        response.status_code = status
+        response.headers["content-type"] = "application/json"
+        response._content = json.dumps(body).encode()
+        return response
+
+    return post
+
+
+def retry_config(**overrides):
+    return LLMConfig(
+        enabled=True,
+        retries=2,
+        transport={
+            "type": "chat-completions",
+            "model": "m",
+            "base_url": "https://gw.example.com/v1",
+        },
+        **overrides,
+    )
+
+
+def test_chat_completions_retries_transient_statuses(monkeypatch, retry_env, tmp_path):
+    calls = []
+    monkeypatch.setattr(
+        "mtng.summary.requests.post",
+        transient_post(
+            calls,
+            [502, 503, 200],
+            [
+                {"error": "down"},
+                {"error": "down"},
+                {"choices": [{"message": {"content": "Recovered."}}]},
+            ],
+        ),
+    )
+    with diskcache.Cache(str(tmp_path)) as cache:
+        assert summarize("prompt", retry_config(), cache) == (None, "Recovered.")
+    assert len(calls) == 3
+    assert retry_env == [1, 2]  # 2**attempt + jitter(0)
+
+
+def test_chat_completions_honors_retry_after(monkeypatch, retry_env, tmp_path):
+    calls = []
+    import mtng.summary as summary_module
+
+    inner = transient_post(
+        calls,
+        [200],
+        [{"choices": [{"message": {"content": "ok"}}]}],
+    )
+
+    def post(url, **kwargs):
+        if len(calls) == 0:
+            calls.append(url)
+            response = requests.Response()
+            response.status_code = 429
+            response.headers["content-type"] = "application/json"
+            response.headers["retry-after"] = "7"
+            response._content = b'{"error": "rate limited"}'
+            return response
+        return inner(url, **kwargs)
+
+    monkeypatch.setattr(summary_module.requests, "post", post)
+    with diskcache.Cache(str(tmp_path)) as cache:
+        assert summarize("prompt", retry_config(), cache) == (None, "ok")
+    assert len(calls) == 2
+    assert retry_env == [7.0]
+
+
+def test_chat_completions_retries_exhausted(monkeypatch, retry_env, tmp_path):
+    calls = []
+    monkeypatch.setattr(
+        "mtng.summary.requests.post",
+        transient_post(calls, [502, 502, 502], [{"error": "down"}] * 3),
+    )
+    with diskcache.Cache(str(tmp_path)) as cache:
+        with pytest.raises(ValueError, match="502"):
+            summarize("prompt", retry_config(), cache)
+        assert len(calls) == 3
+        assert retry_env == [1, 2]
+        assert len(cache) == 0
+
+
+def test_chat_completions_retries_connection_errors(monkeypatch, retry_env, tmp_path):
+    calls = []
+
+    def flaky(url, **kwargs):
+        calls.append(url)
+        if len(calls) < 3:
+            raise requests.ConnectionError("connection reset")
+        response = requests.Response()
+        response.status_code = 200
+        response.headers["content-type"] = "application/json"
+        response._content = b'{"choices": [{"message": {"content": "ok"}}]}'
+        return response
+
+    monkeypatch.setattr("mtng.summary.requests.post", flaky)
+    with diskcache.Cache(str(tmp_path)) as cache:
+        assert summarize("prompt", retry_config(), cache) == (None, "ok")
+    assert len(calls) == 3
+
+
+def test_chat_completions_client_errors_fail_fast(monkeypatch, retry_env, tmp_path):
+    calls = []
+    monkeypatch.setattr(
+        "mtng.summary.requests.post",
+        transient_post(calls, [401], [{"error": {"message": "bad key"}}]),
+    )
+    with diskcache.Cache(str(tmp_path)) as cache:
+        with pytest.raises(ValueError, match="401"):
+            summarize("prompt", retry_config(), cache)
+    assert len(calls) == 1
+    assert retry_env == []
 
 
 @pytest.mark.parametrize(
