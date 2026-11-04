@@ -6,6 +6,8 @@
 
 Tests live in `tests/`, with JSON fixtures and the LaTeX snapshot in `tests/ref/`. `tests/acts_spec.yml` is an example configuration; `screen.png` illustrates output. CI workflows are in `.github/workflows/`.
 
+Configuration is **TOML-first**: prefer `.toml` for new examples, documentation, and tests. YAML is a supported backup format (`load_spec` in `cli.py` also accepts JSON), but user-facing material should default to TOML.
+
 ## Build, Test, and Development Commands
 
 Use Python 3.12 or newer and uv:
