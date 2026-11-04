@@ -3,7 +3,6 @@
 import asyncio
 import hashlib
 import json
-import os
 import subprocess
 from pathlib import Path
 
@@ -11,6 +10,7 @@ import appdirs
 import diskcache
 import requests
 
+from mtng.auth import resolve_llm_api_key
 from mtng.models import IssueBase
 from mtng.progress import progress_items
 from mtng.spec import ChatCompletionsBackend, CommandBackend, LLMConfig
@@ -62,7 +62,7 @@ def summarize_chat_completions(
     """Blocking call; summarize() runs it from a worker thread."""
 
     headers = {}
-    if api_key := os.environ.get(transport.api_key_env, ""):
+    if api_key := resolve_llm_api_key(transport.api_key_env, transport.base_url):
         headers["Authorization"] = f"Bearer {api_key}"
     payload = {
         "model": transport.model,

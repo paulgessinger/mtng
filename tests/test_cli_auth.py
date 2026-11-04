@@ -9,6 +9,7 @@ from typer.testing import CliRunner
 
 import mtng.auth as auth
 import mtng.cli
+from mtng.auth import llm_keyring_username, resolve_llm_api_key
 from mtng.forge.gitlab import GitLabError
 
 
@@ -171,3 +172,56 @@ def test_failed_login_does_not_store(monkeypatch, target):
     )
     assert result.exit_code != 0
     store.assert_not_called()
+
+
+def test_llm_keyring_username_validates_and_normalizes():
+    assert (
+        llm_keyring_username("https://LLM-Gateway.Example.com:8443/v1")
+        == "llm:llm-gateway.example.com:8443:token"
+    )
+    assert (
+        llm_keyring_username("http://localhost:4000/v1/") == "llm:localhost:4000:token"
+    )
+    assert (
+        llm_keyring_username("https://gw.example.com/v1") == "llm:gw.example.com:token"
+    )
+    with pytest.raises(ValueError, match="http"):
+        llm_keyring_username("ftp://gw.example.com")
+    with pytest.raises(ValueError, match="http"):
+        llm_keyring_username("not a url")
+
+
+def test_llm_api_key_resolution_precedence(monkeypatch):
+    get = Mock(return_value=" stored-keyring-key ")
+    monkeypatch.setattr(auth.keyring, "get_password", get)
+    base_url = "https://gw.example.com/v1"
+    # A set environment variable wins, like forge token resolution.
+    monkeypatch.setenv("LITELLM_API_KEY", " env-key ")
+    assert resolve_llm_api_key("LITELLM_API_KEY", base_url) == "env-key"
+    get.assert_not_called()
+    # Blank env values fall through to the keychain.
+    monkeypatch.setenv("LITELLM_API_KEY", "  ")
+    assert resolve_llm_api_key("LITELLM_API_KEY", base_url) == "stored-keyring-key"
+    get.assert_called_once_with("mtng", "llm:gw.example.com:token")
+    # No environment variable at all: keychain value is trimmed and used.
+    monkeypatch.delenv("LITELLM_API_KEY")
+    get = Mock(return_value="stored-keyring-key")
+    monkeypatch.setattr(auth.keyring, "get_password", get)
+    assert resolve_llm_api_key("LITELLM_API_KEY", base_url) == "stored-keyring-key"
+
+
+@pytest.mark.parametrize("stored", [None, ""])
+def test_llm_api_key_missing_stays_optional(monkeypatch, stored):
+    monkeypatch.delenv("LITELLM_API_KEY", raising=False)
+    monkeypatch.setattr(auth.keyring, "get_password", Mock(return_value=stored))
+    assert resolve_llm_api_key("LITELLM_API_KEY", "https://gw.example.com/v1") is None
+
+
+def test_llm_api_key_broken_keychain_is_optional(monkeypatch):
+    from keyring.errors import KeyringError
+
+    monkeypatch.delenv("LITELLM_API_KEY", raising=False)
+    monkeypatch.setattr(
+        auth.keyring, "get_password", Mock(side_effect=KeyringError("locked"))
+    )
+    assert resolve_llm_api_key("LITELLM_API_KEY", "https://gw.example.com/v1") is None

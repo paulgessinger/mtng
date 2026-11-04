@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import diskcache
 import pytest
@@ -18,6 +18,13 @@ from mtng.summary import (
     restore_summaries,
     summarize,
 )
+
+
+@pytest.fixture(autouse=True)
+def no_keychain(monkeypatch):
+    """Keep tests away from the real system keychain."""
+
+    monkeypatch.setattr("mtng.auth.keyring.get_password", Mock(return_value=None))
 
 
 def pr():
@@ -131,20 +138,53 @@ def test_chat_completions(monkeypatch, tmp_path):
         "type": "chat-completions",
         "model": "claude-sonnet-4",
         "base_url": "https://gateway.example.com/v1/",
+        "api_key_env": "GATEWAY_KEY",
     }
     config = LLMConfig(enabled=True, transport=transport)
     assert config.transport.base_url == "https://gateway.example.com/v1"
+    monkeypatch.delenv("GATEWAY_KEY", raising=False)
     monkeypatch.setattr("mtng.summary.requests.post", post)
-    monkeypatch.setenv("GATEWAY_KEY", "sekrit")
-    config.transport.api_key_env = "GATEWAY_KEY"
     with diskcache.Cache(str(tmp_path)) as cache:
         assert summarize("prompt", config, cache) == "Compact summary."
         assert captured["url"] == "https://gateway.example.com/v1/chat/completions"
-        assert captured["headers"]["Authorization"] == "Bearer sekrit"
+        # No environment variable and no keychain entry: unauthenticated request.
+        assert "Authorization" not in captured["headers"]
         assert captured["payload"]["model"] == "claude-sonnet-4"
         # Same transport, same prompt: served from cache without a second call.
         assert summarize("prompt", config, cache) == "Compact summary."
         assert len(calls) == 1
+
+
+def test_chat_completions_uses_keychain_key(monkeypatch, tmp_path):
+    captured = {}
+    monkeypatch.delenv("GATEWAY_KEY", raising=False)
+    monkeypatch.setattr(
+        "mtng.auth.keyring.get_password", Mock(return_value=" keyring-key ")
+    )
+
+    class Response:
+        status_code = 200
+        headers = {"content-type": "application/json"}
+
+        def __init__(self, url, **kwargs):
+            captured.update(url=url, headers=kwargs["headers"])
+
+        def json(self):
+            return {"choices": [{"message": {"content": "ok"}}]}
+
+    monkeypatch.setattr("mtng.summary.requests.post", Response)
+    config = LLMConfig(
+        enabled=True,
+        transport={
+            "type": "chat-completions",
+            "model": "m",
+            "base_url": "https://gateway.example.com/v1",
+            "api_key_env": "GATEWAY_KEY",
+        },
+    )
+    with diskcache.Cache(str(tmp_path)) as cache:
+        assert summarize("prompt", config, cache) == "ok"
+    assert captured["headers"]["Authorization"] == "Bearer keyring-key"
 
 
 def test_chat_completions_error(monkeypatch, tmp_path):
@@ -156,6 +196,7 @@ def test_chat_completions_error(monkeypatch, tmp_path):
         def json(self):
             return {"error": {"message": "rate limited"}}
 
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.setattr("mtng.summary.requests.post", lambda *a, **k: Response())
     config = LLMConfig(
         enabled=True,
