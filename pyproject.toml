@@ -15,13 +15,13 @@ dependencies = [
     "Jinja2>=3.1.1",
     "requests>=2.34.2",
     "typer>=0.27.3",
-    "python-dateutil>=2.8.1",
+    "python-dateutil>=3.0.0",
     "dateparser>=1.4.3",
-    "aiohttp>=3.14.4",
+    "aiohttp>=3.14.5",
     "gidgethub>=6.0.0",
-    "pydantic>=2.13.5",
+    "pydantic>=2.14.1",
     "PyYAML>=6.0.1",
-    "pytest-asyncio>=1.4.0",
+    "pytest-asyncio>=1.4.1",
     "appdirs>=1.4.4",
     "diskcache>=5.4.0",
     "rich>=15.0.0",
@@ -37,9 +37,9 @@ homepage = "https://github.com/paulgessinger/mtng"
 
 [dependency-groups]
 dev = [
-    "black>=26.10.0",
-    "nox>=2026.8.17",
-    "pytest>=9.1.1",
+    "black>=26.10.1",
+    "nox>=2026.10.20",
+    "pytest>=9.2.0",
     "pytest-sugar>=1.1.1",
     "pytest-xdist>=3.8.0",
 ]
