@@ -295,6 +295,23 @@ async def test_refresh_revalidates_even_a_fresh_local_entry():
 
 
 @pytest.mark.asyncio
+async def test_force_fresh_revalidates_instead_of_serving_fresh_entry():
+    session = Session([Response(200, {"v": 1}, {"ETag": "v1"}), Response(304)])
+    transport = HttpTransport(session, max_age=300)
+    await transport.request("GET", URL, HEADERS)
+    # A freshness bypass must not serve the unvalidated entry, but validators
+    # still apply so a 304 keeps the stored body.
+    with http.force_fresh(True):
+        status, headers, body = await transport.request("GET", URL, HEADERS)
+    assert status == 200 and json.loads(body) == {"v": 1}
+    assert transport.stats["hits"] == 0 and transport.stats["revalidated"] == 1
+    assert session.calls[1][1]["headers"]["If-None-Match"] == "v1"
+    # Outside the block the fresh entry short-circuits again.
+    assert json.loads((await transport.request("GET", URL, HEADERS))[2]) == {"v": 1}
+    assert len(session.calls) == 2 and transport.stats["hits"] == 1
+
+
+@pytest.mark.asyncio
 async def test_github_rechecks_cooldown_extended_by_another_response(monkeypatch):
     now = [1000.0]
     scope = http.Coordinator(not_before=1001)

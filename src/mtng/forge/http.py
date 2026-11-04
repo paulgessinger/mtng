@@ -5,6 +5,8 @@ import hashlib
 import json
 import time
 import weakref
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -21,6 +23,22 @@ from mtng.progress import progress_step
 # Only JSON strings are persisted, never Python models or authorization headers.
 cache = diskcache.Cache(str(Path(appdirs.user_cache_dir("mtng")) / "http-v1"))
 RETAIN_SECONDS = 30 * 24 * 3600
+
+
+@contextmanager
+def force_fresh(enabled: bool):
+    """Disable serving locally cached responses without revalidation for the
+    requests made inside the block. Callers revalidate instead of bypassing
+    the cache entirely, so validators and stored bodies still apply."""
+
+    token = _force_fresh.set(enabled)
+    try:
+        yield
+    finally:
+        _force_fresh.reset(token)
+
+
+_force_fresh: ContextVar[bool] = ContextVar("force_fresh", default=False)
 
 
 class RateLimitError(ValueError):
@@ -177,13 +195,15 @@ class HttpTransport:
 
     async def _request(self, scope, key, method, url, headers, body):
         stored = None
+        # Freshness bypass still consults the cache for validators, it only
+        # refuses the unvalidated shortcut.
+        fresh_window = 0 if _force_fresh.get() else self.max_age
         if self.enabled and method == "GET":
             raw = cache.get(key)
             if raw is not None:
                 try:
                     stored = json.loads(raw)
-                    fresh = self.max_age
-                    if time.time() - stored["stored_at"] < fresh:
+                    if time.time() - stored["stored_at"] < fresh_window:
                         self.stats["hits"] += 1
                         return 200, stored["headers"], stored["body"].encode()
                 except (ValueError, KeyError, TypeError):

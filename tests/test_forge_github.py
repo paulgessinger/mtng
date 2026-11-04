@@ -139,3 +139,68 @@ async def test_pull_diff_reraises_other_bad_requests():
     gh.getitem = AsyncMock(side_effect=BadRequest(404, {"message": "Not Found"}))
     with pytest.raises(BadRequest):
         await GitHubForge(gh).pull_diff("team/project", 42)
+
+
+@pytest.mark.asyncio
+async def test_merged_pr_details_revalidate_and_backfill_closed_at(monkeypatch):
+    import json
+    from datetime import UTC, datetime
+    from pathlib import Path
+
+    from mtng.forge import github as github_module
+
+    raw = json.loads((Path(__file__).parent / "ref" / "merged_prs.json").read_text())[0]
+    raw["head"] = {"sha": "current-head"}
+    raw["reviews"] = []
+    # Detail payload that knows about the merge only through merged_at, as
+    # the HTTP cache can serve when a search already observed the merge.
+    stale = dict(
+        raw,
+        closed_at=None,
+        merged_at="2026-11-04T14:59:08+00:00",
+        state="closed",
+        updated_at=raw["created_at"],
+    )
+    merged = dict(
+        raw,
+        closed_at="2026-11-04T14:59:08+00:00",
+        merged_at="2026-11-04T14:59:08+00:00",
+        state="closed",
+    )
+    search_item = dict(raw, pull_request={"url": raw["url"]})
+
+    calls = []
+    real = github_module.force_fresh
+
+    def spy(enabled):
+        calls.append(enabled)
+        return real(enabled)
+
+    monkeypatch.setattr(github_module, "force_fresh", spy)
+    now = datetime(2026, 11, 4, 16, tzinfo=UTC)
+
+    gh = client()
+    gh._make_request = AsyncMock(
+        side_effect=[
+            ({"items": [search_item]}, None, 200),
+            (stale, None, 200),
+            ([], None, 200),
+        ]
+    )
+    prs = await GitHubForge(gh).merged_prs("team/project", now, now)
+    assert calls == [True]
+    # Backfilled from merged_at when the payload trails the merge.
+    assert prs[0].closed_at == datetime(2026, 11, 4, 14, 59, 8, tzinfo=UTC)
+    assert prs[0].merged_at == datetime(2026, 11, 4, 14, 59, 8, tzinfo=UTC)
+
+    # A payload that already carries closed_at keeps it unchanged.
+    gh._make_request = AsyncMock(
+        side_effect=[
+            ({"items": [search_item]}, None, 200),
+            (merged, None, 200),
+            ([], None, 200),
+        ]
+    )
+    prs = await GitHubForge(gh).merged_prs("team/project", now, now)
+    assert calls == [True, True]
+    assert prs[0].closed_at == datetime(2026, 11, 4, 14, 59, 8, tzinfo=UTC)
