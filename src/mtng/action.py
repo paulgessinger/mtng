@@ -192,7 +192,8 @@ def resolve_config(inputs: Mapping[str, str], generated: Path) -> Path:
 
         try:
             with path.open() as stream:
-                spec = load_spec(stream)
+                # Runners are shared: never pick up a maintainer's user config.
+                spec = load_spec(stream, user_layer=False)
         except (ValueError, yaml.YAMLError) as error:
             raise ActionInputError(f"Invalid configuration: {error}") from error
         if any(repo.forge != "github" for repo in spec.source_repositories):

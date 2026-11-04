@@ -34,3 +34,15 @@ def isolated_http_cache(monkeypatch, tmp_path):
     with diskcache.Cache(str(tmp_path / "http-cache")) as cache:
         monkeypatch.setattr(http, "cache", cache)
         yield cache
+
+
+@pytest.fixture(autouse=True)
+def isolated_user_config(monkeypatch, tmp_path):
+    """Point the user config layer at an empty temp path; tests that exercise
+    the layer write to ``cli.user_config_path()`` explicitly."""
+
+    from mtng import cli
+
+    path = tmp_path / "user-config.toml"
+    monkeypatch.setattr(cli, "user_config_path", lambda: path)
+    return path

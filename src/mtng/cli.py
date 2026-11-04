@@ -14,6 +14,7 @@ import json
 import typer
 from gidgethub.aiohttp import GitHubAPI
 import aiohttp
+import appdirs
 import dateparser
 import yaml
 import tomllib
@@ -89,26 +90,44 @@ def merge_config(base: dict, overlay: dict) -> dict:
     return result
 
 
-def load_spec(*configs) -> Spec:
+def user_config_path() -> Path:
+    """Per-user mtng configuration file (lowest merge layer).
+
+    Holds machine-level defaults such as the LLM gateway transport, so
+    individual meeting specs can stay free of host-specific settings.
+    """
+
+    return Path(appdirs.user_config_dir("mtng", appauthor=False)) / "config.toml"
+
+
+def _read_config_file(config) -> dict:
+    name = str(config) if isinstance(config, Path) else config.name
+    content = config.read_text() if isinstance(config, Path) else config.read()
+    suffix = Path(name).suffix.lower()
+    try:
+        if suffix == ".toml":
+            data = tomllib.loads(content)
+        elif suffix == ".json":
+            data = json.loads(content)
+        else:
+            data = yaml.safe_load(content)
+    except (ValueError, yaml.YAMLError) as error:
+        raise ValueError(f"Invalid config {name}: {error}") from error
+    if not isinstance(data, dict):
+        raise ValueError(f"Config {name} must contain a mapping at the top level.")
+    return data
+
+
+def load_spec(*configs, user_layer: bool = True) -> Spec:
     if not configs:
         raise ValueError("Provide a config argument or at least one --config file.")
     merged = {}
+    if user_layer:
+        path = user_config_path()
+        if path.is_file():
+            merged = _read_config_file(path)
     for config in configs:
-        name = str(config) if isinstance(config, Path) else config.name
-        content = config.read_text() if isinstance(config, Path) else config.read()
-        suffix = Path(name).suffix.lower()
-        try:
-            if suffix == ".toml":
-                data = tomllib.loads(content)
-            elif suffix == ".json":
-                data = json.loads(content)
-            else:
-                data = yaml.safe_load(content)
-        except (ValueError, yaml.YAMLError) as error:
-            raise ValueError(f"Invalid config {name}: {error}") from error
-        if not isinstance(data, dict):
-            raise ValueError(f"Config {name} must contain a mapping at the top level.")
-        merged = merge_config(merged, data)
+        merged = merge_config(merged, _read_config_file(config))
     try:
         return Spec.model_validate(merged)
     except ValueError as error:

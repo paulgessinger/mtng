@@ -117,3 +117,28 @@ def test_positional_stdin_config_still_supported(monkeypatch):
     )
     assert result.exit_code == 0, result.output
     assert result.stdout == "latex"
+
+
+def test_user_config_is_lowest_layer_and_toml(isolated_user_config, tmp_path):
+    isolated_user_config.write_text(
+        '[llm.transport]\ntype = "chat-completions"\nmodel = "gateway-default"\n'
+        'base_url = "https://gw.example.com/v1"\n\n[llm]\nenabled = true\n'
+    )
+    project = tmp_path / "project.toml"
+    project.write_text('[llm.transport]\nmodel = "meeting-model"\n')
+    spec = cli.load_spec(project)
+    assert spec.llm.transport.model == "meeting-model"
+    assert spec.llm.enabled is True
+    assert spec.llm.transport.base_url == "https://gw.example.com/v1"
+    # An invalid user config is reported with its path, not the project config.
+    isolated_user_config.write_text("[")
+    with pytest.raises(ValueError, match="config.toml"):
+        cli.load_spec(project)
+
+
+def test_load_spec_can_skip_user_layer(isolated_user_config, tmp_path):
+    isolated_user_config.write_text("[llm]\nenabled = true\n")
+    project = tmp_path / "project.toml"
+    project.write_text("")
+    assert cli.load_spec(project).llm.enabled is True
+    assert cli.load_spec(project, user_layer=False).llm.enabled is False
