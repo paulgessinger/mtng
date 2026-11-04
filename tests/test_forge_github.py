@@ -77,7 +77,7 @@ async def test_pull_diff_requests_diff_media_type():
 
 @pytest.mark.asyncio
 async def test_pull_diff_survives_oversized_diff_rejection():
-    """GitHub 400s on huge diffs; summarize from description instead."""
+    """GitHub 400s on huge diffs; fall back to the per-file endpoint."""
 
     from gidgethub import BadRequest
 
@@ -87,7 +87,47 @@ async def test_pull_diff_survives_oversized_diff_rejection():
             400, "Sorry, the diff exceeded the maximum number of lines (20000)"
         )
     )
-    assert await GitHubForge(gh).pull_diff("team/project", 42) == "[Diff unavailable]"
+
+    async def files(url):
+        assert url == "/repos/team/project/pulls/42/files?per_page=100"
+        yield {
+            "filename": "core/big.py",
+            "additions": 1200,
+            "deletions": 300,
+            "patch": "@@ -1,2 +1,3 @@\n+new",
+        }
+        yield {"filename": "docs/moved.md", "previous_filename": "docs/old.md"}
+        yield {"filename": "data/blob.bin", "additions": 0, "deletions": 0}
+
+    gh.getiter = files
+    diff = await GitHubForge(gh).pull_diff("team/project", 42)
+    assert diff.startswith("[Diff too large to fetch; 3 changed files:]")
+    assert "core/big.py (+1200 -300)" in diff
+    assert "docs/moved.md (+0 -0) (renamed from docs/old.md)" in diff
+    assert "data/blob.bin (+0 -0)" in diff
+    assert "+new" in diff  # patch excerpt included
+
+
+@pytest.mark.asyncio
+async def test_pull_diff_file_fallback_parks_patch_budget():
+    from gidgethub import BadRequest
+
+    gh = client()
+    gh.getitem = AsyncMock(
+        side_effect=BadRequest(
+            400, "Sorry, the diff exceeded the maximum number of lines (20000)"
+        )
+    )
+
+    async def files(url):
+        yield {"filename": "a.py", "patch": "x" * 55000}
+        yield {"filename": "b.py", "patch": "y" * 10000}
+
+    gh.getiter = files
+    diff = await GitHubForge(gh).pull_diff("team/project", 42)
+    # First patch consumes most of the budget; the second is cut to the rest.
+    assert ("x" * 55000) in diff
+    assert ("y" * 5000 + "\n[Truncated]") in diff
 
 
 @pytest.mark.asyncio

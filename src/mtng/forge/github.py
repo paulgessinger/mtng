@@ -89,11 +89,51 @@ class GitHubForge:
             )
         except BadRequest as error:
             # GitHub refuses to serve diffs for very large PRs (about 20 000
-            # lines); summarize from title and description rather than
-            # aborting the whole run.
+            # lines). Fall back to the per-file endpoint, which reports every
+            # changed file with size metadata and per-file patch excerpts,
+            # rather than aborting the whole run.
             if error.status_code == 400 and "diff" in str(error).lower():
-                return "[Diff unavailable]"
+                return await self._diff_from_files(repo_name, number)
             raise
+
+    async def _diff_from_files(self, repo_name: str, number: int) -> str:
+        files = [
+            item
+            async for item in self.gh.getiter(
+                f"/repos/{repo_name}/pulls/{number}/files?per_page=100"
+            )
+        ]
+        headers = []
+        for item in files:
+            line = (
+                f"{item['filename']}"
+                f" (+{item.get('additions', 0)} -{item.get('deletions', 0)})"
+            )
+            if previous := item.get("previous_filename"):
+                line += f" (renamed from {previous})"
+            headers.append(line)
+        lines = [
+            f"[Diff too large to fetch; {len(files)} changed files:]",
+            *headers,
+            "",
+            "[Patch excerpts where available:]",
+        ]
+        # Patch bodies first; the prompt builder applies its own character
+        # limit, but avoid assembling megabytes only to truncate them.
+        budget = 60000
+        for item in files:
+            if budget <= 0:
+                lines.append("[Truncated]")
+                break
+            patch = item.get("patch")
+            if not patch:
+                continue
+            text = patch
+            if len(text) > budget:
+                text = text[:budget] + "\n[Truncated]"
+            budget -= len(text)
+            lines.append(text)
+        return "\n".join(lines)
 
     async def get_reviews(self, url: str) -> list[Review]:
         return [Review.model_validate(r) async for r in self.gh.getiter(url)]
