@@ -406,8 +406,26 @@ class ChatCompletionsBackend(BaseModel):
     model: str = pydantic.Field(min_length=1)
     base_url: str = "https://api.openai.com/v1"
     api_key_env: str = pydantic.Field("OPENAI_API_KEY", min_length=1)
+    identity: str | None = pydantic.Field(
+        None,
+        description=(
+            "Optional keychain identity for gateways where you hold several keys, "
+            "for example one per LiteLLM team. Selects the keychain entry "
+            "llm:<host>:<identity>:token instead of the default llm:<host>:token."
+        ),
+    )
     temperature: float | None = pydantic.Field(None, ge=0, le=2)
     max_tokens: int | None = pydantic.Field(None, ge=1)
+
+    @pydantic.field_validator("identity")
+    @classmethod
+    def check_identity(cls, value):
+        if value is not None and not re.fullmatch(r"[A-Za-z0-9._-]+", value):
+            raise ValueError(
+                "identity must contain only letters, digits, dots, dashes "
+                "and underscores"
+            )
+        return value
 
     @pydantic.field_validator("base_url")
     @classmethod

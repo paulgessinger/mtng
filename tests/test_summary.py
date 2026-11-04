@@ -46,6 +46,13 @@ def pr():
                 "base_url": "ftp://x",
             }
         },
+        {
+            "transport": {
+                "type": "chat-completions",
+                "model": "m",
+                "identity": "bad identity!",
+            }
+        },
         {"max_diff_chars": -1},
         {"max_description_chars": -1},
         {"timeout": 0},
@@ -185,6 +192,40 @@ def test_chat_completions_uses_keychain_key(monkeypatch, tmp_path):
     with diskcache.Cache(str(tmp_path)) as cache:
         assert summarize("prompt", config, cache) == "ok"
     assert captured["headers"]["Authorization"] == "Bearer keyring-key"
+
+
+def test_chat_completions_identity_keychain_entry(monkeypatch, tmp_path):
+    """A named identity reads llm:<host>:<identity>:token from the keychain."""
+
+    captured = {}
+    monkeypatch.delenv("LITELLM_API_KEY", raising=False)
+    get = Mock(return_value="team-b-key")
+    monkeypatch.setattr("mtng.auth.keyring.get_password", get)
+
+    class Response:
+        status_code = 200
+        headers = {"content-type": "application/json"}
+
+        def __init__(self, url, **kwargs):
+            captured.update(headers=kwargs["headers"])
+
+        def json(self):
+            return {"choices": [{"message": {"content": "ok"}}]}
+
+    monkeypatch.setattr("mtng.summary.requests.post", Response)
+    config = LLMConfig(
+        enabled=True,
+        transport={
+            "type": "chat-completions",
+            "model": "m",
+            "base_url": "https://gw.example.com/v1",
+            "identity": "team-b",
+        },
+    )
+    with diskcache.Cache(str(tmp_path)) as cache:
+        assert summarize("prompt", config, cache) == "ok"
+    get.assert_called_once_with("mtng", "llm:gw.example.com:team-b:token")
+    assert captured["headers"]["Authorization"] == "Bearer team-b-key"
 
 
 def test_chat_completions_error(monkeypatch, tmp_path):

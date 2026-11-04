@@ -87,31 +87,44 @@ def store_token(token: str, target: AuthTarget) -> None:
         ) from error
 
 
-def llm_keyring_username(base_url: str) -> str:
-    """Keychain username for an OpenAI-compatible gateway, keyed per host."""
+def llm_keyring_username(base_url: str, identity: str | None = None) -> str:
+    """Keychain username for an OpenAI-compatible gateway, keyed per host.
+
+    An optional identity distinguishes several keys for the same gateway,
+    for example one per LiteLLM team.
+    """
 
     parsed = urlsplit(base_url)
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
         raise ValueError("base_url must be an http(s) URL")
     port = parsed.port  # Also validates the port range.
     host = parsed.hostname + (f":{port}" if port and port not in (80, 443) else "")
-    return f"llm:{host}:token"
+    parts = ["llm", host]
+    if identity:
+        parts.append(identity)
+    parts.append("token")
+    return ":".join(parts)
 
 
-def resolve_llm_api_key(api_key_env: str, base_url: str) -> str | None:
+def resolve_llm_api_key(
+    api_key_env: str, base_url: str, identity: str | None = None
+) -> str | None:
     """Resolve a gateway API key from the environment, then the keychain.
 
     The environment variable named by ``api_key_env`` wins, matching forge
-    token resolution. Otherwise the per-gateway keychain entry is used. A
-    broken keychain is treated like a missing entry so unauthenticated local
-    gateways keep working; requests then fail visibly if the gateway
-    actually requires a key.
+    token resolution. Otherwise the keychain entry for the gateway (and
+    optional identity, e.g. a LiteLLM team) is used. A broken keychain is
+    treated like a missing entry so unauthenticated local gateways keep
+    working; requests then fail visibly if the gateway actually requires
+    a key.
     """
 
     if value := os.environ.get(api_key_env, "").strip():
         return value
     try:
-        value = keyring.get_password(KEYRING_SERVICE, llm_keyring_username(base_url))
+        value = keyring.get_password(
+            KEYRING_SERVICE, llm_keyring_username(base_url, identity)
+        )
     except KeyringError:
         return None
     return value.strip() if value and value.strip() else None

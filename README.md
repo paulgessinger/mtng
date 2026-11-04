@@ -799,8 +799,21 @@ type = "chat-completions"
 model = "anthropic/claude-sonnet-4" # gateway model name
 base_url = "https://llm-gateway.example.com/v1"
 api_key_env = "LITELLM_API_KEY" # name of the environment variable holding the key
+# identity = "team-b" # optional, see below
 # temperature = 0.2
 # max_tokens = 200
+```
+
+The key is resolved like forge tokens: first from the environment variable
+named by `api_key_env`, then from the system keychain (service `mtng`, entry
+`llm:<host>:token`, e.g. `llm:llm-gateway.example.com:token`). If neither is
+present, the request is sent without an `Authorization` header, which suits
+keyless local gateways. LiteLLM virtual keys are scoped to a team; hold keys
+for several teams on one gateway by storing one keychain entry per team and
+naming them with `identity`, which selects `llm:<host>:<identity>:token`:
+
+```console
+$ python -c "import keyring; keyring.set_password('mtng', 'llm:llm-gateway.example.com:team-b:token', 'sk-...')"
 ```
 
 The prompt includes the PR title, description and diff;

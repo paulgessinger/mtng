@@ -62,7 +62,9 @@ def summarize_chat_completions(
     """Blocking call; summarize() runs it from a worker thread."""
 
     headers = {}
-    if api_key := resolve_llm_api_key(transport.api_key_env, transport.base_url):
+    if api_key := resolve_llm_api_key(
+        transport.api_key_env, transport.base_url, transport.identity
+    ):
         headers["Authorization"] = f"Bearer {api_key}"
     payload = {
         "model": transport.model,

@@ -185,6 +185,14 @@ def test_llm_keyring_username_validates_and_normalizes():
     assert (
         llm_keyring_username("https://gw.example.com/v1") == "llm:gw.example.com:token"
     )
+    # An identity (e.g. a LiteLLM team) selects a distinct keychain entry.
+    assert (
+        llm_keyring_username("https://gw.example.com/v1", "team-b")
+        == "llm:gw.example.com:team-b:token"
+    )
+    assert llm_keyring_username("https://gw.example.com/v1", None) == (
+        llm_keyring_username("https://gw.example.com/v1", "")
+    )
     with pytest.raises(ValueError, match="http"):
         llm_keyring_username("ftp://gw.example.com")
     with pytest.raises(ValueError, match="http"):
@@ -215,6 +223,23 @@ def test_llm_api_key_missing_stays_optional(monkeypatch, stored):
     monkeypatch.delenv("LITELLM_API_KEY", raising=False)
     monkeypatch.setattr(auth.keyring, "get_password", Mock(return_value=stored))
     assert resolve_llm_api_key("LITELLM_API_KEY", "https://gw.example.com/v1") is None
+
+
+def test_llm_api_key_identity_selects_keychain_entry(monkeypatch):
+    monkeypatch.delenv("LITELLM_API_KEY", raising=False)
+    get = Mock(return_value="team-b-key")
+    monkeypatch.setattr(auth.keyring, "get_password", get)
+    assert (
+        resolve_llm_api_key("LITELLM_API_KEY", "https://gw.example.com/v1", "team-b")
+        == "team-b-key"
+    )
+    get.assert_called_once_with("mtng", "llm:gw.example.com:team-b:token")
+    # The environment variable still outranks a named identity's keychain entry.
+    monkeypatch.setenv("LITELLM_API_KEY", "env-wins")
+    assert (
+        resolve_llm_api_key("LITELLM_API_KEY", "https://gw.example.com/v1", "team-b")
+        == "env-wins"
+    )
 
 
 def test_llm_api_key_broken_keychain_is_optional(monkeypatch):
