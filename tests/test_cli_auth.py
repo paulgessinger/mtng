@@ -272,13 +272,21 @@ class _ModelsHandler(BaseHTTPRequestHandler):
                 },
                 seen,
             )
-        if self.headers.get("Authorization") != "Bearer good-key":
-            self.send_response(401)
-        else:
-            self.send_response(200)
         body = json.dumps(
             {"data": [{"id": "m1"}, {"id": "m2"}, {"id": "m3"}, {"id": "m4"}]}
         ).encode()
+        if self.headers.get("Authorization") != "Bearer good-key":
+            body = json.dumps(
+                {
+                    "error": {
+                        "message": "Invalid Virtual Key provided.",
+                        "type": "auth_error",
+                    }
+                }
+            ).encode()
+            self.send_response(401)
+        else:
+            self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
@@ -321,13 +329,15 @@ def test_llm_validate_and_login(monkeypatch, models_server):
     assert result.exit_code == 0, result.output
     expected_entry = llm_keyring_username(models_server, "team-b")
     auth.keyring.set_password.assert_called_once_with("mtng", expected_entry, "key")
-    # Validation rejects a wrong key and stores nothing.
+    # Validation rejects a wrong key, surfaces the gateway's error message,
+    # and stores nothing.
     result = CliRunner().invoke(
         mtng.cli.cli,
         ["auth", "llm", "login", models_server, "--key", "bad", "--identity", "t"],
     )
     assert result.exit_code != 0
     assert "rejected" in result.output
+    assert "Invalid Virtual Key provided." in result.output
     # A correct key validates, reports the models, and stores the key.
     result = CliRunner().invoke(
         mtng.cli.cli,

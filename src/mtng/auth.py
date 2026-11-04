@@ -163,14 +163,20 @@ async def validate_llm_key(token: str | None, base_url: str) -> str:
                 headers=headers,
                 timeout=aiohttp.ClientTimeout(total=15),
             ) as response:
+                body_text = await response.text()
                 if response.status != 200:
                     hint = (
                         "the gateway rejected the key"
                         if response.status in (401, 403)
                         else "unexpected gateway response"
                     )
+                    # Include the gateway's own error message; LiteLLM, for
+                    # example, distinguishes invalid, expired and over-budget
+                    # virtual keys in its response body.
+                    detail = " ".join(body_text.split())[:300]
                     raise typer.BadParameter(
                         f"Key validation failed: {response.status} ({hint})"
+                        + (f": {detail}" if detail else "")
                     )
                 body = await response.json(content_type=None)
                 models = body.get("data") if isinstance(body, dict) else None
