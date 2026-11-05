@@ -62,7 +62,11 @@ async def filter_items(items, predicate, forge, repo_name):
         async def paths():
             nonlocal cached
             if cached is None:
-                cached = await forge.changed_paths(repo_name, item.number)
+                cached = await forge.changed_paths(
+                    repo_name,
+                    item.number,
+                    merged=getattr(item, "merged_at", None) is not None,
+                )
             return cached
 
         return await matches(predicate, item, paths)

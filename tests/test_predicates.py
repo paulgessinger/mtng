@@ -96,7 +96,9 @@ async def test_collection_and_replay(section):
     ]
     backend = FakeForge(merged_prs=items, open_prs=items, release=("v1", items))
     backend.changed_paths = AsyncMock(
-        side_effect=lambda repo, number: ["src/a.py"] if number == 2 else ["docs/a.md"]
+        side_effect=lambda repo, number, **kwargs: (
+            ["src/a.py"] if number == 2 else ["docs/a.md"]
+        )
     )
     spec = spec_with(
         dict(

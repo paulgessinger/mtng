@@ -88,11 +88,11 @@ class RecordingForge:
         self.backend = backend
         self.data = BackendData(forge=forge, host=host)
 
-    async def changed_paths(self, repo_name, number):
+    async def changed_paths(self, repo_name, number, **kwargs):
         for result in self.data.changed_paths:
             if result.repo_name == repo_name and result.number == number:
                 return list(result.paths)
-        paths = await self.backend.changed_paths(repo_name, number)
+        paths = await self.backend.changed_paths(repo_name, number, **kwargs)
         self.data.changed_paths.append(
             PathResult(repo_name=repo_name, number=number, paths=paths)
         )
@@ -131,7 +131,7 @@ class ReplayForge:
     def __init__(self, data):
         self.data = data
 
-    async def changed_paths(self, repo_name, number):
+    async def changed_paths(self, repo_name, number, **kwargs):
         for result in self.data.changed_paths:
             if result.repo_name == repo_name and result.number == number:
                 return list(result.paths)

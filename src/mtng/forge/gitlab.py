@@ -9,7 +9,7 @@ from urllib.parse import quote, unquote, urlsplit
 import aiohttp
 from yarl import URL
 
-from mtng.forge.http import HttpTransport
+from mtng.forge.http import HttpTransport, immutable
 from mtng.forge.base import bounded_gather, FetchRequirements
 from mtng.models import Issue, Label, PullRequest, Review, User
 from mtng.spec import normalize_host
@@ -153,11 +153,14 @@ class GitLabForge:
         labels = {label.name for label in item.labels}
         return set(with_labels) <= labels and not set(without_labels) & labels
 
-    async def changed_paths(self, repo_name: str, number: int) -> list[str]:
+    async def changed_paths(
+        self, repo_name: str, number: int, *, merged: bool = False
+    ) -> list[str]:
         # changes exposes overflow, unlike the paginated diffs endpoint.
-        data = await self.getitem(
-            f"{self.project_path(repo_name)}/merge_requests/{number}/changes"
-        )
+        with immutable(merged):
+            data = await self.getitem(
+                f"{self.project_path(repo_name)}/merge_requests/{number}/changes"
+            )
         if data.get("overflow"):
             raise ValueError(
                 "GitLab file list is truncated; cannot filter paths reliably"
@@ -185,9 +188,11 @@ class GitLabForge:
     async def add_reviews(self, repo, prs):
         async def enrich(pr):
             try:
-                data = await self.getitem(
-                    f"{self.project_path(repo)}/merge_requests/{pr.number}/approvals"
-                )
+                # Approvals of a merged MR are settled for reporting purposes.
+                with immutable(pr.merged_at is not None):
+                    data = await self.getitem(
+                        f"{self.project_path(repo)}/merge_requests/{pr.number}/approvals"
+                    )
             except GitLabError as error:
                 if error.status not in (404, 405):
                     raise

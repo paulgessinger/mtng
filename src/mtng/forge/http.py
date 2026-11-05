@@ -5,6 +5,8 @@ import hashlib
 import json
 import time
 import weakref
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -21,6 +23,19 @@ from mtng.progress import progress_step
 # Only JSON strings are persisted, never Python models or authorization headers.
 cache = diskcache.Cache(str(Path(appdirs.user_cache_dir("mtng")) / "http-v1"))
 RETAIN_SECONDS = 30 * 24 * 3600
+# Set by callers that know a response cannot change, e.g. a merged MR's file
+# list, so it is reused without revalidation. A context variable reaches
+# through client libraries such as gidgethub without extra plumbing.
+_immutable: ContextVar[bool] = ContextVar("mtng_immutable", default=False)
+
+
+@contextmanager
+def immutable(enabled=True):
+    token = _immutable.set(enabled)
+    try:
+        yield
+    finally:
+        _immutable.reset(token)
 
 
 class RateLimitError(ValueError):
@@ -154,16 +169,18 @@ class HttpTransport:
         headers = dict(headers)
         key = request_key(method, url, headers)
         scope = coordinator(str(url.origin()))
+        # A zero max_age is an explicit refresh, which immutability never skips.
+        max_age = RETAIN_SECONDS if self.max_age and _immutable.get() else self.max_age
         # Freshness policy participates in in-flight deduplication so refresh
         # callers cannot accidentally join a request served from a fresh cache.
-        pending_key = (key, self.enabled, self.max_age)
+        pending_key = (key, self.enabled, max_age)
         if method != "GET":
-            return await self._request(scope, key, method, url, headers, body)
+            return await self._request(scope, key, method, url, headers, body, max_age)
         if pending_key in scope.pending:
             self.stats["shared"] += 1
             return await asyncio.shield(scope.pending[pending_key])
         task = asyncio.create_task(
-            self._request(scope, key, method, url, headers, body)
+            self._request(scope, key, method, url, headers, body, max_age)
         )
         scope.pending[pending_key] = task
 
@@ -175,14 +192,14 @@ class HttpTransport:
         task.add_done_callback(finished)
         return await asyncio.shield(task)
 
-    async def _request(self, scope, key, method, url, headers, body):
+    async def _request(self, scope, key, method, url, headers, body, max_age):
         stored = None
         if self.enabled and method == "GET":
             raw = cache.get(key)
             if raw is not None:
                 try:
                     stored = json.loads(raw)
-                    if time.time() - stored["stored_at"] < self.max_age:
+                    if time.time() - stored["stored_at"] < max_age:
                         self.stats["hits"] += 1
                         return 200, stored["headers"], stored["body"].encode()
                 except (ValueError, KeyError, TypeError):
@@ -200,7 +217,7 @@ class HttpTransport:
             ).encode()
         ).hexdigest()
         bucket = (credential, "search" if url.path.startswith("/search/") else "core")
-        async with scope.slots if self.github else scope.lock:
+        async with scope.slots:
             waited = 0
             for attempt in range(3):
                 if self.github:

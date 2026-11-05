@@ -9,6 +9,7 @@ from gidgethub.abc import GitHubAPI
 from mtng.progress import collect_items
 
 from mtng.forge.base import bounded_gather, FetchRequirements
+from mtng.forge.http import immutable
 from mtng.models import Issue, PullRequest, Review
 
 
@@ -81,13 +82,16 @@ class GitHubForge:
     async def getitem(self, url: str) -> Any:
         return await self.gh.getitem(url)
 
-    async def changed_paths(self, repo_name: str, number: int) -> list[str]:
-        files = [
-            item
-            async for item in self.gh.getiter(
-                f"/repos/{repo_name}/pulls/{number}/files?per_page=100"
-            )
-        ]
+    async def changed_paths(
+        self, repo_name: str, number: int, *, merged: bool = False
+    ) -> list[str]:
+        with immutable(merged):
+            files = [
+                item
+                async for item in self.gh.getiter(
+                    f"/repos/{repo_name}/pulls/{number}/files?per_page=100"
+                )
+            ]
         if len(files) >= 3000:
             raise ValueError(
                 "GitHub file list may be truncated; cannot filter paths reliably"

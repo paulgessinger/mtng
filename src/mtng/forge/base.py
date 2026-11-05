@@ -26,7 +26,11 @@ class Forge(Protocol):
     # raw credentials. Instances with the same cache_id must see the same data.
     cache_id: str
 
-    async def changed_paths(self, repo_name: str, number: int) -> list[str]: ...
+    async def changed_paths(
+        self, repo_name: str, number: int, *, merged: bool = False
+    ) -> list[str]:
+        """``merged`` marks the file list as final, so it may be cached for good."""
+        ...
 
     async def pull_diff(self, repo_name: str, number: int) -> str: ...
 

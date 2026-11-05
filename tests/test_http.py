@@ -192,7 +192,26 @@ async def test_local_freshness_overrides_short_server_lifetime(monkeypatch, dire
 
 
 @pytest.mark.asyncio
-async def test_github_overlaps_requests_but_bounds_concurrency():
+async def test_immutable_responses_skip_revalidation(monkeypatch):
+    now = 1000.0
+    monkeypatch.setattr(http.time, "time", lambda: now)
+    session = Session([Response(200, {"v": 1}, {"ETag": "v1"}), Response(304)])
+    transport = HttpTransport(session)
+    await transport.request("GET", URL, HEADERS)
+    now += 7 * 24 * 3600
+    with http.immutable():
+        await transport.request("GET", URL, HEADERS)
+    assert len(session.calls) == 1
+    # An explicit refresh still revalidates.
+    transport.max_age = 0
+    with http.immutable():
+        await transport.request("GET", URL, HEADERS)
+    assert len(session.calls) == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("github", [True, False])
+async def test_overlaps_requests_but_bounds_concurrency(github):
     active = peak = 0
     release = asyncio.Event()
     full = asyncio.Event()
@@ -211,7 +230,7 @@ async def test_github_overlaps_requests_but_bounds_concurrency():
                 active -= 1
 
     session = Session([SlowResponse(200) for _ in range(8)])
-    transport = HttpTransport(session, github=True, enabled=False)
+    transport = HttpTransport(session, github=github, enabled=False)
     tasks = [
         asyncio.create_task(transport.request("GET", URL + f"&id={i}", HEADERS))
         for i in range(8)
