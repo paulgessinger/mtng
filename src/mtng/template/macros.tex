@@ -1,4 +1,4 @@
-{% macro show_item(item, spec, mode = none, is_new = false) %}
+{% macro show_item(item, spec, mode = none, is_new = false, show_author = true) %}
     \item\begin{minipage}[t]{\linewidth}\raggedright
     {%- set truncate = spec.truncate_pr_titles -%}
     {%- if truncate -%}\mtngprline{ {% endif %}
@@ -35,7 +35,7 @@
     \issstr{ {{- item.number -}} }
     {%- endif -%}
     }){% if truncate %}}{% endif %} \\
-    by {{ user(item.user) }}
+    {% if show_author %}by {{ user(item.user) }}{% endif %}
     {%- if spec.do_assignee -%}
         ,\space{}
     {%- endif -%}
@@ -71,10 +71,10 @@
 \href{ {{- data.html_url -}} }{\mtngusername{ {{- ("@" ~ data.login)|title_characters -}} }}
 {%- endmacro %}
 
-{% macro show_open_item(item, spec, since, now) -%}
-{%- call show_item(item, spec, mode="OPEN", is_new=since is not none and since <= item.created_at <= now) -%}
+{% macro show_open_item(item, spec, since, now, show_author=true, show_dates=true) -%}
+{%- call show_item(item, spec, mode="OPEN", show_author=show_author, is_new=since is not none and since <= item.created_at <= now) -%}
 {%- set age = item.created_at|age_days(now) -%}
 {%- set inactivity = item.updated_at|age_days(now) -%}
-, {% if age == 0 %}opened today{% else %}open for {{ age|human_days }}{% endif %}{% if inactivity > 0 %}, inactive for {{ inactivity|human_days }}{% endif %}
+{% if show_dates %}, {% if age == 0 %}opened today{% else %}open for {{ age|human_days }}{% endif %}{% if inactivity > 0 %}, inactive for {{ inactivity|human_days }}{% endif %}{% endif %}
 {%- endcall -%}
 {%- endmacro %}
