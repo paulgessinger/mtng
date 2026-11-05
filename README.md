@@ -731,6 +731,118 @@ most three attempts and a 60-second total wait budget. Longer limits produce an
 error with retry timing instead of retrying early. CI jobs are independent, so
 normal CI uses offline fixtures rather than relying on shared private caches.
 
+### Output formats
+
+`generate` and offline `render` support `latex`, `pdf`, `html`, `markdown`, and
+`text`. Without configuration or output flags, the default remains a LaTeX
+fragment. `--format` overrides `[output].format`; file extensions do not select
+the format. Textual output goes to stdout unless `--output` is supplied. PDF
+requires a destination and a TeX installation.
+
+```console
+mtng generate report.toml --since "1 week ago" --format html --output report.html
+mtng render report-data.json --format markdown --output report.md
+mtng render report-data.json --format text
+mtng render report-data.json --format pdf --output report.pdf
+```
+
+Collection and report preparation are shared across renderers: section order,
+category groups, breaking-change repetition, review follow-up groups, statistics,
+and agendas have the same meaning in every format. HTML is a self-contained
+report with embedded styles; Markdown defaults to CommonMark without raw HTML;
+plain text has its own wrapping and link handling. Full titles are preserved in
+all three formats.
+
+The following TOML shows the available format settings. All settings are optional.
+Paths to custom stylesheets and preambles are relative to the working directory.
+
+```toml
+[output]
+format = "html"
+
+[presentation]
+# Omit metadata to preserve existing repository visibility settings.
+# An explicit list replaces them; [] hides all optional item metadata.
+metadata = ["author", "updated", "review_status", "diff"]
+show_summaries = true
+show_categories = true
+
+[presentation.headings]
+merged_prs = "{repo}: Changes merged {range}"
+
+[presentation.colors]
+accent = "#22529E"
+feat = "#65A30D"
+fix = "#7C3AED"
+breaking = "#DC2626"
+
+[output.latex]
+standalone = false
+aspect_ratio = "16:9" # also "4:3", "16:10"
+font_size = 13 # 10, 11, 12, 13, 14, 17, or 20
+truncate_titles = true
+footline_left = "{repos}"
+# preamble = "meeting-preamble.tex" # mutually exclusive with standalone = true
+
+[output.latex.headings]
+merged_prs = "{repo}: Merged PRs"
+
+[output.latex.colors]
+feat = "#4D7C0F"
+
+[output.pdf]
+engine = "auto" # auto | lualatex | pdflatex; auto prefers lualatex
+
+[output.html]
+standalone = true # false emits an article fragment without styles or document wrapper
+layout = "report"
+theme = "light" # light | dark | auto
+table_of_contents = true
+collapsible_sections = false
+# stylesheet = "meeting.css" # appended to embedded styles in standalone mode
+
+[output.html.headings]
+merged_prs = "{repo}: Changes merged between {since} and {date}"
+
+[output.markdown]
+dialect = "commonmark" # commonmark | gfm
+heading_level = 1 # 1 through 4, leaving room for section and group headings
+links = "inline" # inline | reference
+statistics = "list" # table requires dialect = "gfm"
+
+[output.text]
+width = 100 # 0 disables wrapping; complete URLs and long words are never split
+links = "inline" # inline | footnotes | omit
+unicode = true # false transliterates to ASCII where possible, replacing the rest
+```
+
+Presentation precedence is global `[presentation]`, then repository
+`[repositories.<alias>.presentation]`, then the section's `[sections.presentation]`,
+then the selected format's `[output.<format>]` presentation settings. Dictionaries
+merge by key; metadata lists replace earlier lists. PDF uses LaTeX presentation
+settings. Metadata keys are `author`, `updated` (merged date for merged items),
+`assignees`, `review_status`, and `diff`. Selecting review status also requests
+review enrichment during collection. An offline snapshot missing required
+enrichment must be recollected. Hiding summaries does not disable their generation;
+use the existing LLM configuration to control that.
+
+Heading keys and placeholders are the same as the existing `frame_titles` keys.
+Section `title` overrides the shared heading template; a format-specific heading
+can override it. Existing `frame_titles` remains a LaTeX-only compatibility setting.
+Titles, summaries, and descriptions are treated as text and escaped for each format.
+Colors in the new presentation settings use six-digit hex values, with or without
+`#`; LaTeX generates `\definecolor` declarations for them, including fragment output.
+Existing named LaTeX `pr_category_colors`, `accent_color`, `footline_left`, and
+`truncate_pr_titles` remain supported. New settings take precedence when supplied.
+Colors have no effect on Markdown or plain text.
+
+Existing `--tex`, `--pdf`, `--full`, and `--preamble` options still select the
+LaTeX/PDF path, including simultaneous `--tex` and `--pdf`. They take precedence
+over a configured default format but cannot be combined with an explicit
+non-LaTeX `--format`. `--output` cannot be combined with `--tex` or `--pdf`.
+The GitHub Action remains PDF-oriented; its configuration file accepts the new
+presentation settings.
+
 ### Save once, render offline
 
 Save normalized collection results alongside the first rendered report:

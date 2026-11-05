@@ -1,0 +1,61 @@
+{% if full_tex %}{% extends "base.tex" %}{% endif %}
+{% block body %}
+{% include "provides.tex" %}
+{% for name, color in hex_colors.items() %}\definecolor{ {{- name -}} }{HTML}{ {{- color -}} }
+{% endfor %}
+{% from "macros.tex" import show_item, show_open_item, user %}
+{% for section in document.sections %}
+{% set repo = latex_repo(section) %}
+{% if section.repository %}\def\reponame{ {{ (section.repository.display_name or section.repository.name)|sanitize }} }
+{% endif %}
+{% set title = latex_heading(section) %}
+{% if section.navigation %}\section{ {% if section.navigation_repository %}\reponame{} \\ {% endif %}{% if section.emoji %}\protect\cusemoji{ {{- section.emoji -}} }{} {% endif %}{{ section.navigation|sanitize }}}
+{% endif %}
+{% for block in section.blocks %}
+{% if block.values is defined %}
+{% include "sections/statistics.tex" %}
+{% elif block.items is defined %}
+\begin{frame}[allowframebreaks=0.85,t]{ {{- title -}} }
+  \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+{% macro item_list(group, nested=false) %}
+{% if group.heading %}
+{% if nested %}{\small\textit{ {{ group.heading|sanitize }} }}\smallskip
+{% else %}
+{% set count = group.items|length + (group.children|map(attribute="items")|map("length")|sum) %}
+\textbf{ {{ group.heading|sanitize }}{% if group.actor %}: {{ user({"login": group.actor, "html_url": group.actor_url}) }}{% endif %} }\hfill {\small {{ count }} {{ "MR" if repo.spec.forge == "gitlab" else "PR" }}{{ "s" if count != 1 else "" }}}
+\medskip
+{% endif %}
+{% endif %}
+{% if group.items %}
+  \begin{itemize}
+    {% include "list_style.tex" %}
+    {% for original in group.items %}
+    {% set item = latex_item(original, section) %}
+    {% if group.mode == "OPEN" and section.heading.kind not in ["all_stale", "new_stale"] %}
+    {{ show_open_item(item, repo.spec, since, now, show_author=show_metadata(section, "author"), show_dates=show_metadata(section, "updated")) }}
+    {% else %}
+    {%- call show_item(item, repo.spec, mode=group.mode, show_author=show_metadata(section, "author"), is_new=group.mode == "MERGED" and since is not none and since <= item.created_at <= now) -%}
+    {%- if show_metadata(section, "updated") and not group.descriptions -%}, {{ "merged on" if group.mode == "MERGED" else "updated on" }} {{ (item.closed_at if group.mode == "MERGED" else item.updated_at).strftime('%Y-%m-%d') }}{%- endif -%}
+    {%- endcall -%}
+    {% endif %}
+    {% endfor %}
+  \end{itemize}\par\unskip\unpenalty
+{% endif %}
+{% if group.descriptions %}{% for item in group.items %}{% if item.body %}\vspace{1em}
+{{ item.body|sanitize }}{% endif %}{% endfor %}{% endif %}
+{% for child in group.children %}{{ item_list(child, true) }}{% endfor %}
+{% endmacro %}
+{{ item_list(block) }}
+\end{frame}
+{% elif block.contributions is defined %}
+{% set contributions = block.contributions %}
+{% set agenda_title = title %}
+{% include "sections/indico.tex" %}
+{% else %}
+\begin{frame}{ {{- title -}} }
+{{ block.text|sanitize }}
+\end{frame}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endblock %}

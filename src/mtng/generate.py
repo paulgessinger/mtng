@@ -6,6 +6,10 @@ from markupsafe import Markup
 from jinja2 import Environment, FileSystemLoader
 
 from mtng.spec import DEFAULT_FRAME_TITLES, Spec
+from mtng.report_text import (
+    build_placeholders,
+    expand_placeholders as expand_report_text,
+)
 
 
 def sanitize(s):
@@ -47,66 +51,10 @@ def human_int(n, dash="--"):
     return Markup(f"{n:,}".replace(",", "\\,"))
 
 
-PLACEHOLDER_RE = re.compile(r"\{(\w+)\}")
-# Leftovers when a placeholder expands to nothing, e.g. "Core team -- {release}"
-# or "{repo}: Open PRs ({category})".
-DANGLING_SEPARATOR_RE = re.compile(r"[\s]*[-–—:|,]+[\s]*$|^[\s]*[-–—:|,]+[\s]*")
-EMPTY_GROUP_RE = re.compile(r"\s*[(\[]\s*[)\]]")
-
-
-def build_placeholders(data, since: datetime, now: datetime) -> dict:
-    """Values available as {keyword} in user-supplied deck strings."""
-    tags = []
-    for repo in data.values():
-        tag = repo.get("release_tag")
-        if tag is not None and tag not in tags:
-            tags.append(tag)
-    return {
-        "release": ", ".join(tags),
-        "repos": ", ".join(
-            dict.fromkeys(
-                repo["spec"].display_name or repo["spec"].name for repo in data.values()
-            )
-        ),
-        "since": since.strftime("%Y-%m-%d") if since is not None else "",
-        "date": now.strftime("%Y-%m-%d"),
-        "range": (
-            f"between {since.strftime('%Y-%m-%d')} and {now.strftime('%Y-%m-%d')}"
-            if since is not None
-            else ""
-        ),
-    }
-
-
-def expand_placeholders(
-    text: str | None, values: dict, escape: bool = False
-) -> str | None:
-    """Substitute {keyword} occurrences. Unknown keywords are left untouched, and
-    a keyword that expands to nothing takes any dangling separator or empty
-    bracket pair with it. With `escape`, the literal text around the
-    placeholders is sanitized while the substituted values are inserted as is,
-    so a value may carry LaTeX of its own."""
-    if text is None:
-        return None
-
-    out = []
-    last = 0
-    for m in PLACEHOLDER_RE.finditer(text):
-        if m.group(1) not in values:
-            continue
-        chunk = text[last : m.start()]
-        out.append(sanitize(chunk) if escape else chunk)
-        out.append(str(values[m.group(1)]))
-        last = m.end()
-    tail = text[last:]
-    out.append(sanitize(tail) if escape else tail)
-
-    expanded = "".join(out)
-    if last != 0:  # something was substituted, so tidy up after empty values
-        expanded = EMPTY_GROUP_RE.sub("", expanded)
-        expanded = DANGLING_SEPARATOR_RE.sub("", re.sub(r"\s{2,}", " ", expanded))
-    expanded = expanded.strip()
-    return Markup(expanded) if escape else expanded
+def expand_placeholders(text: str | None, values: dict, escape: bool = False):
+    """Compatibility wrapper adding LaTeX escaping to plain placeholder expansion."""
+    expanded = expand_report_text(text, values, sanitize if escape else str)
+    return Markup(expanded) if escape and expanded is not None else expanded
 
 
 def make_frame_title(placeholders: dict):
@@ -165,24 +113,18 @@ def human_days(days: int) -> str:
 
 
 def review_status(item) -> tuple[str, str]:
-    if not getattr(item, "reviews_available", False):
-        return "review unavailable", "black!55"
-    latest = {}
-    reviews = sorted(
-        enumerate(item.reviews),
-        key=lambda pair: (
-            pair[1].submitted_at.timestamp() if pair[1].submitted_at else float("-inf"),
-            pair[0],
-        ),
+    from mtng.document import REVIEW_LABELS, review_state
+
+    state = review_state(item)
+    return (
+        REVIEW_LABELS[state],
+        {
+            "unavailable": "black!55",
+            "changes_requested": "red!75!black",
+            "approved": "green!50!black",
+            "awaiting": "black!55",
+        }[state],
     )
-    for _, review in reviews:
-        if review.state in {"APPROVED", "CHANGES_REQUESTED", "DISMISSED"}:
-            latest[review.user.login] = review.state
-    if "CHANGES_REQUESTED" in latest.values():
-        return "changes requested", "red!75!black"
-    if "APPROVED" in latest.values():
-        return "approved", "green!50!black"
-    return "awaiting review", "black!55"
 
 
 env.filters["sanitize"] = sanitize
@@ -211,34 +153,155 @@ def generate_latex(
     full_tex: bool,
     events=None,
 ) -> str:
-    tpl = env.get_template("main.tex" if spec.sections is None else "sections.tex")
+    from mtng.document import prepare_report
 
-    placeholders = build_placeholders(data, since, now)
+    document = prepare_report(spec, data, since, now, contributions, events)
+    return render_latex(document, spec, full_tex)
 
-    return tpl.render(
-        request_label=(
-            "Merge request"
-            if spec.source_repositories
-            and all(repo.forge == "gitlab" for repo in spec.source_repositories)
-            else (
-                "Pull/merge request"
-                if any(repo.forge == "gitlab" for repo in spec.source_repositories)
-                else "Pull request"
-            )
-        ),
-        title_repositories=list(
-            dict.fromkeys(
-                repo["spec"].display_name or repo["spec"].name for repo in data.values()
-            )
-        ),
-        repos=data,
-        events=events or {},
-        spec=spec,
-        deck_title=expand_placeholders(spec.title, placeholders),
-        footline_left=expand_placeholders(spec.footline_left, placeholders),
-        frame_title=make_frame_title(placeholders),
-        since=since,
-        now=now,
-        contributions=contributions,
-        full_tex=full_tex,
+
+def render_latex(document, spec, full_tex=False):
+    """Adapt semantic blocks to the existing Beamer item and statistics styling."""
+    from mtng.document import Statistics, merge_presentation
+
+    options = spec.output.latex
+    hex_colors = {}
+
+    def color_name(color):
+        if re.fullmatch(r"#?[0-9a-fA-F]{6}", color):
+            value = color.lstrip("#").upper()
+            name = "mtngcolor" + value
+            hex_colors[name] = value
+            return name
+        return color
+
+    def presentation(section):
+        return merge_presentation(section.presentation, options)
+
+    def latex_repo(section):
+        if section.repository is None:
+            return None
+        source = section.repository.model_copy(deep=True)
+        display = presentation(section)
+        if options.truncate_titles is not None:
+            source.truncate_pr_titles = options.truncate_titles
+        if display.show_categories is not None:
+            source.show_pr_categories = display.show_categories
+        if display.metadata is not None:
+            source.do_assignee = "assignees" in display.metadata
+            source.do_reviewers = "review_status" in display.metadata
+            source.show_review_summary = source.do_reviewers
+        source.pr_category_colors.update(
+            {
+                key: color_name(value)
+                for key, value in display.colors.items()
+                if key != "accent"
+            }
+        )
+        source.pr_category_colors = {
+            key: color_name(value) for key, value in source.pr_category_colors.items()
+        }
+        stats = next(
+            (block for block in section.blocks if isinstance(block, Statistics)), None
+        )
+        return {
+            "spec": source,
+            "release_tag": section.heading.values.get("release") or None,
+            "release_stats": stats.values if stats else None,
+            "section": section,
+        }
+
+    def latex_heading(section):
+        heading = section.heading
+        template = heading.template
+        if (
+            heading.legacy_template is not None
+            and heading.kind not in section.presentation.headings
+        ):
+            template = heading.legacy_template
+        template = options.headings.get(heading.kind, template)
+        values = {key: sanitize(value) for key, value in heading.values.items()}
+        if section.repository is not None:
+            values["repo"] = Markup(r"\reponame{}")
+        return expand_placeholders(template, values, escape=True)
+
+    def latex_item(item, section):
+        item = item.model_copy(deep=True)
+        display = presentation(section)
+        if item.pr_category in display.colors:
+            item.pr_category_color = color_name(display.colors[item.pr_category])
+        elif item.pr_category_color:
+            item.pr_category_color = color_name(item.pr_category_color)
+        if display.show_summaries is False:
+            item.llm_summary = None
+        if display.metadata is not None and "diff" not in display.metadata:
+            for key in ("additions", "deletions", "changed_files"):
+                if hasattr(item, key):
+                    setattr(item, key, None)
+        return item
+
+    def show_metadata(section, field):
+        fields = presentation(section).metadata
+        return fields is None or field in fields
+
+    # Define hex colors before any item uses them, including in fragment output.
+    for section in document.sections:
+        latex_repo(section)
+
+        def visit(block):
+            for item in getattr(block, "items", []):
+                latex_item(item, section)
+            for child in getattr(block, "children", []):
+                visit(child)
+
+        for block in section.blocks:
+            visit(block)
+
+    display_spec = spec.model_copy(deep=True)
+    display_spec.accent_color = options.colors.get(
+        "accent", spec.presentation.colors.get("accent", spec.accent_color)
+    ).lstrip("#")
+    rendered = (
+        env.get_template("document.tex")
+        .render(
+            document=document,
+            spec=display_spec,
+            full_tex=full_tex,
+            deck_title=expand_placeholders(spec.title, document.placeholders),
+            footline_left=expand_placeholders(
+                (
+                    options.footline_left
+                    if options.footline_left is not None
+                    else spec.footline_left
+                ),
+                document.placeholders,
+            ),
+            title_repositories=list(
+                dict.fromkeys(
+                    repo.display_name or repo.name for repo in spec.source_repositories
+                )
+            ),
+            request_label=(
+                "Merge request"
+                if spec.source_repositories
+                and all(repo.forge == "gitlab" for repo in spec.source_repositories)
+                else (
+                    "Pull/merge request"
+                    if any(repo.forge == "gitlab" for repo in spec.source_repositories)
+                    else "Pull request"
+                )
+            ),
+            since=document.since,
+            now=document.now,
+            latex_repo=latex_repo,
+            latex_heading=latex_heading,
+            latex_item=latex_item,
+            hex_colors=hex_colors,
+            show_metadata=show_metadata,
+            frame_title=lambda kind, repo: latex_heading(repo["section"]),
+        )
+        .strip()
+    )
+
+    return re.sub(
+        r"\n{3,}", "\n\n", "\n".join(line.rstrip() for line in rendered.splitlines())
     ).strip()

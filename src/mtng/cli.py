@@ -26,7 +26,7 @@ import rich.rule
 
 from mtng.summary import add_summaries, restore_summaries
 from mtng.generate import generate_latex
-from mtng.spec import Spec, IndicoSection
+from mtng.spec import Spec, IndicoSection, OutputFormat
 from mtng.collect import collect_repositories
 from mtng.sections import collect_sections
 from mtng.progress import progress_step
@@ -286,6 +286,21 @@ async def generate(
             help="Summarize merged PRs/MRs from a release tag or release URL instead of a date window.",
         ),
     ] = None,
+    output_format: Annotated[
+        OutputFormat | None,
+        typer.Option(
+            "--format", help="Output format; overrides output.format in configuration"
+        ),
+    ] = None,
+    output: Annotated[
+        Path | None,
+        typer.Option(
+            "--output",
+            "-o",
+            dir_okay=False,
+            help="Output file; textual formats default to stdout",
+        ),
+    ] = None,
     full_tex: Annotated[
         bool,
         typer.Option(
@@ -327,6 +342,11 @@ async def generate(
         spec = load_spec(*([config] if config is not None else []), *(configs or []))
     except ValueError as error:
         raise typer.BadParameter(str(error)) from error
+    selected = validate_output(
+        spec, output_format, output, full_tex, preamble, pdf, tex
+    )
+    spec.output.format = selected
+    configure_collection(spec)
     if cache_max_age is None:
         cache_max_age = spec.cache_max_age
     if spec.sections is not None and event is not None:
@@ -470,8 +490,83 @@ async def generate(
         )
         save_data.write_text(snapshot.model_dump_json(indent=2) + "\n")
     output_report(
-        spec, data, since, now, contributions, full_tex, preamble, pdf, tex, events
+        spec,
+        data,
+        since,
+        now,
+        contributions,
+        full_tex,
+        preamble,
+        pdf,
+        tex,
+        events,
+        output_format,
+        output,
     )
+
+
+def validate_output(
+    spec, output_format, output, full_tex=False, preamble=None, pdf=None, tex=None
+):
+    legacy = pdf is not None or tex is not None or full_tex or preamble is not None
+    selected = (
+        OutputFormat(output_format)
+        if output_format is not None
+        else (
+            OutputFormat.pdf
+            if pdf is not None
+            else OutputFormat.latex if legacy else spec.output.format
+        )
+    )
+    if selected not in {OutputFormat.latex, OutputFormat.pdf} and legacy:
+        raise typer.BadParameter(
+            "--tex, --pdf, --full and --preamble require LaTeX/PDF output"
+        )
+    if output is not None and (pdf is not None or tex is not None):
+        raise typer.BadParameter("--output cannot be combined with --tex or --pdf")
+    if output_format is not None and selected == OutputFormat.latex and pdf is not None:
+        raise typer.BadParameter(
+            "--format latex conflicts with --pdf; omit --format to write both TeX and PDF"
+        )
+    if selected == OutputFormat.pdf and output is None and pdf is None:
+        raise typer.BadParameter("PDF output requires --output or --pdf")
+    if selected in {OutputFormat.latex, OutputFormat.pdf}:
+        effective_preamble = preamble or spec.output.latex.preamble
+        if effective_preamble is not None:
+            if full_tex or spec.output.latex.standalone:
+                raise typer.BadParameter(
+                    "--preamble cannot be used with --full / latex.standalone"
+                )
+            if not effective_preamble.is_file():
+                raise typer.BadParameter(
+                    f"Preamble file does not exist: {effective_preamble}"
+                )
+            normalize_preamble_content(effective_preamble.read_text())
+    if (
+        selected == OutputFormat.html
+        and spec.output.html.stylesheet is not None
+        and not spec.output.html.stylesheet.is_file()
+    ):
+        raise typer.BadParameter(
+            f"Stylesheet file does not exist: {spec.output.html.stylesheet}"
+        )
+    return selected
+
+
+def configure_collection(spec):
+    """Ensure selected presentation metadata is included in collected/replayed data."""
+    from mtng.document import merge_presentation
+
+    options = getattr(
+        spec.output,
+        "latex" if spec.output.format == OutputFormat.pdf else spec.output.format.value,
+    )
+    for repo in spec.source_repositories:
+        display = merge_presentation(spec.presentation, repo.presentation, options)
+        if display.metadata is not None:
+            repo.do_reviewers = "review_status" in display.metadata
+            repo.show_review_summary = repo.do_reviewers
+            repo.do_assignee = "assignees" in display.metadata
 
 
 def output_report(
@@ -485,7 +580,34 @@ def output_report(
     pdf=None,
     tex=None,
     events=None,
+    output_format=None,
+    output=None,
 ):
+    selected = validate_output(
+        spec, output_format, output, full_tex, preamble, pdf, tex
+    )
+    if selected not in {OutputFormat.latex, OutputFormat.pdf}:
+        from mtng.document import prepare_report
+        from mtng.renderers import RENDERERS
+
+        document = prepare_report(spec, data, since, now, contributions, events)
+        options = getattr(spec.output, selected.value).model_copy(deep=True)
+        rendered = RENDERERS[selected.value](document, options)
+        if output is None:
+            typer.echo(rendered, nl=False)
+        else:
+            output.write_text(rendered)
+            console.print(
+                f"Wrote {selected.value}: {output}", markup=False, highlight=False
+            )
+        return
+    if output is not None:
+        if selected == OutputFormat.pdf:
+            pdf = output
+        else:
+            tex = output
+    preamble = preamble or spec.output.latex.preamble
+    full_tex = full_tex or spec.output.latex.standalone
     if preamble is not None and full_tex:
         raise typer.BadParameter("--preamble cannot be used with --full.")
     if pdf is not None:
@@ -513,7 +635,7 @@ def output_report(
             )
         if pdf is not None:
             latex = (
-                "\\documentclass[aspectratio=169,t,13pt,dvipsnames]{beamer}\n\n"
+                f"\\documentclass[aspectratio={spec.output.latex.aspect_ratio.replace(':', '')},t,{spec.output.latex.font_size}pt,dvipsnames]{{beamer}}\n\n"
                 f"{preamble_content}\n\n"
                 "\\begin{document}\n\n"
                 f"{latex}\n\n"
@@ -541,8 +663,11 @@ def output_report(
                 "-pdf",
             ]
 
-            if have_lualatex():
+            engine = spec.output.pdf.engine
+            if engine == "lualatex" or (engine == "auto" and have_lualatex()):
                 args.append("-pdflatex=lualatex")
+            elif engine == "pdflatex":
+                args.append("-pdflatex=pdflatex")
             args.append(source)
             with Status("Compiling LaTeX", console=console):
                 proc = subprocess.Popen(
@@ -574,6 +699,21 @@ async def render(
             help="Override config; repeat to merge files in order. New data requires recollection",
         ),
     ] = None,
+    output_format: Annotated[
+        OutputFormat | None,
+        typer.Option(
+            "--format", help="Output format; overrides output.format in configuration"
+        ),
+    ] = None,
+    output: Annotated[
+        Path | None,
+        typer.Option(
+            "--output",
+            "-o",
+            dir_okay=False,
+            help="Output file; textual formats default to stdout",
+        ),
+    ] = None,
     full_tex: Annotated[
         bool,
         typer.Option(
@@ -589,6 +729,11 @@ async def render(
         spec = saved.spec
         if config:
             spec = load_spec(*config)
+        selected = validate_output(
+            spec, output_format, output, full_tex, preamble, pdf, tex
+        )
+        spec.output.format = selected
+        configure_collection(spec)
         events = {
             url: [item.model_dump() for item in items]
             for url, items in saved.events.items()
@@ -626,6 +771,8 @@ async def render(
         pdf,
         tex,
         events,
+        output_format,
+        output,
     )
 
 

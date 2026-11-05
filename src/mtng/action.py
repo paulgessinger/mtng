@@ -29,14 +29,17 @@ REPOSITORY_INPUT = "repository"
 # The repository name comes from the dedicated `repository` input, which falls
 # back to the repository the action runs in.
 REPOSITORY_FIELDS = [
-    name for name in Repository.model_fields if name not in ("name", "forge", "host")
+    name
+    for name in Repository.model_fields
+    if name not in ("name", "forge", "host", "presentation")
 ]
-# Structured section and LLM configuration is supplied through the config file, not
+# Structured section, output, presentation, and LLM configuration uses a config file, not
 # flattened into Action inputs. Preserve the existing inline input interface.
 SPEC_FIELDS = [
     name
     for name in Spec.model_fields
-    if name not in {"repos", "repositories", "sections", "llm"}
+    if name
+    not in {"repos", "repositories", "sections", "llm", "presentation", "output"}
 ]
 
 TRUE_VALUES = {"true", "1", "yes", "on"}
