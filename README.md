@@ -137,7 +137,9 @@ create additional sections. `group_by` controls category grouping locally.
 
 For open changes, `drafts = "include"`, `"exclude"` (effective default), or `"only"`
 uses both native draft state and the repository's optional `wip_label`. Legacy
-`show_wip` does not override this explicit selection.
+`show_wip` does not override this explicit selection. `stale` and `discussion`
+sections accept the same `drafts` option, defaulting to `"include"`; issues are
+never drafts, so `"only"` keeps just draft PRs there.
 
 Merged changes and statistics can set `release = "v1.2.3"` locally. CLI `--release`
 is their fallback; it does not suppress other explicit sections. `--since` is

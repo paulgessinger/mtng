@@ -16,6 +16,15 @@ from mtng.spec import (
 )
 
 
+def filter_drafts(items, drafts):
+    """Apply a section's ``drafts`` selection; native draft state and the
+    repository's WIP label both count."""
+
+    if drafts == "include":
+        return items
+    return [item for item in items if item.is_wip == (drafts == "only")]
+
+
 async def collect_sections(spec, since, now, forges, release=None):
     data = {}
     for index, section in progress_items(
@@ -75,15 +84,16 @@ async def collect_sections(spec, since, now, forges, release=None):
             )
             block = deepcopy(next(iter(result.values())))
             if isinstance(section, ChangesSection) and section.state == "open":
-                # Both native draft state and the repository's WIP label count.
-                drafts = section.drafts or "exclude"
-                if drafts != "include":
-                    block["open_prs"] = [
-                        item
-                        for item in block["open_prs"]
-                        if item.is_wip == (drafts == "only")
-                    ]
+                block["open_prs"] = filter_drafts(
+                    block["open_prs"], section.drafts or "exclude"
+                )
                 block["open_prs_by_category"] = group_prs_by_category(block["open_prs"])
+            elif isinstance(section, StaleSection):
+                block["stale"] = filter_drafts(block["stale"], section.drafts)
+            elif isinstance(section, DiscussionSection):
+                block["needs_discussion"] = filter_drafts(
+                    block["needs_discussion"], section.drafts
+                )
             block["section_index"] = index
             block["llm_summary"] = section.llm_summary
             data[f"{index}:{alias}"] = block

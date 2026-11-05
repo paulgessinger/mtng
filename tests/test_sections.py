@@ -235,6 +235,60 @@ async def test_draft_selection_includes_label_state(drafts, expected):
     assert [item.title for item in data["0:acts"]["open_prs"]] == expected
 
 
+@pytest.mark.parametrize(
+    "drafts, expected",
+    [
+        ("include", ["Issue", "Ready", "Draft", "WIP"]),
+        ("exclude", ["Issue", "Ready"]),
+        ("only", ["Draft", "WIP"]),
+    ],
+)
+@pytest.mark.parametrize(
+    "kind, key", [("stale", "stale"), ("discussion", "needs_discussion")]
+)
+@pytest.mark.asyncio
+async def test_labelled_section_draft_selection(kind, key, drafts, expected):
+    from mtng.models import Issue
+
+    section = {"type": kind, "label": "Tag", "repositories": ["acts"]}
+    if drafts != "include":  # also covers the default
+        section["drafts"] = drafts
+    spec = spec_with(section)
+    spec.repositories["acts"].wip_label = "WIP"
+
+    def item(title, is_pr=True, draft=None, labels=()):
+        return Issue(
+            number=len(title),
+            title=title,
+            user={"login": "u", "html_url": "https://example.com/u"},
+            labels=[{"name": "Tag"}] + [{"name": name} for name in labels],
+            url="https://example.com/api",
+            html_url="https://example.com/i",
+            created_at=START,
+            updated_at=END,
+            pull_request={"url": "https://example.com/pr"} if is_pr else None,
+            draft=draft,
+        )
+
+    forge = FakeForge(
+        labelled={
+            "Tag": [
+                item("Issue", is_pr=False),
+                item("Ready", draft=False),
+                item("Draft", draft=True),
+                item("WIP", labels=["WIP"]),
+            ]
+        }
+    )
+    data = await collect_sections(spec, START, END, forge)
+    assert [i.title for i in data["0:acts"][key]] == expected
+
+
+def test_drafts_rejected_on_issues_section():
+    with pytest.raises(ValueError):
+        spec_with({"type": "issues", "repositories": ["acts"], "drafts": "exclude"})
+
+
 @pytest.mark.asyncio
 async def test_other_section_types_do_not_emit_merged_placeholder():
     from mtng.models import Issue

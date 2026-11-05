@@ -401,14 +401,27 @@ class IssuesSection(RepositorySection):
     type: Literal["issues"] = "issues"
 
 
+_LABELLED_DRAFTS_DESCRIPTION = (
+    "Draft PRs (native drafts or the repository's wip_label) to list: "
+    '"include" (default), "exclude", or "only". Issues are never drafts, so '
+    '"only" leaves just draft PRs.'
+)
+
+
 class StaleSection(RepositorySection):
     type: Literal["stale"] = "stale"
     label: str = pydantic.Field(min_length=1)
+    drafts: Literal["include", "exclude", "only"] = pydantic.Field(
+        "include", description=_LABELLED_DRAFTS_DESCRIPTION
+    )
 
 
 class DiscussionSection(RepositorySection):
     type: Literal["discussion"] = "discussion"
     label: str = pydantic.Field(min_length=1)
+    drafts: Literal["include", "exclude", "only"] = pydantic.Field(
+        "include", description=_LABELLED_DRAFTS_DESCRIPTION
+    )
 
 
 class IndicoSection(BaseModel):
