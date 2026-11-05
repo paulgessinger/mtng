@@ -153,6 +153,24 @@ class GitLabForge:
         labels = {label.name for label in item.labels}
         return set(with_labels) <= labels and not set(without_labels) & labels
 
+    async def changed_paths(self, repo_name: str, number: int) -> list[str]:
+        # changes exposes overflow, unlike the paginated diffs endpoint.
+        data = await self.getitem(
+            f"{self.project_path(repo_name)}/merge_requests/{number}/changes"
+        )
+        if data.get("overflow"):
+            raise ValueError(
+                "GitLab file list is truncated; cannot filter paths reliably"
+            )
+        return sorted(
+            {
+                path
+                for item in data["changes"]
+                for key in ("old_path", "new_path")
+                if (path := item.get(key))
+            }
+        )
+
     async def pull_diff(self, repo_name: str, number: int) -> str:
         parts = []
         async for entry in self.getiter(

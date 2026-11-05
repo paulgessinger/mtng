@@ -1517,3 +1517,31 @@ async def test_search_result_prs_omit_review_status():
     )
     assert r"\prstr{7}" in tex
     assert "review unavailable" not in tex
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["fix: repair the thing", "feat(core)!: change interface", "Tracking: update"],
+)
+def test_disable_title_prefix_parsing(title):
+    now = datetime(2022, 8, 11, tzinfo=tzlocal())
+    pr = PullRequest(
+        title=title,
+        user=User(login="someone", html_url="https://example.com"),
+        labels=[],
+        number=1,
+        html_url="https://example.com/pull/1",
+        url="https://example.com/pull/1",
+        updated_at=now,
+        created_at=now,
+    )
+    # Also clear previously enriched metadata when rendering with an override.
+    mtng.collect.enrich_item(pr, Repository(name="a/b"))
+    assert pr.pr_title_display is not None
+    mtng.collect.enrich_item(pr, Repository(name="a/b", parse_pr_titles=False))
+    assert pr.title == title
+    assert pr.pr_title_display is None
+    assert pr.pr_category is None
+    assert pr.pr_category_label is None
+    assert pr.pr_category_color is None
+    assert not pr.pr_category_breaking

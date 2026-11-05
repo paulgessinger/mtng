@@ -80,7 +80,7 @@ async def collect_sections(spec, since, now, forges, release=None):
                 values["frame_titles"] = section.title
             repo = Repository.model_validate(values)
             result = await collect_repositories(
-                [repo], since, now, forges, release=section_release
+                [repo], since, now, forges, release=section_release, where=section.where
             )
             block = deepcopy(next(iter(result.values())))
             if isinstance(section, ChangesSection) and section.state == "open":

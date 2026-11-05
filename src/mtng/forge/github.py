@@ -81,6 +81,26 @@ class GitHubForge:
     async def getitem(self, url: str) -> Any:
         return await self.gh.getitem(url)
 
+    async def changed_paths(self, repo_name: str, number: int) -> list[str]:
+        files = [
+            item
+            async for item in self.gh.getiter(
+                f"/repos/{repo_name}/pulls/{number}/files?per_page=100"
+            )
+        ]
+        if len(files) >= 3000:
+            raise ValueError(
+                "GitHub file list may be truncated; cannot filter paths reliably"
+            )
+        return sorted(
+            {
+                path
+                for item in files
+                for key in ("filename", "previous_filename")
+                if (path := item.get(key))
+            }
+        )
+
     async def pull_diff(self, repo_name: str, number: int) -> str:
         try:
             return await self.gh.getitem(

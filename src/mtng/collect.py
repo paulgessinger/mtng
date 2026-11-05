@@ -15,8 +15,10 @@ from mtng.spec import (
     DEFAULT_PR_CATEGORY_LABELS,
     DEFAULT_PR_CATEGORY_ORDER,
     Repository,
+    Predicate,
 )
 from mtng.stats import compute_release_stats
+from mtng.predicates import filter_items
 
 CONVENTIONAL_TITLE_RE = re.compile(
     r"^(?P<kind>[a-z][a-z0-9-]*)(?:\([^)]+\))?(?P<breaking>!)?:\s*(?P<subject>.+)$",
@@ -95,6 +97,15 @@ def enrich_item(item: IssueBase, repo: Repository) -> None:
     if not item.is_pr:
         return
 
+    if not repo.parse_pr_titles:
+        item.pr_category = None
+        item.pr_category_breaking = False
+        item.pr_category_label = None
+        item.pr_category_color = None
+        item.pr_category_order = 999
+        item.pr_title_display = None
+        return
+
     category, is_breaking, display_title, parsed = parse_pr_metadata(item.title)
     item.pr_category = category
     item.pr_category_breaking = is_breaking
@@ -133,6 +144,7 @@ async def collect_repositories(
     now: datetime,
     forge: Forge | Mapping[tuple[str, str], Forge],
     release: str | None = None,
+    where: Predicate | None = None,
 ):
     data = {}
     forges = forge
@@ -180,6 +192,7 @@ async def collect_repositories(
                     with_labels=repo.with_labels,
                     without_labels=repo.without_labels,
                 )
+            merged_prs = await filter_items(merged_prs, where, forge, repo.name)
             data[key]["merged_prs"] = merged_prs
             data[key]["release_stats"] = compute_release_stats(
                 data[key]["merged_prs"],
@@ -220,6 +233,7 @@ async def collect_repositories(
                 ),
             )
 
+            open_prs = await filter_items(open_prs, where, forge, repo.name)
             for pr in open_prs:
                 enrich_item(pr, repo)
 
@@ -252,6 +266,7 @@ async def collect_repositories(
                     include_prs=True,
                 )
 
+                stale = await filter_items(stale, where, forge, repo.name)
                 data[key]["stale"] = stale
                 step.advance(len(stale))
 
@@ -265,6 +280,9 @@ async def collect_repositories(
                     without_labels=repo.without_labels,
                 )
 
+                recent_issues = await filter_items(
+                    recent_issues, where, forge, repo.name
+                )
                 data[key]["recent_issues"] = recent_issues
                 step.advance(len(recent_issues))
 
@@ -279,6 +297,9 @@ async def collect_repositories(
                     repo.name,
                     with_labels=[repo.needs_discussion_label] + repo.with_labels,
                     without_labels=repo.without_labels,
+                )
+                needs_discussion = await filter_items(
+                    needs_discussion, where, forge, repo.name
                 )
                 data[key]["needs_discussion"] = needs_discussion
                 step.advance(len(needs_discussion))

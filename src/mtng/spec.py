@@ -198,10 +198,14 @@ class Repository(BaseModel):
         title="Label for items to list as 'needs discussion'",
         description="Adds the item to a dedicated group of slides",
     )
+    parse_pr_titles: bool = pydantic.Field(
+        True,
+        description="Parse conventional-commit prefixes in PR/MR titles. Disable to preserve titles and omit title-derived categories and breaking-change markers.",
+    )
     show_pr_categories: bool = pydantic.Field(
         True,
         title="Show PR categories",
-        description="If true, parse conventional-commit type prefixes from PR titles and display them as category pills.",
+        description="If true, display parsed PR categories as pills. Requires parse_pr_titles.",
     )
     truncate_pr_titles: bool = pydantic.Field(
         True,
@@ -320,7 +324,48 @@ class LabelFilter(BaseModel):
     exclude: list[str] = pydantic.Field(default_factory=list)
 
 
+class Predicate(BaseModel):
+    """Exactly one operator per node; boolean nodes can nest arbitrarily."""
+
+    all: list["Predicate"] | None = pydantic.Field(None, min_length=1)
+    any: list["Predicate"] | None = pydantic.Field(None, min_length=1)
+    not_: "Predicate | None" = pydantic.Field(None, alias="not")
+    labels_all: list[str] | None = pydantic.Field(None, min_length=1)
+    labels_any: list[str] | None = pydantic.Field(None, min_length=1)
+    paths_any: list[str] | None = pydantic.Field(None, min_length=1)
+
+    model_config = ConfigDict(extra="forbid", serialize_by_alias=True)
+
+    @pydantic.model_validator(mode="after")
+    def check_operator(self):
+        values = [
+            self.all,
+            self.any,
+            self.not_,
+            self.labels_all,
+            self.labels_any,
+            self.paths_any,
+        ]
+        if sum(value is not None for value in values) != 1:
+            raise ValueError("A predicate must specify exactly one operator")
+        for entries in (self.labels_all, self.labels_any, self.paths_any):
+            if entries is not None and any(not entry.strip() for entry in entries):
+                raise ValueError("Predicate labels and paths must not be empty")
+        if self.paths_any is not None:
+            for pattern in self.paths_any:
+                if (
+                    pattern.startswith("/")
+                    or "\\" in pattern
+                    or any(part in ("", ".", "..") for part in pattern.split("/"))
+                ):
+                    raise ValueError(
+                        "Path patterns must be repository-relative POSIX paths"
+                    )
+        return self
+
+
 class RepositorySection(BaseModel):
+    where: Predicate | None = None
     repositories: list[str] = pydantic.Field(min_length=1)
     title: str | None = None
     labels: LabelFilter = pydantic.Field(default_factory=LabelFilter)

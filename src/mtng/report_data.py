@@ -35,10 +35,17 @@ class QueryResult(Model):
     release_tag: str | None = None
 
 
+class PathResult(Model):
+    repo_name: str
+    number: int
+    paths: list[str]
+
+
 class BackendData(Model):
     forge: Literal["github", "gitlab"]
     host: str
     results: list[QueryResult] = Field(default_factory=list)
+    changed_paths: list[PathResult] = Field(default_factory=list)
 
 
 class Contribution(Model):
@@ -81,6 +88,16 @@ class RecordingForge:
         self.backend = backend
         self.data = BackendData(forge=forge, host=host)
 
+    async def changed_paths(self, repo_name, number):
+        for result in self.data.changed_paths:
+            if result.repo_name == repo_name and result.number == number:
+                return list(result.paths)
+        paths = await self.backend.changed_paths(repo_name, number)
+        self.data.changed_paths.append(
+            PathResult(repo_name=repo_name, number=number, paths=paths)
+        )
+        return list(paths)
+
     def __getattr__(self, method):
         if method not in METHODS:
             raise AttributeError(method)
@@ -113,6 +130,14 @@ class RecordingForge:
 class ReplayForge:
     def __init__(self, data):
         self.data = data
+
+    async def changed_paths(self, repo_name, number):
+        for result in self.data.changed_paths:
+            if result.repo_name == repo_name and result.number == number:
+                return list(result.paths)
+        raise ValueError(
+            f"Saved data does not contain changed paths for {repo_name}#{number}. Collect a new snapshot."
+        )
 
     def __getattr__(self, method):
         if method not in METHODS:

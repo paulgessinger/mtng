@@ -135,6 +135,49 @@ label filters for that section. Section types control which data is collected;
 legacy `do_*` content switches and stale/discussion labels on a repository do not
 create additional sections. `group_by` controls category grouping locally.
 
+Repository sections also accept a nested `where` predicate. For example, include
+items with the `tracking` label **or** changes touching tracking files:
+
+```toml
+[sections.where]
+any = [
+  { labels_any = ["tracking"] },
+  { paths_any = ["src/tracking/**", "tests/tracking/**"] },
+]
+```
+
+Each node has exactly one operator: `all` (AND), `any` (OR), `not` (negation),
+`labels_all`, `labels_any`, or `paths_any`. Lists must be nonempty. Boolean nodes
+can nest, for example:
+
+```toml
+[sections.where]
+all = [
+  { any = [
+    { labels_any = ["tracking"] },
+    { paths_any = ["src/tracking/**"] },
+  ] },
+  { not = { labels_any = ["backport"] } },
+]
+```
+
+Existing label, draft, date, and release selection remains unchanged and combines
+with `where` using AND. To express label OR path, put the label inside `where`,
+not in `sections.labels.include`. Omitting `where` preserves existing behavior.
+
+Labels match exactly and case-sensitively. Paths are case-sensitive,
+repository-relative POSIX globs: `*`, `?`, and character classes match within one
+path segment; a whole `**` segment matches zero or more segments. Both old and
+new paths of renames count, as do added and deleted files. `paths_any` is false
+for issues (so its negation is true). Predicates are evaluated in written order
+and short-circuit; changed paths are fetched only when needed. Detected truncated
+file lists fail rather than silently producing incomplete selections.
+
+Filtering precedes statistics, category grouping, and review follow-up grouping.
+Saved reports record fetched paths for offline replay. Old snapshots still work
+with existing configs; a new predicate that needs unsaved paths requires a new
+snapshot. Label-only predicate changes can use the items already in a snapshot.
+
 For open changes, `drafts = "include"`, `"exclude"` (effective default), or `"only"`
 uses both native draft state and the repository's optional `wip_label`. Legacy
 `show_wip` does not override this explicit selection. `stale` and `discussion`
@@ -149,7 +192,7 @@ Use explicit Indico sections instead of `--event` in this configuration format.
 
 Section ordering changes composition, not slide styling. Statistics, grouping,
 breaking-change treatment, item layout, and LaTeX/PDF output otherwise retain
-existing behavior. Contributors, changed-path filters, and revised review reporting
+existing behavior. Contributors and revised review reporting
 are not introduced by this configuration refactor.
 
 `--save-data` and `render --config` support explicit sections, including saved
@@ -268,7 +311,27 @@ Use unique `display_name` values if project paths repeat across hosts. GitHub
 Enterprise and GitLab installations under URL subpaths are not supported.
 The bundled GitHub Action remains GitHub-only; use the CLI for GitLab reports.
 
-Store a GitLab personal access token with `read_api` access:
+For a **classic personal access token**, select the `read_api` scope.
+`read_repository` alone does not cover the MR and issue APIs; full `api` or write
+access is not needed.
+
+For a **fine-grained personal access token**, grant the following permissions.
+Restrict project access to the repositories in your report (for example,
+`atlas/athena` on `gitlab.cern.ch`):
+
+| Access boundary | Permission | Level | Needed for |
+| --- | --- | --- | --- |
+| Project | Merge Request | Read | MR lists, approvals, diffs, and changed-path predicates. |
+| User | User | Read | Token validation by `mtng auth login` and `mtng auth check` through `GET /user`. |
+| Project | Work Item | Read | Issue collection, including issue, stale, and discussion sections. Omit for MR-only reports. |
+| Project | Release | Read | Reports selected by `--release` or a section's `release` setting. Omit for date-based reports. |
+
+The token's account must also have access to the configured projects. See
+[GitLab's fine-grained REST API permission reference](https://docs.gitlab.com/auth/tokens/fine_grained_access_tokens_rest/)
+for the endpoint-to-permission mapping. These permissions provide read access;
+mtng does not require write permissions.
+
+Store and validate either token type with:
 
 ```console
 mtng auth login --host gitlab.cern.ch
@@ -325,7 +388,8 @@ redesign are follow-up work.
   - **`do_reviewers`** *(boolean)*: Show reviewer information for PRs. Default: `False`.
   - **`show_review_summary`** *(boolean)*: Show review outcome text (for example, `reviewed by`). Default: `True`.
   - **`truncate_pr_titles`** *(boolean)*: Fit PR and issue titles on one line across all listings, including review follow-up by replacing the middle with an ellipsis at word boundaries (character fallback for one- or two-word titles), reserving space for status/category badges and the linked item number. Short titles remain unchanged. Default: `True`; set to `false` to allow wrapping.
-  - **`show_pr_categories`** *(boolean)*: Parse conventional-commit style prefixes from PR titles and render category pills. Default: `True`.
+  - **`parse_pr_titles`** *(boolean)*: Parse conventional-commit prefixes in PR/MR titles. Set to `false` for repositories that do not use this convention (for example, under `[repositories.athena]`). Titles retain their prefixes, and title-derived category pills, breaking-change markers, and breaking-change sections are disabled. Keep section `group_by = "none"` (the default) to avoid grouping uncategorized items. Default: `True`.
+  - **`show_pr_categories`** *(boolean)*: Render parsed categories as pills; requires `parse_pr_titles`. Disabling this only hides pills and does not disable prefix parsing. Default: `True`.
   - **`group_prs_by_category`** *(boolean)*: Group open and merged PR slides into one section per category. Default: `False`. Section pages are titled with the category alone (`Feature`, `Bugfix`, ...); the `fix` category also carries a 🐛.
   - **`pr_category_labels`** *(object)*: Override display names for category keys used in pills and grouped sections (for example, `feat: Feature`).
   - **`pr_category_colors`** *(object)*: Override LaTeX color names for category pills. Supports keys like `feat`, `fix`, `docs`, `other`, and `breaking`.
