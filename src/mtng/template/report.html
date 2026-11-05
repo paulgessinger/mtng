@@ -1,0 +1,44 @@
+{% if options.standalone %}<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ document.title }}</title>
+<style>
+:root { color-scheme: {{ 'light dark' if options.theme == 'auto' else options.theme }}; }
+body { margin: 0; font: 16px/1.6 system-ui, sans-serif; background: Canvas; color: CanvasText; }
+.mtng { max-width: 72rem; margin: auto; padding: 2rem; --accent: {{ accent }}; }
+.mtng a { color: var(--accent); overflow-wrap: anywhere; }
+.mtng h1, .mtng h2 { line-height: 1.25; }
+.mtng section { border-top: 1px solid #8886; margin-top: 2rem; padding-top: 1rem; }
+.mtng li { margin-bottom: .8rem; }
+.mtng .metadata { font-size: .85em; opacity: .8; }
+.mtng .badge { border: 1px solid currentColor; border-radius: .3rem; padding: .1rem .3rem; font-size: .75em; }
+.mtng .description { white-space: pre-wrap; }
+.mtng dl { display: grid; grid-template-columns: minmax(10rem, 1fr) 2fr; gap: .3rem 1rem; }
+.mtng dd { margin: 0; }
+@media print { .mtng nav { display: none; } .mtng { padding: 0; } }
+{{ stylesheet|safe }}
+</style></head><body>{% endif %}
+<article class="mtng">
+<header><h1>{{ document.title }}</h1><p>{% if document.since %}{{ document.since.strftime('%Y-%m-%d') }} – {% endif %}{{ document.now.strftime('%Y-%m-%d') }}</p></header>
+{% if options.table_of_contents %}<nav aria-label="Contents"><ul>{% for section in document.sections %}<li><a href="#{{ section.id }}">{{ heading_text(section, options) }}</a></li>{% endfor %}</ul></nav>{% endif %}
+{% macro items(block, section) %}
+{% if block.heading %}<h3>{{ block.heading }}{% if block.actor %}: @{{ block.actor }}{% endif %}</h3>{% endif %}
+{% if block.items %}<ul>{% for item in block.items %}{% set row = item_content(item, block, section, document, options) %}
+<li>{% if row.url %}<a href="{{ row.url }}">{{ row.title }} ({{ row.reference }})</a>{% else %}{{ row.title }} ({{ row.reference }}){% endif %}
+{% for badge in row.badges %}<span class="badge"{% if row.color %} style="color: {{ row.color }}"{% endif %}>{{ badge }}</span> {% endfor %}
+{% if row.metadata %}<div class="metadata">{{ row.metadata|join('; ') }}</div>{% endif %}
+{% if row.summary %}<p>{{ row.summary }}</p>{% endif %}
+{% if row.description %}<p class="description">{{ row.description }}</p>{% endif %}</li>
+{% endfor %}</ul>{% endif %}
+{% for child in block.children %}{{ items(child, section) }}{% endfor %}
+{% endmacro %}
+{% for section in document.sections %}<section id="{{ section.id }}">
+{% if options.collapsible_sections %}<details open><summary>{{ heading_text(section, options) }}</summary>{% else %}<h2>{{ heading_text(section, options) }}</h2>{% endif %}
+{% for block in section.blocks %}
+{% if block.items is defined %}{{ items(block, section) }}
+{% elif block.values is defined %}<dl>{% for key, value in metrics(block) %}<dt>{{ key }}</dt><dd>{{ value }}</dd>{% endfor %}</dl>
+{% elif block.contributions is defined %}<ul>{% for contribution in block.contributions %}<li>{% set url = safe_url(contribution.url) %}{% if url %}<a href="{{ url }}">{{ contribution.title }}</a>{% else %}{{ contribution.title }}{% endif %}{% if contribution.speakers %} — {{ contribution.speakers|join(', ') }}{% endif %}</li>{% endfor %}</ul>
+{% else %}<p>{{ block.text }}</p>{% endif %}
+{% endfor %}
+{% if options.collapsible_sections %}</details>{% endif %}</section>{% endfor %}
+</article>
+{% if options.standalone %}</body></html>{% endif %}

@@ -94,34 +94,15 @@
 }
 \ExplSyntaxOff
 
-
-
-
-
-
-
-
-
-
 \def\reponame{ group/sub/project }
-
-
-
-
-
-
 
 \section{ \reponame{} \\ Merged MRs}
 
-
-
-
-
 \begin{frame}{\reponame{}: period at a glance}
   \bentobox{
-    
+
     \bentolisttile{0}{0}{2}{1}{bentohero}{2026-01-01\\2026-01-31}{reporting period}
-    
+
     \bentotile{2}{0}{1}{1}{bentotile}{1}{merged MRs}
     \bentotile{3}{0}{1}{1}{bentotile}{1}{contributors}
     \bentotile{0}{1}{1}{1}{bentotile}{1}{days, Jan 10--Jan 10}
@@ -130,28 +111,24 @@
   }
 \end{frame}
 
-
-
-
+\def\reponame{ group/sub/project }
 
 \begin{frame}[allowframebreaks=0.85,t]{\reponame{}: MRs merged between 2026-01-01 and 2026-01-31}
-
   \setlength{\leftmargini}{\dimexpr\leftmargini+\prlistindent\relax}
+
   \begin{itemize}
     \footnotesize
     \setlength{\itemsep}{0.2em}
     \setlength{\parsep}{0pt}
     \setlength{\parskip}{0pt}
     \setlength{\topsep}{0pt}
-    
-    
+
     \item\begin{minipage}[t]{\linewidth}\raggedright\mtngprline{ \prmerged\prnew\prcategory{Feature}{LimeGreen}}{{n}{e}{w}{ }{t}{h}{i}{n}{g}}{https://gitlab.example/group/sub/project/-/merge_requests/1}{
     (\href{https://gitlab.example/group/sub/project/-/merge_requests/1}{!1})} \\
     by \href{https://gitlab.example/alice}{\mtngusername{{@}{a}{l}{i}{c}{e}}}, merged on 2026-01-10
     \allowbreak\hspace{0.3em}\mbox{\scriptsize\textcolor{black!55}{\ensuremath{\cdot}}\,\textcolor{black!55}{awaiting review}}
     \end{minipage}
 
-    
   \end{itemize}\par\unskip\unpenalty
 
 \end{frame}
