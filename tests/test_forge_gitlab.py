@@ -52,7 +52,44 @@ def payload(iid=1, **kwargs):
 
 @pytest.fixture
 def forge():
-    return GitLabForge(None, "gitlab.example", "test-token")
+    forge = GitLabForge(None, "gitlab.example", "test-token")
+    forge.graphql = AsyncMock(return_value={"project": None})
+    return forge
+
+
+def size_node(iid, additions=10, deletions=4, files=2, commits=3):
+    return {
+        "iid": str(iid),
+        "commitCount": commits,
+        "diffStatsSummary": {
+            "additions": additions,
+            "deletions": deletions,
+            "fileCount": files,
+        },
+    }
+
+
+@pytest.mark.asyncio
+async def test_diff_stats_from_graphql(forge):
+    forge.graphql = AsyncMock(
+        return_value={"project": {"mergeRequests": {"nodes": [size_node(1)]}}}
+    )
+    prs = [forge.item(payload(), REPO, mr=True), forge.item(payload(2), REPO, mr=True)]
+    await forge.add_diff_stats(REPO, prs)
+    assert (prs[0].additions, prs[0].deletions) == (10, 4)
+    assert (prs[0].changed_files, prs[0].commits) == (2, 3)
+    assert prs[1].additions is None
+    _, variables = forge.graphql.call_args.args
+    assert variables == {"project": REPO, "iids": ["1", "2"]}
+
+
+@pytest.mark.asyncio
+async def test_diff_stats_are_batched_and_optional(forge):
+    forge.graphql = AsyncMock(side_effect=GitLabError(500, "/api/graphql"))
+    prs = [forge.item(payload(i), REPO, mr=True) for i in range(1, 152)]
+    await forge.add_diff_stats(REPO, prs)
+    assert forge.graphql.await_count == 2
+    assert all(pr.additions is None for pr in prs)
 
 
 def test_mapping(forge):

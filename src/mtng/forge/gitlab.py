@@ -1,6 +1,7 @@
 """GitLab REST adapter. Report layout and section selection live elsewhere."""
 
 import hashlib
+import json
 import re
 from datetime import datetime
 from collections.abc import Sequence
@@ -59,6 +60,18 @@ def extract_release_numbers(body: str, repo: str, host: str) -> list[int]:
     return list(dict.fromkeys(numbers))
 
 
+DIFF_STATS_BATCH = 100
+DIFF_STATS_QUERY = """
+query($project: ID!, $iids: [String!]) {
+  project(fullPath: $project) {
+    mergeRequests(iids: $iids, first: 100) {
+      nodes { iid commitCount diffStatsSummary { additions deletions fileCount } }
+    }
+  }
+}
+"""
+
+
 class GitLabForge:
     def __init__(
         self, session: aiohttp.ClientSession, host: str, token: str, *, transport=None
@@ -86,9 +99,24 @@ class GitLabForge:
         )
         if not 200 <= status < 300:
             raise GitLabError(status, path)
-        import json
-
         return json.loads(body), headers
+
+    async def graphql(self, query: str, variables: dict):
+        # Queries go over GET so the shared transport caches and revalidates them.
+        url = URL(f"https://{self.host}/api/graphql").with_query(
+            query=query, variables=json.dumps(variables)
+        )
+        status, _, body = await self.transport.request(
+            "GET", url, {"PRIVATE-TOKEN": self.token}
+        )
+        if not 200 <= status < 300:
+            raise GitLabError(status, "/api/graphql")
+        data = json.loads(body)
+        if data.get("errors"):
+            raise GitLabError(
+                status, f"/api/graphql: {data['errors'][0].get('message')}"
+            )
+        return data["data"]
 
     async def getitem(self, path: str):
         data, _ = await self.request(path)
@@ -206,6 +234,44 @@ class GitLabForge:
 
         return await bounded_gather(prs, enrich, description="Fetching MR approvals")
 
+    async def add_diff_stats(self, repo, prs):
+        """Line, file and commit counts, which the REST MR payloads lack."""
+        pending = [pr for pr in prs if pr.additions is None]
+        batches = [
+            pending[i : i + DIFF_STATS_BATCH]
+            for i in range(0, len(pending), DIFF_STATS_BATCH)
+        ]
+
+        async def fetch(batch):
+            iids = sorted(str(pr.number) for pr in batch)
+            try:
+                # Sizes of merged MRs are final.
+                with immutable(all(pr.merged_at is not None for pr in batch)):
+                    data = await self.graphql(
+                        DIFF_STATS_QUERY, {"project": repo, "iids": iids}
+                    )
+            except GitLabError:
+                # Size data is optional: an older GitLab or a GraphQL outage
+                # leaves the statistics marked as unavailable.
+                return {}
+            nodes = ((data.get("project") or {}).get("mergeRequests") or {}).get(
+                "nodes"
+            ) or []
+            return {int(node["iid"]): node for node in nodes}
+
+        results = await bounded_gather(batches, fetch, description="Fetching MR sizes")
+        stats = {iid: node for result in results for iid, node in result.items()}
+        for pr in pending:
+            node = stats.get(pr.number)
+            if node is None:
+                continue
+            summary = node.get("diffStatsSummary") or {}
+            pr.additions = summary.get("additions")
+            pr.deletions = summary.get("deletions")
+            pr.changed_files = summary.get("fileCount")
+            pr.commits = node.get("commitCount")
+        return prs
+
     async def list_items(self, repo, *, mr, params, with_labels=(), without_labels=()):
         kind = "merge_requests" if mr else "issues"
         # Local filtering also handles commas and GitLab's reserved label names.
@@ -242,6 +308,7 @@ class GitLabForge:
             for pr in prs
             if pr.merged_at is not None and start <= pr.merged_at <= end
         ]
+        await self.add_diff_stats(repo_name, prs)
         return await self.add_reviews(repo_name, prs)
 
     async def open_prs(
@@ -258,6 +325,8 @@ class GitLabForge:
             with_labels=with_labels,
             without_labels=without_labels,
         )
+        if requirements.details:
+            await self.add_diff_stats(repo_name, prs)
         return await self.add_reviews(repo_name, prs) if requirements.reviews else prs
 
     async def open_issues(
@@ -327,4 +396,5 @@ class GitLabForge:
             if payload.get("state") == "merged"
         ]
         prs = [pr for pr in prs if self.matches(pr, with_labels, without_labels)]
+        await self.add_diff_stats(repo_name, prs)
         return tag, await self.add_reviews(repo_name, prs)
