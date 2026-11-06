@@ -1,4 +1,4 @@
-\documentclass[aspectratio=169,t,13pt,dvipsnames]{beamer}
+\documentclass[aspectratio={{ spec.output.latex.aspect_ratio|replace(":", "") }},t,{{ spec.output.latex.font_size }}pt,dvipsnames]{beamer}
 
 \setbeamertemplate{navigation symbols}{}
 \setbeamersize{text margin left=8mm,text margin right=8mm}
@@ -12,7 +12,7 @@
 {% if deck_title %}
 \title{ {{ deck_title|sanitize }} }
 {% else %}
-\title{ {{- request_label }} and issue summary for \\{%- for repo_name in title_repositories -%}{{ repo_name }}{% if not loop.last %}\\{% endif %}{%- endfor -%}}
+\title{ {{- request_label }} and issue summary for \\{%- for repo_name in title_repositories -%}{{ repo_name|sanitize }}{% if not loop.last %}\\{% endif %}{%- endfor -%}}
 {% endif %}
 {% if footline_left %}
 \author{ {{ footline_left|sanitize }} }

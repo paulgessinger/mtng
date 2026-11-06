@@ -4,9 +4,9 @@
     {% for contrib in contributions %}
 
       \item
-      \href{ {{- contrib["url"] -}} }{ \textbf{ {{- contrib["title"] -}} } } \\
+      \href{ {{- contrib["url"] -}} }{ \textbf{ {{- contrib["title"]|sanitize -}} } } \\
       {% if contrib["speakers"]|length > 0 %}
-      by {{ contrib["speakers"]|join(", ") }}
+      by {{ contrib["speakers"]|join(", ")|sanitize }}
       {% endif %}
     {% endfor %}
   \end{itemize}

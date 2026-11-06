@@ -67,6 +67,24 @@ async def collect_block(spec, index, section, alias, since, now, forges, release
         include_labels=section.labels.include,
         exclude_labels=section.labels.exclude,
     )
+    from mtng.document import merge_presentation
+    from mtng.spec import OutputFormat
+
+    options = getattr(
+        spec.output,
+        (
+            "latex"
+            if spec.output.format == OutputFormat.pdf
+            else spec.output.format.value
+        ),
+    )
+    display = merge_presentation(
+        spec.presentation, source.presentation, section.presentation, options
+    )
+    if display.metadata is not None:
+        values["do_reviewers"] = "review_status" in display.metadata
+        values["show_review_summary"] = values["do_reviewers"]
+        values["do_assignee"] = "assignees" in display.metadata
     section_release = None
     if isinstance(section, ChangesSection):
         values.update(

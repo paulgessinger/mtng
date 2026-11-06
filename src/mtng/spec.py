@@ -1,4 +1,6 @@
 import pydantic
+from pathlib import Path
+from enum import Enum
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
 import re
@@ -109,7 +111,103 @@ DEFAULT_PR_CATEGORY_ORDER = [
 ]
 
 
+class OutputFormat(str, Enum):
+    latex = "latex"
+    pdf = "pdf"
+    html = "html"
+    markdown = "markdown"
+    text = "text"
+
+
+class Presentation(BaseModel):
+    headings: dict[str, str] = pydantic.Field(default_factory=dict)
+    colors: dict[str, str] = pydantic.Field(default_factory=dict)
+    metadata: (
+        list[Literal["author", "updated", "assignees", "review_status", "diff"]] | None
+    ) = None
+    show_summaries: bool | None = None
+    show_categories: bool | None = None
+
+    @pydantic.field_validator("headings")
+    @classmethod
+    def check_headings(cls, value):
+        unknown = value.keys() - DEFAULT_FRAME_TITLES.keys()
+        if unknown:
+            raise ValueError(f"Unknown heading keys: {sorted(unknown)}")
+        return value
+
+    @pydantic.field_validator("colors")
+    @classmethod
+    def check_colors(cls, value):
+        for key, color in value.items():
+            if not re.fullmatch(r"#?[0-9a-fA-F]{6}", color):
+                raise ValueError(f"Color {key} must contain six hexadecimal digits")
+        return {key: "#" + color.lstrip("#").upper() for key, color in value.items()}
+
+
+class LatexOutput(Presentation):
+    standalone: bool = False
+    aspect_ratio: Literal["16:9", "4:3", "16:10"] = "16:9"
+    font_size: Literal[10, 11, 12, 13, 14, 17, 20] = 13
+    truncate_titles: bool | None = None
+    footline_left: str | None = None
+    preamble: Path | None = None
+
+    @pydantic.model_validator(mode="after")
+    def check_preamble(self):
+        if self.standalone and self.preamble is not None:
+            raise ValueError(
+                "latex.standalone and latex.preamble are mutually exclusive"
+            )
+        return self
+
+
+class PdfOutput(BaseModel):
+    engine: Literal["auto", "lualatex", "pdflatex"] = "auto"
+
+
+class HtmlOutput(Presentation):
+    standalone: bool = True
+    layout: Literal["report"] = "report"
+    theme: Literal["light", "dark", "auto"] = "light"
+    table_of_contents: bool = True
+    collapsible_sections: bool = False
+    stylesheet: Path | None = None
+    emoji: bool = True
+    new_tab: bool = True
+
+
+class MarkdownOutput(Presentation):
+    dialect: Literal["commonmark", "gfm"] = "commonmark"
+    heading_level: int = pydantic.Field(1, ge=1, le=4)
+    links: Literal["inline", "reference"] = "inline"
+    statistics: Literal["list", "table"] = "list"
+    emoji: bool = True
+
+    @pydantic.model_validator(mode="after")
+    def check_tables(self):
+        if self.statistics == "table" and self.dialect != "gfm":
+            raise ValueError("Markdown statistics tables require dialect = 'gfm'")
+        return self
+
+
+class TextOutput(Presentation):
+    width: int = pydantic.Field(100, ge=0)
+    links: Literal["inline", "footnotes", "omit"] = "inline"
+    unicode: bool = True
+
+
+class Output(BaseModel):
+    format: OutputFormat = OutputFormat.latex
+    latex: LatexOutput = pydantic.Field(default_factory=LatexOutput)
+    pdf: PdfOutput = pydantic.Field(default_factory=PdfOutput)
+    html: HtmlOutput = pydantic.Field(default_factory=HtmlOutput)
+    markdown: MarkdownOutput = pydantic.Field(default_factory=MarkdownOutput)
+    text: TextOutput = pydantic.Field(default_factory=TextOutput)
+
+
 class Repository(BaseModel):
+    presentation: Presentation = pydantic.Field(default_factory=Presentation)
     forge: Literal["github", "gitlab"] = pydantic.Field(
         "github", description="Code hosting backend. Defaults to GitHub."
     )
@@ -366,6 +464,7 @@ class Predicate(BaseModel):
 
 class RepositorySection(BaseModel):
     where: Predicate | None = None
+    presentation: Presentation = pydantic.Field(default_factory=Presentation)
     repositories: list[str] = pydantic.Field(min_length=1)
     title: str | None = None
     labels: LabelFilter = pydantic.Field(default_factory=LabelFilter)
@@ -573,6 +672,8 @@ class LLMConfig(BaseModel):
 
 
 class Spec(BaseModel):
+    presentation: Presentation = pydantic.Field(default_factory=Presentation)
+    output: Output = pydantic.Field(default_factory=Output)
     llm: LLMConfig = pydantic.Field(default_factory=LLMConfig)
     accent_color: str = pydantic.Field(
         "22529E",
