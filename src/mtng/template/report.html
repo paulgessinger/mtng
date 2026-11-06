@@ -4,39 +4,101 @@
 <style>
 :root { color-scheme: {{ 'light dark' if options.theme == 'auto' else options.theme }}; }
 body { margin: 0; font: 16px/1.6 system-ui, sans-serif; background: Canvas; color: CanvasText; }
-.mtng { max-width: 72rem; margin: auto; padding: 2rem; --accent: {{ accent }}; }
+.mtng { max-width: 72rem; margin: auto; padding: 2rem; --accent: {{ accent }}; --muted: color-mix(in srgb, CanvasText 60%, transparent); }
 .mtng a { color: var(--accent); overflow-wrap: anywhere; }
 .mtng h1, .mtng h2 { line-height: 1.25; }
+.mtng header { border-bottom: 4px solid var(--accent); padding-bottom: .5rem; }
+.mtng header p { margin: 0; color: var(--muted); }
 .mtng section { border-top: 1px solid #8886; margin-top: 2rem; padding-top: 1rem; }
-.mtng li { margin-bottom: .8rem; }
-.mtng .metadata { font-size: .85em; opacity: .8; }
-.mtng .badge { border: 1px solid currentColor; border-radius: .3rem; padding: .1rem .3rem; font-size: .75em; }
+.mtng h2 { color: var(--accent); }
+.mtng ul.items { list-style: none; padding-left: 0; }
+.mtng ul.items > li { display: grid; grid-template-columns: 1.25rem 1fr; column-gap: .5rem; margin-bottom: .9rem; }
+.mtng .state { width: 1.1rem; height: 1.1rem; margin-top: .25rem; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mtng .state-open, .mtng .state-issue { color: #87C945; }
+.mtng .state-merged { color: #8F45A3; }
+.mtng .state-draft { color: #8A8C8E; }
+.mtng .title { font-weight: 600; }
+.mtng .title a { color: inherit; text-decoration: none; }
+.mtng .title a:hover { text-decoration: underline; }
+.mtng .reference { color: var(--muted); font-weight: normal; }
+.mtng .badges { display: inline-flex; flex-wrap: wrap; gap: .3rem; vertical-align: .1em; }
+.mtng .badge { border-radius: .35em; padding: .05em .45em; font-size: .75em; font-weight: 600; line-height: 1.5; background: #8883; }
+.mtng .badge-emoji { background: none; padding: 0; font-size: .9em; }
+.mtng .badge-wip { background: #FFEB3D; color: #1C1C1E; }
+.mtng .badge-stale { background: #FFEBC6; color: #1C1C1E; }
+.mtng .badge-draft { background: #8A8C8E; color: #FFFFFF; }
+.mtng .badge-new { background: #DCE8FB; color: #1D4F91; }
+.mtng .badge-breaking { background: #EF5D60; color: #FFFFFF; }
+.mtng .metadata { font-size: .85em; color: var(--muted); }
+.mtng .metadata a.user { color: inherit; }
+.mtng .metadata > span + span::before { content: "·"; margin: 0 .4em; }
+.mtng .review-approved { color: #2E8B3E; }
+.mtng .review-changes_requested { color: #D1383D; }
+.mtng .review-awaiting { color: #B7791F; }
+.mtng .add { color: #2E8B3E; }
+.mtng .del { color: #D1383D; }
+.mtng .attention { color: #D1383D; font-weight: 600; }
+.mtng .summary { margin: .2rem 0 0; color: var(--muted); }
 .mtng .description { white-space: pre-wrap; }
-.mtng dl { display: grid; grid-template-columns: minmax(10rem, 1fr) 2fr; gap: .3rem 1rem; }
-.mtng dd { margin: 0; }
+.mtng .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: .6rem; margin: 1rem 0; padding: 0; }
+.mtng .tile { margin: 0; border-radius: .8rem; padding: .8rem 1rem; background: #8881; }
+.mtng .tile dd { margin: 0; font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.mtng .tile dt { font-size: .8rem; color: var(--muted); }
+.mtng .tile-wide { grid-column: span 2; }
+.mtng .tile-wide dd { font-size: 1rem; font-weight: 600; }
+.mtng .tile-hero { background: #8F45A322; }
+.mtng .tile-add { background: #2E8B3E22; }
+.mtng .tile-del { background: #D1383D22; }
+.mtng .note { font-size: .85em; color: var(--muted); }
 @media print { .mtng nav { display: none; } .mtng { padding: 0; } }
 {{ stylesheet|safe }}
 </style></head><body>{% endif %}
+{%- macro state_icon(state) -%}
+<svg class="state state-{{ state }}" viewBox="0 0 16 16" aria-hidden="true">
+{%- if state == "issue" -%}
+<circle cx="8" cy="8" r="6.25"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/>
+{%- elif state == "merged" -%}
+<circle cx="4" cy="13" r="1.75"/><circle cx="4" cy="3" r="1.75"/><circle cx="12" cy="9" r="1.75"/><path d="M4 4.75v6.5M10.25 9H9a5 5 0 0 1-5-5"/>
+{%- else -%}
+<circle cx="4" cy="13" r="1.75"/><circle cx="4" cy="3" r="1.75"/><circle cx="12" cy="13" r="1.75"/><path d="M4 4.75v6.5M12 11.25V6a3 3 0 0 0-3-3H6.5M8.25 1.25 6.5 3l1.75 1.75"/>
+{%- endif -%}
+</svg>
+{%- endmacro -%}
+{%- set external = ' target="_blank" rel="noopener"'|safe if options.new_tab else '' -%}
+{%- macro icon(value) %}{% if options.emoji and value %}{{ value }} {% endif %}{% endmacro -%}
 <article class="mtng">
 <header><h1>{{ document.title }}</h1><p>{% if document.since %}{{ document.since.strftime('%Y-%m-%d') }} – {% endif %}{{ document.now.strftime('%Y-%m-%d') }}</p></header>
-{% if options.table_of_contents %}<nav aria-label="Contents"><ul>{% for section in document.sections %}<li><a href="#{{ section.id }}">{{ heading_text(section, options) }}</a></li>{% endfor %}</ul></nav>{% endif %}
-{% macro items(block, section) %}
-{% if block.heading %}<h3>{{ block.heading }}{% if block.actor %}: @{{ block.actor }}{% endif %}</h3>{% endif %}
-{% if block.items %}<ul>{% for item in block.items %}{% set row = item_content(item, block, section, document, options) %}
-<li>{% if row.url %}<a href="{{ row.url }}">{{ row.title }} ({{ row.reference }})</a>{% else %}{{ row.title }} ({{ row.reference }}){% endif %}
-{% for badge in row.badges %}<span class="badge"{% if row.color %} style="color: {{ row.color }}"{% endif %}>{{ badge }}</span> {% endfor %}
-{% if row.metadata %}<div class="metadata">{{ row.metadata|join('; ') }}</div>{% endif %}
-{% if row.summary %}<p>{{ row.summary }}</p>{% endif %}
-{% if row.description %}<p class="description">{{ row.description }}</p>{% endif %}</li>
+{% set groups = section_groups(document, options) %}
+{% if options.table_of_contents %}<nav aria-label="Contents"><ul>{% for group in groups %}<li><a href="#{{ group.id }}">{{ icon(emoji(group.emoji)) }}{{ group.heading }}</a>
+{%- if group.subheadings %}<ul>{% for anchor, text in group.subheadings %}<li><a href="#{{ anchor }}">{{ text }}</a></li>{% endfor %}</ul>{% endif %}</li>{% endfor %}</ul></nav>{% endif %}
+{% macro items(block, section, anchor=none) %}
+{% if block.heading %}<h3{% if anchor %} id="{{ anchor }}"{% endif %}>{{ block.heading }}{% if block.actor %}: {% set actor_url = safe_url(block.actor_url or "") %}{% if actor_url %}<a href="{{ actor_url }}"{{ external }}>@{{ block.actor }}</a>{% else %}@{{ block.actor }}{% endif %}{% endif %}</h3>{% endif %}
+{% if block.items %}<ul class="items">{% for item in block.items %}{% set row = item_content(item, block, section, document, options) %}
+<li>{{ state_icon(row.state) }}<div>
+{% if row.badges %}<span class="badges">{% for badge in row.badges %}
+{%- if badge.kind == "category" %}<span class="badge badge-category"{% if badge.color %} style="background: {{ badge.color }}; color: {{ contrast_text(badge.color) }}"{% endif %}>{{ icon(row.category_emoji) }}{{ badge.label }}</span>
+{%- elif options.emoji and badge.kind in ("new", "breaking") %}<span class="badge badge-emoji" title="{{ badge.label }}">{{ emoji(badge_emoji[badge.kind]) }}</span>
+{%- else %}<span class="badge badge-{{ badge.kind }}">{% if badge.kind == "wip" %}{{ icon(emoji("construction")) }}{% endif %}{{ badge.label }}</span>
+{%- endif %}{% endfor %}</span>{% endif %}
+<span class="title">{% if row.url %}<a href="{{ row.url }}"{{ external }}>{{ row.title }}</a>{% else %}{{ row.title }}{% endif %} <span class="reference">{{ row.reference }}</span></span>
+{% if row.metadata %}<div class="metadata">{% for entry in row.metadata %}
+{%- if entry.kind == "review" %}<span class="review-{{ entry.state }}">{{ icon(review_emoji[entry.state]) }}{{ entry.text }}</span>
+{%- elif entry.kind == "diff" %}<span><span class="add">+{{ entry.additions }}</span> <span class="del">−{{ entry.deletions }}</span></span>
+{%- elif entry.attention %}<span class="attention">{{ icon(emoji("warning")) }}{{ entry.text }}</span>
+{%- elif entry.users %}<span>{{ entry.prefix }}{% for user in entry.users %}{% if not loop.first %}, {% endif %}{% if user.url %}<a class="user" href="{{ user.url }}"{{ external }}>@{{ user.login }}</a>{% else %}@{{ user.login }}{% endif %}{% endfor %}</span>
+{%- else %}<span>{{ entry.text }}</span>{% endif %}{% endfor %}</div>{% endif %}
+{% if row.summary %}<p class="summary">{{ icon(emoji("robot")) }}{{ row.summary }}</p>{% endif %}
+{% if row.description %}<p class="description">{{ row.description }}</p>{% endif %}</div></li>
 {% endfor %}</ul>{% endif %}
 {% for child in block.children %}{{ items(child, section) }}{% endfor %}
 {% endmacro %}
-{% for section in document.sections %}<section id="{{ section.id }}">
-{% if options.collapsible_sections %}<details open><summary>{{ heading_text(section, options) }}</summary>{% else %}<h2>{{ heading_text(section, options) }}</h2>{% endif %}
-{% for block in section.blocks %}
-{% if block.items is defined %}{{ items(block, section) }}
-{% elif block.values is defined %}<dl>{% for key, value in metrics(block) %}<dt>{{ key }}</dt><dd>{{ value }}</dd>{% endfor %}</dl>
-{% elif block.contributions is defined %}<ul>{% for contribution in block.contributions %}<li>{% set url = safe_url(contribution.url) %}{% if url %}<a href="{{ url }}">{{ contribution.title }}</a>{% else %}{{ contribution.title }}{% endif %}{% if contribution.speakers %} — {{ contribution.speakers|join(', ') }}{% endif %}</li>{% endfor %}</ul>
+{% for group in groups %}<section id="{{ group.id }}">
+{% if options.collapsible_sections %}<details open><summary>{{ icon(emoji(group.emoji)) }}{{ group.heading }}</summary>{% else %}<h2>{{ icon(emoji(group.emoji)) }}{{ group.heading }}</h2>{% endif %}
+{% for section, block, anchor in group.parts %}
+{% if block.items is defined %}{{ items(block, section, anchor) }}
+{% elif block.values is defined %}<dl class="tiles">{% for key, value in metrics(block) if key != "Note" %}<div class="tile{% if key in ('Release', 'Merged requests') %} tile-hero{% elif key == 'Lines added' %} tile-add{% elif key == 'Lines removed' %} tile-del{% elif key == 'Top labels' %} tile-wide{% endif %}"><dd>{{ value }}</dd><dt>{{ key }}</dt></div>{% endfor %}</dl>
+{% for key, value in metrics(block) if key == "Note" %}<p class="note">{{ value }}</p>{% endfor %}
+{% elif block.contributions is defined %}<ul>{% for contribution in block.contributions %}<li>{% set url = safe_url(contribution.url) %}{% if url %}<a href="{{ url }}"{{ external }}>{{ contribution.title }}</a>{% else %}{{ contribution.title }}{% endif %}{% if contribution.speakers %} — {{ contribution.speakers|join(', ') }}{% endif %}</li>{% endfor %}</ul>
 {% else %}<p>{{ block.text }}</p>{% endif %}
 {% endfor %}
 {% if options.collapsible_sections %}</details>{% endif %}</section>{% endfor %}

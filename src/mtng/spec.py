@@ -173,6 +173,8 @@ class HtmlOutput(Presentation):
     table_of_contents: bool = True
     collapsible_sections: bool = False
     stylesheet: Path | None = None
+    emoji: bool = True
+    new_tab: bool = True
 
 
 class MarkdownOutput(Presentation):
@@ -180,6 +182,7 @@ class MarkdownOutput(Presentation):
     heading_level: int = pydantic.Field(1, ge=1, le=4)
     links: Literal["inline", "reference"] = "inline"
     statistics: Literal["list", "table"] = "list"
+    emoji: bool = True
 
     @pydantic.model_validator(mode="after")
     def check_tables(self):

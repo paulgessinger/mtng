@@ -817,7 +817,10 @@ category groups, breaking-change repetition, review follow-up groups, statistics
 and agendas have the same meaning in every format. HTML is a self-contained
 report with embedded styles; Markdown defaults to CommonMark without raw HTML;
 plain text has its own wrapping and link handling. Full titles are preserved in
-all three formats.
+all three formats. HTML marks each item with an inline
+SVG state icon (open, draft, merged, issue), category pills in the slide palette,
+colored review status and line counts, and statistics as tiles. HTML and Markdown
+use the same emoji as the slides; plain text stays undecorated.
 
 The following TOML shows the available format settings. All settings are optional.
 Paths to custom stylesheets and preambles are relative to the working directory.
@@ -866,6 +869,8 @@ theme = "light" # light | dark | auto
 table_of_contents = true
 collapsible_sections = false
 # stylesheet = "meeting.css" # appended to embedded styles in standalone mode
+emoji = true # category, badge, review and summary emoji; false keeps only the inline SVG state icons
+new_tab = true # external links open in a new tab; contents links stay in the page
 
 [output.html.headings]
 merged_prs = "{repo}: Changes merged between {since} and {date}"
@@ -875,6 +880,7 @@ dialect = "commonmark" # commonmark | gfm
 heading_level = 1 # 1 through 4, leaving room for section and group headings
 links = "inline" # inline | reference
 statistics = "list" # table requires dialect = "gfm"
+emoji = true # category, badge, review and summary emoji, like the slides
 
 [output.text]
 width = 100 # 0 disables wrapping; complete URLs and long words are never split

@@ -5,8 +5,16 @@ import textwrap
 import unicodedata
 from urllib.parse import quote
 
-from mtng.document import Agenda, ItemList, Notice, Statistics, heading_text
-from .common import item_content, metrics, safe_url
+from mtng.document import Agenda, ItemList, Notice, Statistics
+from .common import (
+    BADGE_EMOJI,
+    REVIEW_EMOJI,
+    emoji,
+    item_content,
+    metrics,
+    safe_url,
+    section_groups,
+)
 
 
 def markdown_escape(value):
@@ -45,8 +53,44 @@ def _render(document, options, markdown):
             return f"[{label}][{number}]" if markdown else f"{label} [{number}]"
         return f"[{label}](<{url}>)" if markdown else f"{label} ({url})"
 
-    def heading(value, level):
-        lines.extend([("#" * level + " " if markdown else "") + escape(value), ""])
+    # Plain text stays plain; Markdown decorates unless disabled.
+    decorate = markdown and options.emoji
+
+    def icon(value):
+        return value + " " if decorate and value else ""
+
+    def badge_text(row, badge):
+        if badge["kind"] == "category":
+            return icon(row["category_emoji"]) + badge["label"]
+        return icon(emoji(BADGE_EMOJI.get(badge["kind"]))) + badge["label"]
+
+    def badge_markdown(row, badge):
+        if decorate and badge["kind"] in ("new", "breaking"):
+            return emoji(BADGE_EMOJI[badge["kind"]])
+        return "`" + badge_text(row, badge).replace("`", "") + "`"
+
+    def meta_text(entry):
+        if entry["kind"] == "review":
+            return icon(REVIEW_EMOJI[entry["state"]]) + escape(entry["text"])
+        if entry.get("attention"):
+            return icon(emoji("warning")) + escape(entry["text"])
+        if markdown and entry.get("users"):
+            return escape(entry["prefix"]) + ", ".join(
+                link("@" + user["login"], user["url"]) for user in entry["users"]
+            )
+        return escape(entry["text"])
+
+    def actor(block):
+        if not block.actor:
+            return ""
+        if markdown:
+            return ": " + link("@" + block.actor, block.actor_url or "")
+        return f": @{block.actor}"
+
+    def heading(value, level, suffix=""):
+        lines.extend(
+            [("#" * level + " " if markdown else "") + escape(value) + suffix, ""]
+        )
 
     base = options.heading_level if markdown else 1
     heading(document.title, base)
@@ -57,28 +101,45 @@ def _render(document, options, markdown):
 
     def render_items(block, section):
         if block.heading:
-            heading(
-                block.heading + (f": @{block.actor}" if block.actor else ""), base + 2
-            )
+            heading(block.heading, base + 2, actor(block))
         for item in block.items:
             row = item_content(item, block, section, document, options)
             text = link(f"{row['title']} ({row['reference']})", row["url"])
-            if row["badges"]:
-                text += " — " + escape(", ".join(row["badges"]))
-            if row["metadata"]:
-                text += "; " + escape("; ".join(row["metadata"]))
-            lines.append("- " + text)
-            if row["summary"]:
-                lines.append("  " + escape(row["summary"]))
+            if markdown:
+                # Badges lead the title, as on the slides; code spans read as pills.
+                if decorate:
+                    text = f"**{text}**"
+                text = " ".join(
+                    [*(badge_markdown(row, badge) for badge in row["badges"]), text]
+                )
+            elif row["badges"]:
+                text += " — " + escape(
+                    ", ".join(badge_text(row, badge) for badge in row["badges"])
+                )
+            if markdown:
+                # Title, metadata and summary on their own lines within the item;
+                # a trailing backslash is CommonMark's portable hard line break.
+                item_lines = [text]
+                if row["metadata"]:
+                    item_lines.append(" · ".join(map(meta_text, row["metadata"])))
+                if row["summary"]:
+                    item_lines.append(icon(emoji("robot")) + escape(row["summary"]))
+                lines.append("- " + "\\\n  ".join(item_lines))
+            else:
+                if row["metadata"]:
+                    text += "; " + "; ".join(map(meta_text, row["metadata"]))
+                lines.append("- " + text)
+                if row["summary"]:
+                    lines.append("  " + escape(row["summary"]))
             if row["description"]:
                 lines.extend(["", "  " + escape(row["description"])])
         lines.append("")
         for child in block.children:
             render_items(child, section)
 
-    for section in document.sections:
-        heading(heading_text(section, options), base + 1)
-        for block in section.blocks:
+    for group in section_groups(document, options):
+        heading(icon(emoji(group.emoji)) + group.heading, base + 1)
+        for section, block, _ in group.parts:
             if isinstance(block, ItemList):
                 render_items(block, section)
             elif isinstance(block, Notice):

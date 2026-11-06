@@ -92,7 +92,8 @@ async def test_markdown_reference_links_and_escaping(report):
         prepare_report(spec, data, START, END), spec.output.markdown
     )
     assert r"\[click\]" in output and r"\<b\>" in output
-    assert "[2]: <https://example.org/a%28b%29?x=1&y=2>" in output
+    assert "[2]: <https://example.org/alice>" in output
+    assert "[3]: <https://example.org/a%28b%29?x=1&y=2>" in output
     assert "<table" not in output
 
 
@@ -385,3 +386,94 @@ def test_pdf_output_routes_engine_and_destination(monkeypatch, tmp_path):
     output_report(spec, {}, START, END, [], output_format=OutputFormat.pdf, output=path)
     assert path.read_bytes() == b"%PDF-test"
     assert "-pdflatex=pdflatex" in commands[0]
+
+
+@pytest.mark.asyncio
+async def test_html_and_markdown_decorations(report):
+    spec, data = report
+    data["org/project"]["open_prs"][0].llm_summary = "A summary"
+    document = prepare_report(spec, data, START, END)
+    html = RENDERERS["html"](document, spec.output.html)
+    markdown = RENDERERS["markdown"](document, spec.output.markdown)
+    plain = RENDERERS["text"](document, spec.output.text)
+    assert 'class="state state-merged"' in html and 'class="state state-open"' in html
+    assert "🚀 Feature" in html and "🤖 A summary" in html and "🆕" in html
+    assert "🚀 Feature" in markdown and "🤖 A summary" in markdown
+    assert "**[Change 1" in markdown
+    assert "**\\\n  by [@alice]" in markdown and "\\\n  🤖 A summary" in markdown
+    assert "🚀" not in plain and "🤖" not in plain
+    # The default LaTeX palette maps to hex for HTML pills.
+    assert "background: #87C945" in html
+
+    spec.output.html.emoji = False
+    spec.output.markdown.emoji = False
+    html = RENDERERS["html"](document, spec.output.html)
+    markdown = RENDERERS["markdown"](document, spec.output.markdown)
+    assert "🚀" not in html and "🤖" not in html and "badge-new" in html
+    assert "🚀" not in markdown and "🤖" not in markdown and "**" not in markdown
+    assert "<svg" in html
+
+
+@pytest.mark.asyncio
+async def test_html_links_open_in_new_tab(report):
+    spec, data = report
+    document = prepare_report(spec, data, START, END)
+    html = RENDERERS["html"](document, spec.output.html)
+    assert (
+        '<a class="user" href="https://example.org/alice" target="_blank" rel="noopener">'
+        in html
+    )
+    assert (
+        '<a href="#' in html
+        and 'target="_blank" rel="noopener">org/project' not in html
+    )
+    spec.output.html.new_tab = False
+    html = RENDERERS["html"](document, spec.output.html)
+    assert 'target="_blank"' not in html
+    spec.output.html.new_tab = True
+    spec.output.html.standalone = False
+    html = RENDERERS["html"](document, spec.output.html)
+    assert 'href="https://example.org/pr/1" target="_blank" rel="noopener"' in html
+
+
+def test_repeated_section_headings_are_merged():
+    from mtng.document import Heading, ItemList, ReportDocument, ReportSection
+    from mtng.renderers.common import section_groups
+    from mtng.spec import Presentation
+
+    def section(id, kind, block_heading, actor=None):
+        return ReportSection(
+            id,
+            Heading(kind, {"repo": "org/project"}, "{repo}: " + kind),
+            None,
+            Presentation(),
+            [ItemList([], "OPEN", block_heading, actor)],
+        )
+
+    document = ReportDocument(
+        "Report",
+        START,
+        END,
+        [
+            section("s1", "review", "Needs assignment"),
+            section("s2", "review", "Awaiting review", "alice"),
+            section("s3", "review", "Awaiting review", "bob"),
+            section("s4", "open", None),
+        ],
+        {},
+    )
+    options = Spec().output.html
+    groups = section_groups(document, options)
+    assert [group.heading for group in groups] == [
+        "org/project: review",
+        "org/project: open",
+    ]
+    assert groups[0].subheadings == [
+        ("s1-0", "Needs assignment"),
+        ("s1-1", "Awaiting review (2)"),
+    ]
+    assert groups[1].subheadings == []
+    html = RENDERERS["html"](document, options)
+    assert html.count("<h2>") == 2 and 'id="s1-2"' in html
+    markdown = RENDERERS["markdown"](document, Spec().output.markdown)
+    assert markdown.count("## org/project: review") == 1
