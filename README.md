@@ -799,9 +799,11 @@ normal CI uses offline fixtures rather than relying on shared private caches.
 
 `generate` and offline `render` support `latex`, `pdf`, `html`, `markdown`, and
 `text`. Without configuration or output flags, the default remains a LaTeX
-fragment. `--format` overrides `[output].format`; file extensions do not select
-the format. Textual output goes to stdout unless `--output` is supplied. PDF
-requires a destination and a TeX installation.
+fragment. `--format` overrides `[output].format`. When neither is set, the
+`--output` extension selects the format (`.tex`, `.pdf`, `.html`/`.htm`,
+`.md`/`.markdown`, `.txt`); other extensions keep the LaTeX default. Textual
+output goes to stdout unless `--output` is supplied. PDF requires a destination
+and a TeX installation.
 
 ```console
 mtng generate report.toml --since "1 week ago" --format html --output report.html

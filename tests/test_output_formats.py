@@ -190,6 +190,31 @@ def test_output_selection_and_conflicts(tmp_path):
         validate_output(spec, OutputFormat.html, None, full_tex=True)
 
 
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("report.html", OutputFormat.html),
+        ("report.HTM", OutputFormat.html),
+        ("report.md", OutputFormat.markdown),
+        ("report.txt", OutputFormat.text),
+        ("report.pdf", OutputFormat.pdf),
+        ("report.tex", OutputFormat.latex),
+        ("report.out", OutputFormat.latex),
+    ],
+)
+def test_output_format_from_extension(tmp_path, name, expected):
+    assert validate_output(Spec(), None, tmp_path / name) == expected
+
+
+def test_output_extension_does_not_override_explicit_format(tmp_path):
+    output = tmp_path / "report.html"
+    assert validate_output(Spec(), OutputFormat.text, output) == OutputFormat.text
+    spec = Spec(output={"format": "markdown"})
+    assert validate_output(spec, None, output) == OutputFormat.markdown
+    spec = Spec(output={"format": "latex"})
+    assert validate_output(spec, None, output) == OutputFormat.latex
+
+
 @pytest.mark.asyncio
 async def test_offline_cli_all_formats(tmp_path):
     repo = Repository(name="org/project")

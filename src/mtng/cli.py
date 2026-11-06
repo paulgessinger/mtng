@@ -298,7 +298,7 @@ async def generate(
             "--output",
             "-o",
             dir_okay=False,
-            help="Output file; textual formats default to stdout",
+            help="Output file; textual formats default to stdout. Without --format or output.format, the extension selects the format",
         ),
     ] = None,
     full_tex: Annotated[
@@ -505,6 +505,26 @@ async def generate(
     )
 
 
+OUTPUT_EXTENSIONS = {
+    ".tex": OutputFormat.latex,
+    ".pdf": OutputFormat.pdf,
+    ".html": OutputFormat.html,
+    ".htm": OutputFormat.html,
+    ".md": OutputFormat.markdown,
+    ".markdown": OutputFormat.markdown,
+    ".txt": OutputFormat.text,
+}
+
+
+def configured_format(spec, output):
+    """The configured format, or one inferred from the ``--output`` extension
+    when the configuration does not set one."""
+
+    if "format" in spec.output.model_fields_set or output is None:
+        return spec.output.format
+    return OUTPUT_EXTENSIONS.get(output.suffix.lower(), spec.output.format)
+
+
 def validate_output(
     spec, output_format, output, full_tex=False, preamble=None, pdf=None, tex=None
 ):
@@ -515,7 +535,7 @@ def validate_output(
         else (
             OutputFormat.pdf
             if pdf is not None
-            else OutputFormat.latex if legacy else spec.output.format
+            else OutputFormat.latex if legacy else configured_format(spec, output)
         )
     )
     if selected not in {OutputFormat.latex, OutputFormat.pdf} and legacy:
@@ -711,7 +731,7 @@ async def render(
             "--output",
             "-o",
             dir_okay=False,
-            help="Output file; textual formats default to stdout",
+            help="Output file; textual formats default to stdout. Without --format or output.format, the extension selects the format",
         ),
     ] = None,
     full_tex: Annotated[
